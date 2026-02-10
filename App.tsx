@@ -1,0 +1,219 @@
+import React, { useState, useCallback, useMemo } from 'react';
+import { ReportData } from './types';
+import { INITIAL_REPORT, PRE_MARKET_REPORT_TEMPLATE, CLOSE_REPORT_TEMPLATE, SHARED_FIELDS } from './constants';
+import { useUndoRedo } from './hooks/useUndoRedo';
+import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
+import Toolbar from './components/Toolbar';
+import ExportModal from './components/ExportModal';
+import ReportEditor from './components/ReportEditor';
+import ReportPreview from './components/ReportPreview';
+
+const getStorageKey = (type: '장전' | '마감') => `rising-report-${type === '장전' ? 'pre' : 'close'}`;
+
+const loadSavedTemplate = (type: '장전' | '마감'): ReportData | null => {
+  try {
+    const saved = localStorage.getItem(getStorageKey(type));
+    if (saved) return JSON.parse(saved);
+  } catch { /* ignore */ }
+  return null;
+};
+
+const App: React.FC = () => {
+  const { state: reportData, setState: setReportData, undo, redo, canUndo, canRedo, reset } = useUndoRedo<ReportData>(loadSavedTemplate(INITIAL_REPORT.reportType) || INITIAL_REPORT);
+  const [showExport, setShowExport] = useState(false);
+  const [zoom, setZoom] = useState(1.0);
+  const [activeSection, setActiveSection] = useState<string | null>('setup');
+  const [saveToast, setSaveToast] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
+
+  // ===========================
+  // Mode Switch with shared fields preservation
+  // ===========================
+  const handleModeSwitch = useCallback(() => {
+    const next = reportData.reportType === '장전' ? '마감' : '장전';
+
+    // 전환 대상 타입의 저장된 데이터 확인
+    const savedForNext = loadSavedTemplate(next);
+    if (savedForNext) {
+      setReportData(savedForNext);
+    } else {
+      const template = next === '장전' ? { ...PRE_MARKET_REPORT_TEMPLATE } : { ...CLOSE_REPORT_TEMPLATE };
+      SHARED_FIELDS.forEach((field) => {
+        (template as any)[field] = (reportData as any)[field];
+      });
+      setReportData(template);
+    }
+  }, [reportData, setReportData]);
+
+  // ===========================
+  // Reset to template
+  // ===========================
+  const handleReset = useCallback(() => {
+    // 저장된 템플릿이 있는지 확인
+    const storageKey = getStorageKey(reportData.reportType);
+    const saved = localStorage.getItem(storageKey);
+    const hasSaved = !!saved;
+
+    // 모든 contenteditable 요소의 인라인 서식 정리
+    document.querySelectorAll('[contenteditable="true"]').forEach(el => {
+      const htmlEl = el as HTMLElement;
+      htmlEl.style.fontSize = '';
+      htmlEl.style.color = '';
+      htmlEl.querySelectorAll('font').forEach(font => {
+        const text = document.createTextNode(font.textContent || '');
+        font.parentNode?.replaceChild(text, font);
+      });
+      htmlEl.querySelectorAll('span[style]').forEach(span => {
+        const text = document.createTextNode(span.textContent || '');
+        span.parentNode?.replaceChild(text, span);
+      });
+    });
+
+    if (hasSaved) {
+      // 저장된 템플릿으로 복원
+      try {
+        const savedData = JSON.parse(saved!);
+        reset(savedData);
+      } catch {
+        // 파싱 실패 시 기본 템플릿으로
+        const template = reportData.reportType === '장전' ? PRE_MARKET_REPORT_TEMPLATE : CLOSE_REPORT_TEMPLATE;
+        reset(template);
+      }
+    } else {
+      // 기본 템플릿으로 초기화
+      const template = reportData.reportType === '장전' ? PRE_MARKET_REPORT_TEMPLATE : CLOSE_REPORT_TEMPLATE;
+      reset(template);
+    }
+  }, [reportData.reportType, reset]);
+
+  // ===========================
+  // Full Reset (완전 초기화)
+  // ===========================
+  const handleFullReset = useCallback(() => {
+    if (!confirm('저장된 템플릿을 포함한 모든 데이터를 완전히 초기화합니다. 계속하시겠습니까?')) return;
+    localStorage.removeItem(getStorageKey(reportData.reportType));
+
+    // 모든 contenteditable 요소의 인라인 서식 정리
+    document.querySelectorAll('[contenteditable="true"]').forEach(el => {
+      const htmlEl = el as HTMLElement;
+      htmlEl.style.fontSize = '';
+      htmlEl.style.color = '';
+      htmlEl.querySelectorAll('font').forEach(font => {
+        const text = document.createTextNode(font.textContent || '');
+        font.parentNode?.replaceChild(text, font);
+      });
+      htmlEl.querySelectorAll('span[style]').forEach(span => {
+        const text = document.createTextNode(span.textContent || '');
+        span.parentNode?.replaceChild(text, span);
+      });
+    });
+
+    const template = reportData.reportType === '장전' ? PRE_MARKET_REPORT_TEMPLATE : CLOSE_REPORT_TEMPLATE;
+    reset(template);
+  }, [reportData.reportType, reset]);
+
+  // ===========================
+  // Save / Load Template
+  // ===========================
+  const saveTemplate = useCallback(() => {
+    try {
+      localStorage.setItem(getStorageKey(reportData.reportType), JSON.stringify(reportData));
+      setSaveToast(true);
+      setTimeout(() => setSaveToast(false), 2000);
+    } catch {
+      alert('⚠️ 저장 실패: 브라우저 저장공간이 부족합니다.');
+    }
+  }, [reportData]);
+
+  // ===========================
+  // Keyboard Shortcuts
+  // ===========================
+  const shortcuts = useMemo(() => ({
+    'ctrl+z': undo,
+    'ctrl+shift+z': redo,
+    'ctrl+s': saveTemplate,
+    'ctrl+e': () => setShowExport(true),
+  }), [undo, redo, saveTemplate]);
+
+  useKeyboardShortcuts(shortcuts);
+
+  // ===========================
+  // Element selection from preview → editor sync
+  // ===========================
+  const handleElementSelect = useCallback((path: string) => {
+    // Auto-open the relevant accordion section
+    if (path.includes('sector')) setActiveSection('sectors');
+    else if (path.includes('featuredStock')) setActiveSection('stocks');
+    else if (path.includes('expert') || path.includes('Analysis')) setActiveSection('insight');
+    else if (path.includes('market') || path.includes('schedule')) setActiveSection('schedule');
+    else if (path.includes('summary') || path.includes('currentMarket')) setActiveSection('coreview');
+    else if (path.includes('title') || path.includes('date')) setActiveSection('setup');
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-slate-100 flex flex-col">
+      <Toolbar
+        reportType={reportData.reportType}
+        onModeSwitch={handleModeSwitch}
+        onUndo={undo}
+        onRedo={redo}
+        canUndo={canUndo}
+        canRedo={canRedo}
+        onReset={handleReset}
+        onExport={() => setShowExport(true)}
+        zoom={zoom}
+        onZoomChange={setZoom}
+        darkMode={darkMode}
+        onDarkModeToggle={() => setDarkMode(prev => !prev)}
+      />
+
+      <main className="flex-1 flex min-h-0">
+        {/* Left: Editor Panel */}
+        <aside className="hidden lg:block h-[calc(100vh-56px)] overflow-y-auto bg-white border-r border-slate-200 p-5 no-print custom-scrollbar" style={{ width: 'clamp(380px, 28vw, 560px)', minWidth: '380px', flexShrink: 0 }}>
+          <ReportEditor
+            data={reportData}
+            onChange={setReportData}
+            activeSection={activeSection}
+            onSectionChange={setActiveSection}
+            onSave={saveTemplate}
+            onFullReset={handleFullReset}
+          />
+        </aside>
+
+        {/* Right: Preview Pane */}
+        <div className="flex-1 h-[calc(100vh-56px)] overflow-y-auto overflow-x-auto bg-[#e8eaed] no-print custom-scrollbar flex items-start justify-center" style={{ padding: 'clamp(8px, 2vw, 32px)' }}>
+          <div
+            style={{
+              transform: `scale(${zoom})`,
+              transformOrigin: 'top center',
+              transition: 'transform 0.2s ease',
+            }}
+          >
+            <ReportPreview
+              data={reportData}
+              onChange={setReportData}
+              onElementSelect={handleElementSelect}
+              darkMode={darkMode}
+            />
+          </div>
+        </div>
+      </main>
+
+      <ExportModal
+        isOpen={showExport}
+        onClose={() => setShowExport(false)}
+        reportType={reportData.reportType}
+        date={reportData.date}
+        reportData={reportData}
+        darkMode={darkMode}
+      />
+      {saveToast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-6 py-3 rounded-xl shadow-2xl text-sm font-bold flex items-center gap-2 z-50 animate-fade-in">
+          ✅ 템플릿 저장 완료
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default App;
