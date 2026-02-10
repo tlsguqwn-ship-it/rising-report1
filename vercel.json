@@ -1,6 +1,5 @@
 {
   "rewrites": [
-    { "source": "/api/naver-finance/:path*", "destination": "/api/naver-finance/:path*" },
-    { "source": "/api/perplexity/:path*", "destination": "/api/perplexity/:path*" }
+    { "source": "/api/proxy", "destination": "/api/proxy" }
   ]
 }

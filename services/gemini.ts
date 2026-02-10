@@ -2,6 +2,23 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { ReportData } from "../types";
 
+// Vercel 배포 시 프록시 사용, 로컬에서는 Vite 프록시 사용
+const IS_VERCEL = typeof window !== 'undefined' && !window.location.hostname.includes('localhost');
+
+const naverUrl = (path: string) => {
+  if (IS_VERCEL) {
+    return `/api/proxy?url=${encodeURIComponent(`https://finance.naver.com${path}`)}`;
+  }
+  return `/api/naver-finance${path}`;
+};
+
+const perplexityUrl = (path: string) => {
+  if (IS_VERCEL) {
+    return `/api/proxy?url=${encodeURIComponent(`https://api.perplexity.ai${path}`)}`;
+  }
+  return `/api/perplexity${path}`;
+};
+
 // Initialize the Google GenAI client with the API key from environment variables.
 const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
 
@@ -142,7 +159,7 @@ const fetchNaverWorldIndex = async (symbol: string, label: string): Promise<{
   label: string; value: string; subText: string; trend: 'up' | 'down' | 'neutral';
 }> => {
   try {
-    const res = await fetch(`/api/naver-finance/world/sise.naver?symbol=${symbol}`);
+    const res = await fetch(naverUrl(`/world/sise.naver?symbol=${symbol}`));
     const html = await res.text();
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, 'text/html');
@@ -177,7 +194,7 @@ const fetchNaverExchangeRate = async (): Promise<{
   label: string; value: string; subText: string; trend: 'up' | 'down' | 'neutral';
 }> => {
   try {
-    const res = await fetch('/api/naver-finance/marketindex/exchangeDetail.naver?marketindexCd=FX_USDKRW');
+    const res = await fetch(naverUrl('/marketindex/exchangeDetail.naver?marketindexCd=FX_USDKRW'));
     const html = await res.text();
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, 'text/html');
@@ -216,7 +233,7 @@ const fetchNightFuturesPerplexity = async (apiKey: string): Promise<{
   label: string; value: string; subText: string; trend: 'up' | 'down' | 'neutral';
 }> => {
   try {
-    const res = await fetch('/api/perplexity/chat/completions', {
+    const res = await fetch(perplexityUrl('/chat/completions'), {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -270,7 +287,7 @@ const fetchOnePerplexity = async (apiKey: string, label: string, query: string):
   label: string; value: string; subText: string; trend: 'up' | 'down' | 'neutral';
 }> => {
   try {
-    const res = await fetch('/api/perplexity/chat/completions', {
+    const res = await fetch(perplexityUrl('/chat/completions'), {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -338,7 +355,7 @@ const fetchNaverDomesticAll = async (code: 'KOSPI' | 'KOSDAQ'): Promise<{
   const fallbackInst = { label: `${code} 기관`, value: 'N/A', subText: '-', trend: 'neutral' as const };
 
   try {
-    const res = await fetch(`/api/naver-finance/sise/sise_index.naver?code=${code}`);
+    const res = await fetch(naverUrl(`/sise/sise_index.naver?code=${code}`));
     // EUC-KR 디코딩
     const buf = await res.arrayBuffer();
     const html = new TextDecoder('euc-kr').decode(buf);
