@@ -644,8 +644,8 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
         <table className="w-full text-left border-collapse table-fixed">
           <thead>
             <tr className={`h-[8mm] border-b ${cardBorder} ${labelText}`}>
-              <th className="px-3 text-[11px] font-bold uppercase tracking-tight pl-4" style={{ width: '18%' }}>{isPreMarket ? '이슈 키워드' : '종목명'}</th>
-              <th className="px-2 text-[11px] font-bold uppercase tracking-tight" style={{ width: '22%' }}>
+              <th className="px-3 text-[11px] font-bold uppercase tracking-tight pl-4" style={{ width: '20%' }}>{isPreMarket ? '이슈 키워드' : '종목명'}</th>
+              <th className="px-2 text-[11px] font-bold uppercase tracking-tight" style={{ width: '20%' }}>
                 {isPreMarket ? (
                   <span className="block text-center">국내 관련주</span>
                 ) : (
@@ -677,13 +677,13 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                 (rawRate.includes('+') || rawRate.includes('▲') || (parseFloat(rawRate) > 0)) ? 'text-[#f04452]' : pageText;
               return (
               <tr key={stock.id || idx} data-arr="featuredStocks" className={`${isDark ? 'hover:bg-[#22222e]' : 'hover:bg-slate-50'} transition-colors group/row relative`}>
-                <td className={`px-3 py-2 text-[15px] font-black ${pageText} border-r ${isDark ? 'border-[#1a1a24]' : 'border-slate-50'} align-middle pl-4 relative`} style={{ width: '18%', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <td className={`px-3 py-2 text-[15px] font-black ${pageText} border-r ${isDark ? 'border-[#1a1a24]' : 'border-slate-50'} align-middle pl-4 relative`} style={{ width: '20%', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {!isModalView && data.featuredStocks.length > MIN_ITEMS && (
                     <button onClick={() => removeItem('featuredStocks', idx)} className="absolute -left-1 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold opacity-0 group-hover/row:opacity-100 transition-opacity no-print flex items-center justify-center shadow-sm hover:bg-red-600 z-10">×</button>
                   )}
                   <EditableText value={stock.name} onSave={(v) => updateArr('featuredStocks', idx, 'name', v)} isModal={isModalView} placeholder="EX. 삼성전자" className="truncate" />
                 </td>
-                <td className={`py-2 border-r ${isDark ? 'border-[#1a1a24]' : 'border-slate-50'} align-middle`} style={{ width: '22%' }}>
+                <td className={`py-2 border-r ${isDark ? 'border-[#1a1a24]' : 'border-slate-50'} align-middle`} style={{ width: '20%' }}>
                   {isPreMarket ? (
                     <ChipInput value={stock.change} onSave={(v) => updateArr('featuredStocks', idx, 'change', v)} isModal={isModalView} placeholder="EX. 종목명 입력 후 Enter" vertical />
                   ) : (
