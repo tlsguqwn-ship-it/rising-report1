@@ -227,7 +227,7 @@ const fetchNaverExchangeRate = async (): Promise<{
 
 /**
  * Perplexity API로 야간선물 가격 조회
- * 자연어 응답을 받은 후 정규식으로 가격/등락률 파싱
+ * 구조화된 응답 요청 후 정규식으로 가격/등락률 파싱
  */
 const fetchNightFuturesPerplexity = async (apiKey: string): Promise<{
   label: string; value: string; subText: string; trend: 'up' | 'down' | 'neutral';
@@ -238,11 +238,11 @@ const fetchNightFuturesPerplexity = async (apiKey: string): Promise<{
       headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'sonar',
-        max_tokens: 150,
+        max_tokens: 100,
         temperature: 0.1,
         messages: [
-          { role: 'system', content: 'You are a helpful financial assistant.' },
-          { role: 'user', content: '현재 코스피200 야간선물 지수 및 등락률 알려줘' }
+          { role: 'system', content: 'You are a financial data lookup tool. Reply ONLY with PRICE|CHANGE% format. Example: 350.25|+0.38% or 348.10|-1.2%. Nothing else.' },
+          { role: 'user', content: '코스피200 야간선물(KOSPI 200 night futures) 현재가와 등락률' }
         ]
       })
     });
@@ -251,25 +251,40 @@ const fetchNightFuturesPerplexity = async (apiKey: string): Promise<{
     const content = data.choices?.[0]?.message?.content?.trim() || '';
     console.log('Perplexity [야간선물] raw:', content);
 
-    // 자연어에서 가격과 등락률 파싱
-    // 패턴1: "783.95" 와 "(+2.95, +0.38%)" 또는 "(+0.38%)"
-    // 패턴2: "현재 783.95, 전일대비 +0.38%"
     let value = 'N/A';
     let subText = 'N/A';
     let trend: 'up' | 'down' | 'neutral' = 'neutral';
 
-    // 가격 추출 (3자리.2자리 형태)
-    const priceMatch = content.match(/(\d{3,4}\.\d{1,2})/);
-    if (priceMatch) {
-      value = priceMatch[1];
-    }
-
-    // 등락률 추출 (괄호 안의 % 또는 단독 %)
-    const pctMatch = content.match(/([+-]\d+\.?\d*)\s*%/) || content.match(/([+-]\d+\.?\d*)%/);
-    if (pctMatch) {
-      const pctNum = parseFloat(pctMatch[1]);
+    // 1차: PRICE|CHANGE% 형식 시도
+    const pipeMatch = content.match(/(\d{2,4}\.?\d*)\s*\|\s*([+-]?\d+\.?\d*)\s*%/);
+    if (pipeMatch) {
+      value = pipeMatch[1];
+      const pctNum = parseFloat(pipeMatch[2]);
       subText = `${pctNum >= 0 ? '+' : ''}${pctNum}%`;
       trend = pctNum > 0 ? 'up' : pctNum < 0 ? 'down' : 'neutral';
+    } else {
+      // 2차: 자연어에서 가격 추출 (2~4자리.소수점)
+      const priceMatch = content.match(/(\d{2,4}\.\d{1,2})/);
+      if (priceMatch) {
+        value = priceMatch[1];
+      }
+
+      // 등락률 추출 - 부호 있든 없든 처리
+      const pctMatch = content.match(/([+-]?\d+\.?\d*)\s*%/);
+      if (pctMatch) {
+        const pctNum = parseFloat(pctMatch[1]);
+        subText = `${pctNum >= 0 ? '+' : ''}${pctNum}%`;
+        trend = pctNum > 0 ? 'up' : pctNum < 0 ? 'down' : 'neutral';
+      } else {
+        // 3차: "상승"/"하락" 키워드로 추론
+        if (content.includes('상승') || content.includes('올') || content.includes('上')) {
+          trend = 'up';
+          subText = '상승';
+        } else if (content.includes('하락') || content.includes('내') || content.includes('下')) {
+          trend = 'down';
+          subText = '하락';
+        }
+      }
     }
 
     console.log(`Perplexity [야간선물] parsed: ${value} | ${subText} | ${trend}`);
