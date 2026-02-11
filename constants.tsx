@@ -62,7 +62,7 @@ export const CLOSE_REPORT_TEMPLATE: ReportData = {
     { label: "KOSPI 기관", value: "0억", subText: "-", trend: "neutral" },
     { label: "KOSDAQ 외인", value: "0억", subText: "-", trend: "neutral" },
     { label: "KOSDAQ 기관", value: "0억", subText: "-", trend: "neutral" },
-    { label: "USD/KRW", value: "0", subText: "0%", trend: "neutral" }
+    { label: "원달러환율", value: "0", subText: "0%", trend: "neutral" }
   ],
   marketSchedule: [
     { id: genId(), time: "장마감", event: "국내 소비자물가지수(CPI) 2.8% 발표 - 금리 인하 기대감 소폭 후퇴" },
@@ -125,7 +125,7 @@ export const PRE_MARKET_REPORT_TEMPLATE: ReportData = {
     { label: "다우존스", value: "0", subText: "0%", trend: "neutral" },
     { label: "VIX", value: "0", subText: "0%", trend: "neutral" },
     { label: "야간선물", value: "0", subText: "0%", trend: "neutral" },
-    { label: "USD/KRW", value: "0", subText: "0%", trend: "neutral" }
+    { label: "원달러환율", value: "0", subText: "0%", trend: "neutral" }
   ],
   subIndicators: [
     { label: "WTI/USD", value: "0", subText: "0%", trend: "neutral" },

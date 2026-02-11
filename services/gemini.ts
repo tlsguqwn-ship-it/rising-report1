@@ -223,10 +223,10 @@ const fetchNaverExchangeRate = async (): Promise<{
     const trend: 'up' | 'down' | 'neutral' = isDown ? 'down' : 'up';
 
     console.log(`Naver [USD/KRW]: ${value} ${sign}${changePct}%`);
-    return { label: 'USD/KRW', value, subText: `${sign}${changePct}%`, trend };
+    return { label: '원달러환율', value, subText: `${sign}${changePct}%`, trend };
   } catch (e) {
     console.error('Naver exchange rate fetch failed:', e);
-    return { label: 'USD/KRW', value: 'N/A', subText: 'N/A', trend: 'neutral' };
+    return { label: '원달러환율', value: 'N/A', subText: 'N/A', trend: 'neutral' };
   }
 };
 
@@ -707,7 +707,7 @@ export const fetchMarketIndicators = async (reportType: '장전' | '마감'): Pr
 
       const kospi = kospiResult.status === 'fulfilled' ? kospiResult.value : defaultAll('KOSPI');
       const kosdaq = kosdaqResult.status === 'fulfilled' ? kosdaqResult.value : defaultAll('KOSDAQ');
-      const fx = fxResult.status === 'fulfilled' ? fxResult.value : { label: 'USD/KRW', value: 'N/A', subText: 'N/A', trend: 'neutral' as const };
+      const fx = fxResult.status === 'fulfilled' ? fxResult.value : { label: '원달러환율', value: 'N/A', subText: 'N/A', trend: 'neutral' as const };
 
       const items = [
         { label: kospi.index.label, value: kospi.index.value, subText: `${kospi.index.changeAmount}  ${kospi.index.subText}`, trend: kospi.index.trend },
