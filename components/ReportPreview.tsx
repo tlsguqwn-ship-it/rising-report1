@@ -682,36 +682,15 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                     <div className="flex items-center justify-center text-[13px] font-[900] leading-snug whitespace-nowrap">
                       <input
                         type="text"
-                        defaultValue={hasSlash ? formatPrice(rawPrice) : ''}
-                        placeholder="523,100"
-                        onFocus={(e) => { e.target.value = e.target.value.replace(/,/g, ''); }}
-                        onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
-                        onBlur={(e) => {
-                          const num = e.target.value.replace(/[^0-9]/g, '');
-                          const formatted = num ? Number(num).toLocaleString() : '';
-                          e.target.value = formatted;
-                          const currentRate = (stock.change.split('/')[1] || '').replace(/[%\s]/g, '').trim();
-                          updateArr('featuredStocks', idx, 'change', `${formatted}원 / ${currentRate}%`);
-                        }}
-                        className={`${pageText} bg-transparent border-none outline-none font-[900] text-[13px] text-right placeholder-slate-300`}
-                        style={{ width: `${Math.max((hasSlash ? formatPrice(rawPrice) : '523,100').length, 5) * 8 + 4}px` }}
-                      />
-                      <span className={`${pageText} shrink-0`}>원</span>
-                      <span className={`${pageText} shrink-0 mx-1`}>/</span>
-                      <input
-                        type="text"
-                        defaultValue={hasSlash ? rawRate : ''}
-                        placeholder="-1.5"
+                        defaultValue={stock.change || ''}
+                        placeholder="523,100원 / -1.5%"
                         onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
                         onBlur={(e) => {
                           const val = e.target.value.trim();
-                          const currentPrice = formatPrice((stock.change.split('/')[0] || '').replace(/[원,\s]/g, ''));
-                          updateArr('featuredStocks', idx, 'change', `${currentPrice}원 / ${val}%`);
+                          updateArr('featuredStocks', idx, 'change', val);
                         }}
-                        className={`${rateColor} bg-transparent border-none outline-none font-[900] text-[13px] text-left placeholder-slate-300`}
-                        style={{ width: `${Math.max((hasSlash ? rawRate : '-1.5').length, 2) * 8}px`, padding: 0 }}
+                        className={`bg-transparent border-none outline-none font-[900] text-[13px] text-center placeholder-slate-300 w-full ${rateColor}`}
                       />
-                      <span className={`${rateColor} shrink-0`}>%</span>
                     </div>
                   )}
                 </td>
