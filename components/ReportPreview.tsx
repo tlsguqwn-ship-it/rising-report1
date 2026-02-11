@@ -662,7 +662,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                   {isPreMarket ? (
                     <ChipInput value={stock.change} onSave={(v) => updateArr('featuredStocks', idx, 'change', v)} isModal={isModalView} placeholder="EX. 종목명 입력 후 Enter" vertical />
                   ) : (
-                    <div className="flex items-center gap-0.5 text-[13px] font-[900] leading-snug whitespace-nowrap">
+                    <div className="flex items-center text-[13px] font-[900] leading-snug whitespace-nowrap">
                       <input
                         type="text"
                         defaultValue={hasSlash ? formatPrice(rawPrice) : ''}
@@ -677,7 +677,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                         }}
                         className={`${pageText} bg-transparent border-none outline-none font-[900] text-[13px] w-[72px] text-right placeholder-slate-300`}
                       />
-                      <span className={`${isDark ? 'text-slate-500' : 'text-slate-400'} text-[11px] font-bold shrink-0`}>원 /</span>
+                      <span className={`${pageText} text-[13px] font-[900] shrink-0`}>원 /</span>
                       <input
                         type="text"
                         defaultValue={hasSlash ? rawRate : ''}
@@ -687,9 +687,9 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                           const currentPrice = formatPrice((stock.change.split('/')[0] || '').replace(/[원,\s]/g, ''));
                           updateArr('featuredStocks', idx, 'change', `${currentPrice}원 / ${val}%`);
                         }}
-                        className={`${rateColor} bg-transparent border-none outline-none font-[900] text-[13px] w-[52px] text-right placeholder-slate-300`}
+                        className={`${rateColor} bg-transparent border-none outline-none font-[900] text-[13px] w-[44px] text-right placeholder-slate-300`}
                       />
-                      <span className={`${isDark ? 'text-slate-500' : 'text-slate-400'} text-[11px] font-bold shrink-0`}>%</span>
+                      <span className={`${rateColor} text-[13px] font-[900] shrink-0`}>%</span>
                     </div>
                   )}
                 </td>
