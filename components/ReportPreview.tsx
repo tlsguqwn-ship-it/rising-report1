@@ -395,22 +395,17 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center gap-4">
             <span className={`px-3 py-1 text-[11px] font-black text-white rounded-lg ${typeBadge} uppercase tracking-tight shadow-sm`}>
-              {data.reportType} REPORT
+              {data.reportType}
             </span>
           </div>
           <EditableText value={data.title} {...ep('title')} tag="h1" className={`text-[28px] font-[900] tracking-tighter leading-tight ${pageText}`} />
           <EditableText value={data.date} {...ep('date')} className={`text-[13px] font-semibold ${labelText} tracking-tight`} />
         </div>
-        <div className="shrink-0 ml-6 self-center flex flex-col items-center">
-          <span className={`text-[28px] font-[900] tracking-[-0.06em] uppercase leading-none ${
+        <span className={`text-[28px] font-[900] uppercase leading-none shrink-0 ml-6 self-center ${
             isDark 
               ? 'text-transparent bg-clip-text bg-gradient-to-b from-white to-slate-400' 
               : 'text-transparent bg-clip-text bg-gradient-to-b from-slate-800 to-slate-500'
           }`} style={{ fontStretch: 'condensed', letterSpacing: '0.12em' }}>RISING</span>
-          <span className={`text-[7px] font-bold tracking-[0.35em] uppercase leading-none mt-1 ${
-            isDark ? 'text-slate-500' : 'text-slate-400'
-          }`}>STOCK REPORT</span>
-        </div>
       </div>
     </div>
   );
@@ -670,7 +665,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                     <ChipInput value={stock.change} onSave={(v) => updateArr('featuredStocks', idx, 'change', v)} isModal={isModalView} placeholder="EX. 종목명 입력 후 Enter" vertical />
                   ) : (
                     <div className="flex items-center text-[13px] font-[900] leading-snug whitespace-nowrap">
-                      <div className="flex items-center justify-end" style={{ minWidth: '90px' }}>
+                      <div className="flex items-center">
                         <input
                           type="text"
                           defaultValue={hasSlash ? formatPrice(rawPrice) : ''}
@@ -689,7 +684,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                         />
                         <span className={`${pageText} text-[13px] font-[900] shrink-0`}>원</span>
                       </div>
-                      <span className={`${pageText} text-[13px] font-[900] shrink-0 mx-1`}>/</span>
+                      <span className={`${pageText} text-[13px] font-[900] shrink-0 mx-[6px]`}>/</span>
                       <div className="flex items-center">
                         <input
                           type="text"
@@ -701,7 +696,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                             const currentPrice = formatPrice((stock.change.split('/')[0] || '').replace(/[원,\s]/g, ''));
                             updateArr('featuredStocks', idx, 'change', `${currentPrice}원 / ${val}%`);
                           }}
-                          className={`${rateColor} bg-transparent border-none outline-none font-[900] text-[13px] text-right placeholder-slate-300 w-[40px]`}
+                          className={`${rateColor} bg-transparent border-none outline-none font-[900] text-[13px] text-left placeholder-slate-300 w-[40px]`}
                         />
                         <span className={`${rateColor} text-[13px] font-[900] shrink-0`}>%</span>
                       </div>

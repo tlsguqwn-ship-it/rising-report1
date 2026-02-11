@@ -50,7 +50,7 @@ export const SHARED_FIELDS: (keyof ReportData)[] = [
 // 마감 리포트 템플릿
 // ===========================
 export const CLOSE_REPORT_TEMPLATE: ReportData = {
-  title: "[마감 REPORT] RISING STOCK 마감 시황 리포트",
+  title: "RISING STOCK 마감 시황",
   date: "2026년 2월 10일 (월) 15:40 발행",
   reportType: "마감",
   summaryTitle: "국내 증시 및 수급 현황",
@@ -115,7 +115,7 @@ export const CLOSE_REPORT_TEMPLATE: ReportData = {
 // 장전 리포트 템플릿
 // ===========================
 export const PRE_MARKET_REPORT_TEMPLATE: ReportData = {
-  title: "[장전 REPORT] RISING STOCK 마켓 데일리 리포트",
+  title: "RISING STOCK 마켓 데일리",
   date: "2026년 2월 10일 (월) 08:20 발행",
   reportType: "장전",
   summaryTitle: "미국 증시 및 글로벌 지표",
