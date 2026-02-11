@@ -63,6 +63,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
   const [emojiCategory, setEmojiCategory] = useState(0);
   const [currentFontSize, setCurrentFontSize] = useState<number | null>(null);
   const [activeEditableEl, setActiveEditableEl] = useState<HTMLElement | null>(null);
+  const [isBold, setIsBold] = useState(false);
   const fontSizeInputRef = useRef<HTMLInputElement>(null);
 
   // contenteditable 포커스 감지 → 현재 폰트 크기 읽기
@@ -96,6 +97,20 @@ const Toolbar: React.FC<ToolbarProps> = ({
       document.removeEventListener('focusin', handleFocusIn);
       document.removeEventListener('focusout', handleFocusOut);
     };
+  }, []);
+
+  // Bold 상태 감지: 커서 위치에 따라 B 버튼 활성화
+  useEffect(() => {
+    const updateBoldState = () => {
+      try {
+        const active = document.activeElement as HTMLElement;
+        if (active?.contentEditable === 'true') {
+          setIsBold(document.queryCommandState('bold'));
+        }
+      } catch {}
+    };
+    document.addEventListener('selectionchange', updateBoldState);
+    return () => document.removeEventListener('selectionchange', updateBoldState);
   }, []);
 
   const togglePanel = useCallback((panel: 'color' | 'emoji') => {
@@ -275,8 +290,14 @@ const Toolbar: React.FC<ToolbarProps> = ({
 
         {/* 굵게 */}
         <button
-          onMouseDown={(e) => { e.preventDefault(); document.execCommand('bold'); }}
-          className={btnClass}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            document.execCommand('bold');
+            setTimeout(() => {
+              try { setIsBold(document.queryCommandState('bold')); } catch {}
+            }, 0);
+          }}
+          className={isBold ? activeBtnClass : btnClass}
           title="굵게 (Ctrl+B)"
         >
           <span style={{ fontSize: '16px', fontWeight: 900, fontFamily: 'serif' }}>B</span>

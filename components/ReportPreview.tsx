@@ -639,7 +639,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                 </div>
                 <div className="pl-[18px]">
                   <EditableText value={item.event} onSave={(v) => updateArr('marketSchedule', idx, 'event', v)} isModal={isModalView}
-                    className={`text-[11px] font-semibold ${isDark ? 'text-slate-400' : 'text-slate-700'} leading-[1.6]`} placeholder="EX. 고용보고서 발표" />
+                    className={`text-[11px] font-bold ${isDark ? 'text-slate-400' : 'text-slate-700'} leading-[1.6]`} placeholder="EX. 고용보고서 발표" />
                 </div>
               </div>
             ))}
@@ -695,10 +695,10 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
               : 'border-[#2a2035]/30 bg-gradient-to-r from-[#1c162a] to-[#221a30]')
             } p-4 shadow-md`}>
               <div className="flex items-start gap-3">
-                <span className="text-[18px] leading-none mt-0.5">💬</span>
+                <span className="text-[18px] leading-none mt-[3px]">💬</span>
                 <div className="flex-1">
                   <span className={`text-[10px] font-black ${isDark ? 'text-amber-400' : (isPreMarket ? 'text-slate-300' : 'text-amber-400')} uppercase tracking-widest`}>오늘의 한마디</span>
-                  <EditableText value={data.dailyComment} {...ep('dailyComment')} className="text-[12px] font-semibold text-white/90 leading-[1.6] mt-1" />
+                  <EditableText value={data.dailyComment} {...ep('dailyComment')} className="text-[12px] font-bold text-white/90 leading-[1.6] mt-1" />
                 </div>
               </div>
             </div>

@@ -226,7 +226,81 @@ const fetchNaverExchangeRate = async (): Promise<{
 };
 
 /**
- * Perplexity API로 야간선물 가격 조회
+ * Investing.com에서 야간선물(KOSPI 200 Futures) 가격 스크래핑
+ * HTML을 프록시 경유로 가져온 뒤 정규식으로 가격/등락률 추출
+ */
+const fetchNightFuturesInvesting = async (): Promise<{
+  label: string; value: string; subText: string; trend: 'up' | 'down' | 'neutral';
+} | null> => {
+  try {
+    const targetUrl = 'https://kr.investing.com/indices/korea-200-futures';
+    const proxyUrl = IS_VERCEL
+      ? `/api/proxy?url=${encodeURIComponent(targetUrl)}`
+      : targetUrl;
+
+    const res = await fetch(proxyUrl, { method: 'GET' });
+    if (!res.ok) throw new Error(`Investing.com HTTP ${res.status}`);
+
+    const html = await res.text();
+    console.log('Investing.com [야간선물] HTML length:', html.length);
+
+    // Investing.com SSR HTML에서 가격 파싱
+    // 패턴1: data-test="instrument-price-last" 속성
+    let value = 'N/A';
+    let subText = 'N/A';
+    let trend: 'up' | 'down' | 'neutral' = 'neutral';
+
+    // 가격 추출: "last-price" 또는 instrument 관련 속성에서
+    const priceMatch = html.match(/data-test="instrument-price-last"[^>]*>([0-9.,]+)</) ||
+                        html.match(/"last":\s*"?([0-9.,]+)"?/) ||
+                        html.match(/class="[^"]*last-price[^"]*"[^>]*>([0-9.,]+)</) ||
+                        html.match(/pid-\d+-last[^>]*>([0-9.,]+)</);
+    if (priceMatch) {
+      value = priceMatch[1].replace(/,/g, '');
+    }
+
+    // 등락률 추출
+    const pctMatch = html.match(/data-test="instrument-price-change-percent"[^>]*>([+-]?[0-9.,]+%?)</) ||
+                      html.match(/"change_precent":\s*"?([+-]?[0-9.,]+)"?/) ||
+                      html.match(/pid-\d+-pcp[^>]*>([+-]?[0-9.,]+)%?</);
+    if (pctMatch) {
+      const pctStr = pctMatch[1].replace(/[%,]/g, '');
+      const pctNum = parseFloat(pctStr);
+      if (!isNaN(pctNum)) {
+        subText = `${pctNum >= 0 ? '+' : ''}${pctNum}%`;
+        trend = pctNum > 0 ? 'up' : pctNum < 0 ? 'down' : 'neutral';
+      }
+    }
+
+    // 가격은 있는데 등락률이 없으면 변동 금액에서 추론
+    if (value !== 'N/A' && subText === 'N/A') {
+      const changeMatch = html.match(/data-test="instrument-price-change"[^>]*>([+-]?[0-9.,]+)</) ||
+                           html.match(/"change":\s*"?([+-]?[0-9.,]+)"?/);
+      if (changeMatch) {
+        const changeStr = changeMatch[1].replace(/,/g, '');
+        const changeNum = parseFloat(changeStr);
+        if (!isNaN(changeNum)) {
+          trend = changeNum > 0 ? 'up' : changeNum < 0 ? 'down' : 'neutral';
+          subText = `${changeNum >= 0 ? '+' : ''}${changeNum}`;
+        }
+      }
+    }
+
+    if (value === 'N/A') {
+      console.log('Investing.com [야간선물] parsing failed, no price found');
+      return null;
+    }
+
+    console.log(`Investing.com [야간선물] parsed: ${value} | ${subText} | ${trend}`);
+    return { label: '야간선물', value, subText, trend };
+  } catch (e) {
+    console.error('Investing.com night futures fetch failed:', e);
+    return null;
+  }
+};
+
+/**
+ * Perplexity API로 야간선물 가격 조회 (폴백용)
  * 구조화된 응답 요청 후 정규식으로 가격/등락률 파싱
  */
 const fetchNightFuturesPerplexity = async (apiKey: string): Promise<{
@@ -241,8 +315,8 @@ const fetchNightFuturesPerplexity = async (apiKey: string): Promise<{
         max_tokens: 100,
         temperature: 0.1,
         messages: [
-          { role: 'system', content: 'You are a financial data lookup tool. Reply ONLY with PRICE|CHANGE% format. Example: 350.25|+0.38% or 348.10|-1.2%. Nothing else.' },
-          { role: 'user', content: '코스피200 야간선물(KOSPI 200 night futures) 현재가와 등락률' }
+          { role: 'system', content: 'You are a financial data lookup tool. Reply ONLY with PRICE|CHANGE% format. Example: 350.25|+0.38% or 348.10|-1.2%. Nothing else. I need the FUTURES CONTRACT price, NOT the index value.' },
+          { role: 'user', content: 'KOSPI 200 야간선물(night session futures contract, traded on SGX/Eurex) 최신 선물 계약 가격과 등락률. 코스피200 지수가 아니라 선물(futures) 가격을 알려줘.' }
         ]
       })
     });
@@ -293,6 +367,24 @@ const fetchNightFuturesPerplexity = async (apiKey: string): Promise<{
     console.error('Perplexity night futures fetch failed:', e);
     return { label: '야간선물', value: 'N/A', subText: 'N/A', trend: 'neutral' };
   }
+};
+
+/**
+ * 야간선물 데이터 조회 (Investing.com → Perplexity 폴백)
+ */
+const fetchNightFutures = async (perplexityApiKey?: string): Promise<{
+  label: string; value: string; subText: string; trend: 'up' | 'down' | 'neutral';
+}> => {
+  // 1차: Investing.com 시도
+  const investingResult = await fetchNightFuturesInvesting();
+  if (investingResult) return investingResult;
+
+  // 2차: Perplexity 폴백
+  if (perplexityApiKey) {
+    return fetchNightFuturesPerplexity(perplexityApiKey);
+  }
+
+  return { label: '야간선물', value: 'N/A', subText: 'N/A', trend: 'neutral' };
 };
 
 /**
@@ -454,12 +546,12 @@ export const fetchMarketIndicators = async (reportType: '장전' | '마감'): Pr
     const apiKey = import.meta.env.VITE_PERPLEXITY_API_KEY;
 
     if (reportType === '장전') {
-      // 네이버 금융 4개 + Perplexity 야간선물 1개 병렬
+      // 네이버 금융 4개 + 야간선물(Investing.com → Perplexity 폴백) 병렬
       const results = await Promise.allSettled([
         fetchNaverWorldIndex('SPI@SPX', 'S&P 500'),
         fetchNaverWorldIndex('NAS@IXIC', 'NASDAQ'),
         fetchNaverWorldIndex('NAS@SOX', 'SOX(반도체)'),
-        apiKey ? fetchNightFuturesPerplexity(apiKey) : Promise.resolve({ label: '야간선물', value: 'N/A', subText: 'N/A', trend: 'neutral' as const }),
+        fetchNightFutures(apiKey || undefined),
         fetchNaverExchangeRate(),
       ]);
       const items = results.map(r =>
