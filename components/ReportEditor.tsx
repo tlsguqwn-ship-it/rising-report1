@@ -4,7 +4,7 @@ import { PRE_MARKET_REPORT_TEMPLATE, CLOSE_REPORT_TEMPLATE, createEmptySector, c
 import { fetchMarketIndicators } from '../services/gemini';
 import {
   ChevronDown, Plus, Trash2, GripVertical, Loader2, RotateCcw,
-  Settings, BarChart3, Eye, Star, PenTool, Layers, Calendar, Info, MessageSquare, Save, RefreshCw, Clock
+  Settings, BarChart3, Eye, Star, PenTool, Layers, Calendar, Info, MessageSquare, Save, RefreshCw, Clock, History
 } from 'lucide-react';
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent
@@ -21,6 +21,8 @@ interface Props {
   onSectionChange: (section: string | null) => void;
   onSave?: () => void;
   onFullReset?: () => void;
+  templateHistory?: Array<{data: ReportData, savedAt: string}>;
+  onRestoreHistory?: (data: ReportData) => void;
 }
 
 // ===========================
@@ -133,9 +135,10 @@ const FieldTip: React.FC<{ text: string }> = ({ text }) => {
 // ===========================
 // Main Editor Component
 // ===========================
-const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectionChange, onSave, onFullReset }) => {
+const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectionChange, onSave, onFullReset, templateHistory = [], onRestoreHistory }) => {
   const [isFetching, setIsFetching] = useState(false);
   const [lastFetched, setLastFetched] = useState<string | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -288,6 +291,58 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
           )}
         </div>
       )}
+
+      {/* Template History */}
+      {templateHistory.length > 0 && (
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <button
+            onClick={() => setShowHistory(!showHistory)}
+            className="w-full px-5 py-3 flex items-center justify-between text-left hover:bg-slate-50 transition-colors"
+          >
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 bg-slate-100 rounded-lg flex items-center justify-center">
+                <History size={13} className="text-slate-500" />
+              </div>
+              <div>
+                <span className="text-[12px] font-bold text-slate-700">저장 히스토리</span>
+                <span className="text-[10px] text-slate-400 ml-2">최근 {templateHistory.length}개</span>
+              </div>
+            </div>
+            <ChevronDown size={14} className={`text-slate-400 transition-transform ${showHistory ? 'rotate-180' : ''}`} />
+          </button>
+          {showHistory && (
+            <div className="px-4 pb-4 space-y-2 border-t border-slate-100 pt-3">
+              {templateHistory.map((entry, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => {
+                    if (confirm(`${entry.savedAt} 시점의 템플릿으로 복원하시겠습니까?`)) {
+                      onRestoreHistory?.(entry.data);
+                    }
+                  }}
+                  className="w-full p-3 bg-slate-50 hover:bg-blue-50 border border-slate-100 hover:border-blue-200 rounded-xl text-left transition-all group"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] font-bold text-slate-500 bg-white px-2 py-0.5 rounded-md border border-slate-100">
+                        #{idx + 1}
+                      </span>
+                      <span className="text-[12px] font-bold text-slate-700">{entry.savedAt}</span>
+                    </div>
+                    <span className="text-[10px] font-bold text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                      복원
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-1 truncate">
+                    {entry.data.title} · {entry.data.featuredStocks?.map(s => s.name).filter(Boolean).join(', ') || '데이터 없음'}
+                  </p>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
 
       {/* Editor Sections */}
       <div className="space-y-3">

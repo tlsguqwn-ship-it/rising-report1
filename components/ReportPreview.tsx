@@ -402,7 +402,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
             </span>
           </div>
           <EditableText value={data.title} {...ep('title')} tag="h1" className={`text-[28px] font-[900] tracking-tighter leading-tight ${pageText}`} />
-          <EditableText value={data.date} {...ep('date')} className={`text-[13px] font-semibold ${labelText} tracking-tight`} placeholder="EX. 2026년 2월 11일 (화) 15:40 발행" />
+          <EditableText value={data.date} {...ep('date')} className={`text-[13px] font-semibold ${labelText} tracking-tight`} placeholder="2026년 2월 11일 (화) 15:40 발행" />
         </div>
         <span className={`text-[36px] font-[900] uppercase leading-none shrink-0 ml-6 self-center text-transparent bg-clip-text`}
           style={{

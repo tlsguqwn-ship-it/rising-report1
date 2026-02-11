@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { ReportData } from './types';
 import { INITIAL_REPORT, PRE_MARKET_REPORT_TEMPLATE, CLOSE_REPORT_TEMPLATE, SHARED_FIELDS } from './constants';
 import { useUndoRedo } from './hooks/useUndoRedo';
@@ -55,6 +55,37 @@ const App: React.FC = () => {
   const [activeSection, setActiveSection] = useState<string | null>('setup');
   const [saveToast, setSaveToast] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
+  const [templateHistory, setTemplateHistory] = useState<Array<{data: ReportData, savedAt: string}>>([]); 
+  const [showHistory, setShowHistory] = useState(false);
+
+  // ===========================
+  // 현재 시각을 발행시간 포맷으로 생성
+  // ===========================
+  const formatCurrentDate = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1;
+    const day = now.getDate();
+    const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+    const dayName = dayNames[now.getDay()];
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    return `${year}년 ${month}월 ${day}일 (${dayName}) ${hours}:${minutes} 발행`;
+  };
+
+  // ===========================
+  // 접속 시 발행시간 자동 설정 + 히스토리 로드
+  // ===========================
+  useEffect(() => {
+    setReportData({ ...reportData, date: formatCurrentDate() });
+    // 템플릿 히스토리 로드
+    try {
+      const historyKey = `rising-report-history-${reportData.reportType === '장전' ? 'pre' : 'close'}`;
+      const saved = localStorage.getItem(historyKey);
+      if (saved) setTemplateHistory(JSON.parse(saved));
+    } catch { /* ignore */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ===========================
   // Mode Switch with shared fields preservation
@@ -153,7 +184,24 @@ const App: React.FC = () => {
   // ===========================
   const saveTemplate = useCallback(() => {
     try {
-      localStorage.setItem(getStorageKey(reportData.reportType), JSON.stringify(reportData));
+      const storageKey = getStorageKey(reportData.reportType);
+      localStorage.setItem(storageKey, JSON.stringify(reportData));
+      
+      // 히스토리에 추가 (최근 5개)
+      const historyKey = `rising-report-history-${reportData.reportType === '장전' ? 'pre' : 'close'}`;
+      const now = new Date();
+      const timeStr = `${now.getMonth()+1}/${now.getDate()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+      const entry = { data: JSON.parse(JSON.stringify(reportData)), savedAt: timeStr };
+      let history: Array<{data: ReportData, savedAt: string}> = [];
+      try {
+        const existing = localStorage.getItem(historyKey);
+        if (existing) history = JSON.parse(existing);
+      } catch { /* ignore */ }
+      history.unshift(entry);
+      if (history.length > 5) history = history.slice(0, 5);
+      localStorage.setItem(historyKey, JSON.stringify(history));
+      setTemplateHistory(history);
+      
       setSaveToast(true);
       setTimeout(() => setSaveToast(false), 2000);
     } catch {
@@ -198,15 +246,7 @@ const App: React.FC = () => {
         onReset={handleReset}
         onExport={() => {
           // 리포트 완성 시 현재시각 자동 적용
-          const now = new Date();
-          const year = now.getFullYear();
-          const month = now.getMonth() + 1;
-          const day = now.getDate();
-          const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
-          const dayName = dayNames[now.getDay()];
-          const hours = String(now.getHours()).padStart(2, '0');
-          const minutes = String(now.getMinutes()).padStart(2, '0');
-          const dateStr = `${year}년 ${month}월 ${day}일 (${dayName}) ${hours}:${minutes} 발행`;
+          const dateStr = formatCurrentDate();
           setReportData({ ...reportData, date: dateStr });
           setShowExport(true);
         }}
@@ -226,6 +266,10 @@ const App: React.FC = () => {
             onSectionChange={setActiveSection}
             onSave={saveTemplate}
             onFullReset={handleFullReset}
+            templateHistory={templateHistory}
+            onRestoreHistory={(histData) => {
+              reset(histData);
+            }}
           />
         </aside>
 

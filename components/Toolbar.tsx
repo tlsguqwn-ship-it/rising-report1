@@ -430,14 +430,15 @@ const Toolbar: React.FC<ToolbarProps> = ({
         {!isPreMarket && onDarkModeToggle && (
           <button
             onClick={onDarkModeToggle}
-            className={`p-2 rounded-lg transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all active:scale-95 border ${
               darkMode
-                ? 'text-yellow-400 hover:bg-slate-100'
-                : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'
+                ? 'bg-slate-800 text-yellow-300 border-slate-600 hover:bg-slate-700'
+                : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
             }`}
             title={darkMode ? '화이트 모드로 전환' : '블랙 모드로 전환'}
           >
-            {darkMode ? <Sun size={16} /> : <Moon size={16} />}
+            {darkMode ? <Sun size={13} /> : <Moon size={13} />}
+            {darkMode ? 'White' : 'Black'}
           </button>
         )}
       </div>
