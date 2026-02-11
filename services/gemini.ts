@@ -164,14 +164,11 @@ const fetchNaverWorldIndex = async (symbol: string, label: string): Promise<{
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, 'text/html');
 
-    // 현재가 - span 태그 조합으로 추출 후 소수점 제거
+    // 현재가 - span 태그 조합으로 추출 (소수점 유지)
     const priceEmMatch = html.match(/no_today[\s\S]*?<em[^>]*>([\s\S]*?)<\/em>/);
     let value = 'N/A';
     if (priceEmMatch) {
-      const raw = parseNaverSpanNumber(priceEmMatch[1]);
-      // 나스닥/다우존스는 소수점 제거
-      const dotIdx = raw.indexOf('.');
-      value = dotIdx !== -1 ? raw.substring(0, dotIdx) : raw;
+      value = parseNaverSpanNumber(priceEmMatch[1]);
     }
 
     // 등락 정보: 두 번째 em 태그에서 등락률
@@ -482,20 +479,15 @@ const fetchNaverBitcoin = async (): Promise<{
     if (priceMatch) {
       const num = parseInt(priceMatch[1], 10);
       if (!isNaN(num)) {
-        if (num >= 100000000) {
-          const eok = Math.floor(num / 100000000);
-          const man = Math.floor((num % 100000000) / 10000);
-          value = `${eok}억${man > 0 ? man.toLocaleString() + '만' : ''}`;
-        } else {
-          value = num.toLocaleString();
-        }
+        // 전체 숫자를 쉼표 포함하여 표시 (예: 100,939,000)
+        value = num.toLocaleString();
       }
     }
 
-    // 등락률: "fluctuationsRatio" 필드 우선 (BTC 페이지에서 사용)
+    // 등락률: "fluctuationsRatio" 또는 "changeRate" 필드
     // 0.0012 형태(소수) → *100 변환, 또는 이미 퍼센트일 수 있음
     const changeMatch = html.match(/"fluctuationsRatio"\s*:\s*"?(-?[\d.]+)"?/) ||
-                         html.match(/"changeRate"\s*:\s*"?(-?0\.\d+)"?/);
+                         html.match(/"changeRate"\s*:\s*"?(-?[\d.]+)"?/);
     if (changeMatch) {
       const raw = parseFloat(changeMatch[1]);
       if (!isNaN(raw)) {
@@ -507,10 +499,10 @@ const fetchNaverBitcoin = async (): Promise<{
     }
 
     console.log(`Naver [BTC]: ${value} | ${subText}`);
-    return { label: 'BTC', value, subText, trend };
+    return { label: 'BTC/KRW', value, subText, trend };
   } catch (e) {
     console.error('Naver BTC fetch failed:', e);
-    return { label: 'BTC', value: 'N/A', subText: 'N/A', trend: 'neutral' };
+    return { label: 'BTC/KRW', value: 'N/A', subText: 'N/A', trend: 'neutral' };
   }
 };
 
@@ -686,8 +678,8 @@ export const fetchMarketIndicators = async (reportType: '장전' | '마감'): Pr
           fetchNaverExchangeRate(),
         ]),
         Promise.allSettled([
-          fetchNaverCommodity('OIL_CL', 'WTI'),
-          fetchNaverCommodity('CMDT_GC', '금'),
+          fetchNaverCommodity('OIL_CL', 'WTI/USD'),
+          fetchNaverCommodity('CMDT_GC', '금/USD'),
           fetchNaverBitcoin(),
         ]),
       ]);
