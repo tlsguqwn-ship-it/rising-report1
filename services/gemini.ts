@@ -370,6 +370,7 @@ const fetchVIX = async (): Promise<{
 /**
  * 네이버 금융 원자재 상세 페이지에서 가격/등락률 파싱
  * 원유(OIL_CL), 국제금(CMDT_GC) 등에 사용
+ * DOM 파싱 대신 정규식으로 raw HTML에서 직접 추출
  */
 const fetchNaverCommodity = async (code: string, label: string): Promise<{
   label: string; value: string; subText: string; trend: 'up' | 'down' | 'neutral';
@@ -380,30 +381,37 @@ const fetchNaverCommodity = async (code: string, label: string): Promise<{
       : naverUrl(`/marketindex/worldGoldDetail.naver?marketindexCd=${code}&fdtc=2`);
     const res = await fetch(url);
     const html = await res.text();
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, 'text/html');
 
-    // 현재가: .no_today 안의 첫 번째 em 태그에서 가격만 추출
-    const priceEm = doc.querySelector('.no_today em');
-    let value = priceEm?.textContent?.trim() || 'N/A';
-    value = value.replace(/[^\d,.]/g, '').trim();
-
-    // 등락정보: .no_exday 안의 em 태그들에서 개별 추출
-    const changeEms = doc.querySelectorAll('.no_exday em');
-    let changeAmt = '0';
+    let value = 'N/A';
     let changePct = '0';
-    if (changeEms.length >= 2) {
-      changeAmt = changeEms[0]?.textContent?.trim().replace(/[^\d,.]/g, '') || '0';
-      changePct = changeEms[1]?.textContent?.trim().replace(/[^\d,.%]/g, '').replace('%', '') || '0';
-    } else if (changeEms.length === 1) {
-      changePct = changeEms[0]?.textContent?.trim().replace(/[^\d,.]/g, '') || '0';
-    }
-    const changeEl = doc.querySelector('.no_exday');
-    const changeText = changeEl?.textContent?.trim() || '';
 
-    const isDown = !!doc.querySelector('.no_exday .no_down') ||
-                   !!doc.querySelector('.head_info .down') ||
-                   changeText.includes('하락');
+    // 정규식으로 가격 추출: "no_today" 클래스 영역에서 첫 번째 숫자 패턴
+    const priceMatch = html.match(/no_today[\s\S]*?<em[^>]*>[\s]*([0-9][0-9,.]*)/);
+    if (priceMatch) {
+      let raw = priceMatch[1].trim();
+      // 소수점 2자리까지만 유지
+      const dotIdx = raw.indexOf('.');
+      if (dotIdx !== -1) {
+        raw = raw.substring(0, dotIdx + 3);
+      }
+      value = raw;
+    }
+
+    // 등락률 추출: "no_exday" 클래스 영역에서 em 태그 내 숫자들
+    const changeSection = html.match(/no_exday[\s\S]*?<em[^>]*>[\s]*([0-9][0-9,.]*)/);
+    const pctMatch = html.match(/no_exday[\s\S]*?<em[^>]*>[^<]*<\/em>[\s\S]*?<em[^>]*>[\s]*([0-9][0-9,.]*)/);
+    if (pctMatch) {
+      changePct = pctMatch[1].trim();
+    } else if (changeSection) {
+      changePct = changeSection[1].trim();
+    }
+
+    // 상승/하락 판별
+    const isDown = html.includes('no_exday') && (
+      html.match(/no_exday[\s\S]*?no_down/) !== null ||
+      html.match(/class="[^"]*down[^"]*"[\s\S]*?no_exday/) !== null ||
+      html.includes('하락')
+    );
     const sign = isDown ? '-' : '+';
     const trend: 'up' | 'down' | 'neutral' = isDown ? 'down' : 'up';
 
@@ -416,77 +424,50 @@ const fetchNaverCommodity = async (code: string, label: string): Promise<{
 };
 
 /**
- * 네이버 크립토 API에서 비트코인(BTC) 가격 파싱
- * REST API JSON 직접 호출로 안정적 파싱
+ * 네이버 크립토에서 비트코인(BTC) 가격 파싱
+ * HTML 스크래핑 + SSR JSON에서 정규식 추출
  */
 const fetchNaverBitcoin = async (): Promise<{
   label: string; value: string; subText: string; trend: 'up' | 'down' | 'neutral';
 }> => {
   try {
-    // 네이버 금융 암호화폐 API 직접 호출
-    const targetUrl = 'https://m.stock.naver.com/front-api/crypto/otc/UPBIT/price?codes=BTC';
+    const targetUrl = 'https://m.stock.naver.com/crypto/UPBIT/BTC';
     const proxyUrl = IS_VERCEL
       ? `/api/proxy?url=${encodeURIComponent(targetUrl)}`
       : targetUrl;
     const res = await fetch(proxyUrl);
-    const text = await res.text();
+    const html = await res.text();
 
     let value = 'N/A';
     let subText = 'N/A';
     let trend: 'up' | 'down' | 'neutral' = 'neutral';
 
-    try {
-      const json = JSON.parse(text);
-      // API 응답에서 가격, 등락률 추출
-      const data = json?.result || json?.datas?.[0] || json;
-      const priceRaw = data?.tradePrice || data?.closePrice || data?.now;
-      
-      if (priceRaw) {
-        const num = typeof priceRaw === 'number' ? priceRaw : parseInt(String(priceRaw).replace(/,/g, ''), 10);
-        if (!isNaN(num)) {
-          if (num >= 100000000) {
-            const eok = Math.floor(num / 100000000);
-            const man = Math.floor((num % 100000000) / 10000);
-            value = `${eok}억${man > 0 ? man.toLocaleString() + '만' : ''}`;
-          } else {
-            value = num.toLocaleString();
-          }
+    // SSR JSON 데이터에서 가격 파싱
+    const priceMatch = html.match(/"now"\s*:\s*"?([0-9,]+)"?/) ||
+                        html.match(/"closePrice"\s*:\s*"?([0-9,]+)"?/) ||
+                        html.match(/"tradePrice"\s*:\s*"?([0-9,]+)"?/);
+    if (priceMatch) {
+      const num = parseInt(priceMatch[1].replace(/,/g, ''), 10);
+      if (!isNaN(num)) {
+        if (num >= 100000000) {
+          const eok = Math.floor(num / 100000000);
+          const man = Math.floor((num % 100000000) / 10000);
+          value = `${eok}억${man > 0 ? man.toLocaleString() + '만' : ''}`;
+        } else {
+          value = num.toLocaleString();
         }
       }
+    }
 
-      const changeRate = data?.changeRate || data?.fluctuationsRatio;
-      if (changeRate !== undefined) {
-        const pct = typeof changeRate === 'number' ? changeRate : parseFloat(String(changeRate));
-        if (!isNaN(pct)) {
-          const pctValue = Math.abs(pct) < 1 ? pct * 100 : pct;
-          subText = `${pctValue >= 0 ? '+' : ''}${pctValue.toFixed(1)}%`;
-          trend = pctValue > 0 ? 'up' : pctValue < 0 ? 'down' : 'neutral';
-        }
-      }
-    } catch {
-      // JSON 파싱 실패 시 HTML에서 정규식으로 fallback
-      const priceMatch = text.match(/"tradePrice"\s*:\s*"?([0-9,]+)"?/) ||
-                          text.match(/"closePrice"\s*:\s*"?([0-9,]+)"?/);
-      if (priceMatch) {
-        const num = parseInt(priceMatch[1].replace(/,/g, ''), 10);
-        if (!isNaN(num)) {
-          if (num >= 100000000) {
-            const eok = Math.floor(num / 100000000);
-            const man = Math.floor((num % 100000000) / 10000);
-            value = `${eok}억${man > 0 ? man.toLocaleString() + '만' : ''}`;
-          } else {
-            value = num.toLocaleString();
-          }
-        }
-      }
-      const changeMatch = text.match(/"changeRate"\s*:\s*"?(-?[0-9.]+)"?/);
-      if (changeMatch) {
-        const pct = parseFloat(changeMatch[1]);
-        if (!isNaN(pct)) {
-          const pctValue = Math.abs(pct) < 1 ? pct * 100 : pct;
-          subText = `${pctValue >= 0 ? '+' : ''}${pctValue.toFixed(1)}%`;
-          trend = pctValue > 0 ? 'up' : pctValue < 0 ? 'down' : 'neutral';
-        }
+    // 등락률
+    const changeMatch = html.match(/"changeRate"\s*:\s*"?(-?[0-9.]+)"?/) ||
+                         html.match(/"fluctuationsRatio"\s*:\s*"?(-?[0-9.]+)"?/);
+    if (changeMatch) {
+      const pct = parseFloat(changeMatch[1]);
+      if (!isNaN(pct)) {
+        const pctValue = Math.abs(pct) < 1 ? pct * 100 : pct;
+        subText = `${pctValue >= 0 ? '+' : ''}${pctValue.toFixed(1)}%`;
+        trend = pctValue > 0 ? 'up' : pctValue < 0 ? 'down' : 'neutral';
       }
     }
 
@@ -497,6 +478,7 @@ const fetchNaverBitcoin = async (): Promise<{
     return { label: 'BTC', value: 'N/A', subText: 'N/A', trend: 'neutral' };
   }
 };
+
 
 /**
  * Perplexity API로 단일 지표 조회 (마감 시황용)
