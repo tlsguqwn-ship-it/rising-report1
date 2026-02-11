@@ -401,16 +401,16 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
           <EditableText value={data.title} {...ep('title')} tag="h1" className={`text-[28px] font-[900] tracking-tighter leading-tight ${pageText}`} />
           <EditableText value={data.date} {...ep('date')} className={`text-[13px] font-semibold ${labelText} tracking-tight`} />
         </div>
-        <div className="shrink-0 ml-6 self-center flex flex-col items-center">
-          <span className={`text-[36px] font-[900] uppercase leading-none ${
-            isDark 
-              ? 'text-transparent bg-clip-text bg-gradient-to-b from-white to-slate-400' 
-              : 'text-transparent bg-clip-text bg-gradient-to-b from-slate-800 to-slate-500'
-          }`} style={{ fontStretch: 'condensed', letterSpacing: '0.08em' }}>RISING</span>
-          <span className={`text-[12px] font-medium uppercase leading-none mt-[3px] ${
-            isDark ? 'text-slate-400' : 'text-slate-500'
-          }`} style={{ letterSpacing: '0.38em' }}>STOCK</span>
-        </div>
+        <span className={`text-[36px] font-[900] uppercase leading-none shrink-0 ml-6 self-center text-transparent bg-clip-text`}
+          style={{
+            fontStretch: 'condensed',
+            letterSpacing: '0.06em',
+            backgroundImage: isDark
+              ? 'linear-gradient(180deg, #f0f0f0 0%, #a8b0ba 40%, #6b7280 70%, #9ca3af 100%)'
+              : 'linear-gradient(180deg, #2d3436 0%, #4a5568 35%, #1a202c 65%, #3d4f5f 100%)',
+            filter: 'drop-shadow(0 1px 0px rgba(255,255,255,0.15))',
+            WebkitTextStroke: isDark ? '0.3px rgba(255,255,255,0.1)' : '0.3px rgba(0,0,0,0.05)',
+          }}>RISING</span>
       </div>
     </div>
   );
@@ -438,7 +438,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
               const trendColor = item.trend === 'up' ? 'text-[#f04452]' :
                 item.trend === 'down' ? 'text-[#3182f6]' : pageText;
               return (
-                <div key={idx} className={`${cardBg} px-4 py-3.5 rounded-xl border ${cardBorder} shadow-sm flex items-baseline gap-3`}>
+                <div key={idx} className={`${cardBg} px-4 py-3.5 rounded-xl border ${cardBorder} shadow-sm flex items-center gap-2`}>
                   <span className={`text-[11px] font-extrabold ${labelText} uppercase leading-none tracking-tight shrink-0`} style={{ width: '52px' }}>{item.label}</span>
                   <EditableText
                     value={item.value}
@@ -446,10 +446,10 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                     isModal={isModalView}
                     className={`text-[17px] font-[900] leading-none tracking-tight ${trendColor}`}
                   />
-                  <span className={`text-[12px] font-bold leading-none shrink-0 whitespace-nowrap ${trendColor} ml-auto`}>
-                    {arrow && <span className="mr-1">{arrow}</span>}
+                  <span className={`text-[12px] font-bold leading-none shrink-0 whitespace-nowrap ${trendColor}`}>
+                    {arrow && <span className="mr-0.5">{arrow}</span>}
                     {changeAmt && <span>{changeAmt}</span>}
-                    {changePct && <span className="ml-2">{changePct}</span>}
+                    {changePct && <span className="ml-1.5">{changePct}</span>}
                   </span>
                 </div>
               );
@@ -676,7 +676,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                     <ChipInput value={stock.change} onSave={(v) => updateArr('featuredStocks', idx, 'change', v)} isModal={isModalView} placeholder="EX. 종목명 입력 후 Enter" vertical />
                   ) : (
                     <div className="flex items-center text-[13px] font-[900] leading-snug whitespace-nowrap">
-                      <div className="flex items-center justify-end" style={{ width: '85px' }}>
+                      <div className="flex items-center">
                         <input
                           type="text"
                           defaultValue={hasSlash ? formatPrice(rawPrice) : ''}
@@ -690,12 +690,13 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                             const currentRate = (stock.change.split('/')[1] || '').replace(/[%\s]/g, '').trim();
                             updateArr('featuredStocks', idx, 'change', `${formatted}원 / ${currentRate}%`);
                           }}
-                          className={`${pageText} bg-transparent border-none outline-none font-[900] text-[13px] text-right placeholder-slate-300 w-full`}
+                          className={`${pageText} bg-transparent border-none outline-none font-[900] text-[13px] text-right placeholder-slate-300`}
+                          style={{ width: `${Math.max((hasSlash ? formatPrice(rawPrice) : '523,100').length, 5) * 8 + 4}px` }}
                         />
                         <span className={`${pageText} text-[13px] font-[900] shrink-0`}>원</span>
                       </div>
-                      <span className={`${pageText} text-[13px] font-[900] shrink-0 mx-[6px]`}>/</span>
-                      <div className="flex items-center" style={{ width: '48px' }}>
+                      <span className={`${pageText} text-[13px] font-[900] shrink-0 mx-1`}>/</span>
+                      <div className="flex items-center">
                         <input
                           type="text"
                           defaultValue={hasSlash ? rawRate : ''}
@@ -706,7 +707,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                             const currentPrice = formatPrice((stock.change.split('/')[0] || '').replace(/[원,\s]/g, ''));
                             updateArr('featuredStocks', idx, 'change', `${currentPrice}원 / ${val}%`);
                           }}
-                          className={`${rateColor} bg-transparent border-none outline-none font-[900] text-[13px] text-right placeholder-slate-300 w-full`}
+                          className={`${rateColor} bg-transparent border-none outline-none font-[900] text-[13px] text-left placeholder-slate-300 w-[42px]`}
                         />
                         <span className={`${rateColor} text-[13px] font-[900] shrink-0`}>%</span>
                       </div>
