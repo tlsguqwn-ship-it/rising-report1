@@ -656,7 +656,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                   </div>
                 )}
               </th>
-              <th className="px-3 text-[11px] font-bold uppercase tracking-tight" style={{ width: '56%' }}>{isPreMarket ? '투자 포인트' : '등락 사유 및 분석'}</th>
+              <th className="pl-8 pr-3 text-[11px] font-bold uppercase tracking-tight" style={{ width: '56%' }}>{isPreMarket ? '투자 포인트' : '등락 사유 및 분석'}</th>
             </tr>
           </thead>
           <tbody className={`divide-y ${isDark ? 'divide-[#1a1a24]' : 'divide-slate-50'}`}>
