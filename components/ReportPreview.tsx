@@ -649,7 +649,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                 {isPreMarket ? (
                   <span className="block text-center">국내 관련주</span>
                 ) : (
-                  <div className="grid grid-cols-[1fr_8px_55px] items-center gap-0">
+                  <div className="grid grid-cols-[80px_8px_55px] items-center gap-0">
                     <span className="text-center">종가</span>
                     <div />
                     <span className="text-left">등락률</span>
@@ -687,7 +687,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                   {isPreMarket ? (
                     <ChipInput value={stock.change} onSave={(v) => updateArr('featuredStocks', idx, 'change', v)} isModal={isModalView} placeholder="EX. 종목명 입력 후 Enter" vertical />
                   ) : (
-                    <div className="grid grid-cols-[1fr_8px_55px] items-center gap-0 text-[13px] font-[900] leading-snug">
+                    <div className="grid grid-cols-[80px_8px_55px] items-center gap-0 text-[13px] font-[900] leading-snug">
                       <div className="flex items-center justify-end">
                         <span
                           contentEditable={!isModalView}
@@ -700,8 +700,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                             const currentRate = (stock.change.split('/')[1] || '').replace(/[%\s]/g, '').trim();
                             updateArr('featuredStocks', idx, 'change', `${formatted}원 / ${currentRate}%`);
                           }}
-                          className={`${rateColor} outline-none cursor-text`}
-                          style={{ minWidth: '6ch', display: 'inline-block', textAlign: 'right' }}
+                          className={`${rateColor} outline-none cursor-text text-right`}
                         >{hasSlash ? formatPrice(rawPrice) : ''}</span>
                         <span className={`${rateColor} shrink-0 ml-[2px]`}>원</span>
                       </div>
