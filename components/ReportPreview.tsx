@@ -835,7 +835,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
           </div>
           {/* 페이지 번호 */}
           <div className="absolute bottom-[3mm] left-0 right-0 flex justify-center">
-            <span className={`text-[7px] font-medium tracking-[0.2em] ${isDark ? 'text-slate-600' : 'text-slate-300'}`}>— 1 / 2 —</span>
+            <span className={`text-[7px] font-medium tracking-[0.2em] ${isDark ? 'text-slate-600' : 'text-slate-300'}`}>- 1 / 2 -</span>
           </div>
         </div>
 
@@ -874,7 +874,10 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
               ◆ 본 리포트는 Rising 서비스의 주관적인 견해를 포함하며 투자 결과에 대한 법적 책임은 투자자 본인에게 있습니다.
             </p>
             {/* 페이지 번호 - 면책 아래 */}
-            <span className={`text-[7px] font-medium tracking-[0.2em] mt-1 inline-block ${isDark ? 'text-slate-600' : 'text-slate-300'}`}>— 2 / 2 —</span>
+          </div>
+          {/* 페이지 번호 - 면책 밖에 별도 배치 */}
+          <div className="absolute bottom-[3mm] left-0 right-0 flex justify-center">
+            <span className={`text-[7px] font-medium tracking-[0.2em] ${isDark ? 'text-slate-600' : 'text-slate-300'}`}>- 2 / 2 -</span>
           </div>
         </div>
       </div>
