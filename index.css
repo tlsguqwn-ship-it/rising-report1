@@ -185,28 +185,82 @@ body {
    Print Styles
    =========================== */
 @media print {
+  /* 기본 초기화 */
   body {
     background: white !important;
     margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
+  /* 불필요한 요소 모두 숨기기 */
   nav,
-  .no-print {
+  aside,
+  .no-print,
+  [class*="no-print"] {
     display: none !important;
   }
 
-  .print-area {
-    display: block !important;
-    width: 210mm !important;
-    margin: 0 auto !important;
-    transform: scale(1) !important;
+  /* 메인 컨테이너 풀화면 */
+  main {
+    width: 100% !important;
+    margin: 0 !important;
     padding: 0 !important;
-    box-shadow: none !important;
-    background-color: white !important;
+    display: block !important;
   }
 
-  .transform {
-    transform: scale(1) !important;
+  /* 미리보기 영역 래퍼 초기화 */
+  main > section,
+  main > div {
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    background: white !important;
+  }
+
+  /* zoom/transform 초기화 */
+  [style*="transform"] {
+    transform: none !important;
+  }
+
+  /* report-content 출력 최적화 */
+  #report-content {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    box-shadow: none !important;
+  }
+
+  /* 각 페이지 */
+  #report-content > div {
+    width: 100% !important;
+    min-height: auto !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    page-break-after: always;
+    break-after: page;
+    margin: 0 !important;
+  }
+
+  #report-content > div:last-child {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  /* contenteditable 스타일 제거 */
+  [contenteditable="true"] {
+    background: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
+  }
+
+  @page {
+    size: A4;
+    margin: 0;
   }
 }
 
