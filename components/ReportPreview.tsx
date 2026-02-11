@@ -734,7 +734,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
               <EditableText value={sector.issue} onSave={(v) => updateArr('sectors', idx, 'issue', v)} isModal={isModalView}
                 className={`text-[11px] font-medium ${subText} leading-[1.5]`} placeholder="EX. 미국 의회 생물보안법 추진 가속화" />
               <div className={`flex gap-2 items-center mt-1.5 border-t ${isDark ? 'border-white/5' : 'border-slate-50'} pt-1.5`}>
-                <span className={`text-[9px] font-black ${isDark ? 'text-slate-300' : 'text-slate-600'} uppercase leading-none tracking-widest shrink-0`}>{isPreMarket ? '관심' : '주도'}</span>
+                <span className={`text-[9px] font-black ${isDark ? 'text-slate-300' : 'text-slate-600'} uppercase leading-none tracking-widest shrink-0`}>{isPreMarket ? '관심' : '관련'}</span>
                 <div className="flex-1">
                   <ChipInput value={sector.stocks} onSave={(v) => updateArr('sectors', idx, 'stocks', v)} isModal={isModalView}
                     placeholder="EX. 종목명 입력 후 Enter" size="sm" />
