@@ -52,18 +52,8 @@ const EditableText: React.FC<{
           }
         }
       }, 0);
-    } else if (ref.current) {
-      // 기존 텍스트가 있으면 전체 선택 → 바로 타이핑으로 교체 가능
-      setTimeout(() => {
-        const sel = window.getSelection();
-        if (sel && ref.current) {
-          const range = document.createRange();
-          range.selectNodeContents(ref.current);
-          sel.removeAllRanges();
-          sel.addRange(range);
-        }
-      }, 0);
     }
+    // 기존 텍스트가 있으면 자동선택 없이 커서만 표시 (사용자가 직접 삭제/편집)
   }, [editPath, onSelect, value, isEmpty, placeholder]);
 
   const handleBlur = useCallback(() => {
@@ -229,17 +219,8 @@ const ChipInput: React.FC<{
         suppressContentEditableWarning
         onBlur={() => finishChipEdit(i)}
         onKeyDown={(e) => handleChipKeyDown(e, i)}
-        onFocus={(e) => {
-          // 포커스 시 전체 선택
-          setTimeout(() => {
-            const sel = window.getSelection();
-            if (sel && e.target) {
-              const range = document.createRange();
-              range.selectNodeContents(e.target as Node);
-              sel.removeAllRanges();
-              sel.addRange(range);
-            }
-          }, 0);
+        onFocus={() => {
+          // 포커스 시 자동선택 없이 커서만 표시 (사용자가 직접 편집)
         }}
         className="outline-none min-w-[1ch]"
       >{chip}</span>
@@ -675,7 +656,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
               <EditableText value={sector.issue} onSave={(v) => updateArr('sectors', idx, 'issue', v)} isModal={isModalView}
                 className={`text-[11px] font-medium ${subText} leading-[1.5]`} placeholder="EX. 미국 의회 생물보안법 추진 가속화" />
               <div className={`flex gap-2 items-center mt-1.5 border-t ${isDark ? 'border-white/5' : 'border-slate-50'} pt-1.5`}>
-                <span className={`text-[9px] font-black ${labelText} uppercase leading-none tracking-widest shrink-0`}>관심</span>
+                <span className={`text-[9px] font-black ${isDark ? 'text-slate-300' : 'text-slate-600'} uppercase leading-none tracking-widest shrink-0`}>관심</span>
                 <div className="flex-1">
                   <ChipInput value={sector.stocks} onSave={(v) => updateArr('sectors', idx, 'stocks', v)} isModal={isModalView}
                     placeholder="EX. 종목명 입력 후 Enter" size="sm" />
