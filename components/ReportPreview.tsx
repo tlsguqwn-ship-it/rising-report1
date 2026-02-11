@@ -677,7 +677,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                 (rawRate.includes('+') || rawRate.includes('▲') || (parseFloat(rawRate) > 0)) ? 'text-[#f04452]' : pageText;
               return (
               <tr key={stock.id || idx} data-arr="featuredStocks" className={`${isDark ? 'hover:bg-[#22222e]' : 'hover:bg-slate-50'} transition-colors group/row relative`}>
-                <td className={`px-3 py-2 text-[15px] font-black ${pageText} border-r ${isDark ? 'border-[#1a1a24]' : 'border-slate-50'} align-middle pl-4 relative`} style={{ width: '22%', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <td className={`pl-4 pr-0 py-2 text-[15px] font-black ${pageText} border-r ${isDark ? 'border-[#1a1a24]' : 'border-slate-50'} align-middle relative`} style={{ width: '22%', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {!isModalView && data.featuredStocks.length > MIN_ITEMS && (
                     <button onClick={() => removeItem('featuredStocks', idx)} className="absolute -left-1 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold opacity-0 group-hover/row:opacity-100 transition-opacity no-print flex items-center justify-center shadow-sm hover:bg-red-600 z-10">×</button>
                   )}
