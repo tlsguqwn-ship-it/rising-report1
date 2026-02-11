@@ -48,12 +48,15 @@ const getLastMode = (): '장전' | '마감' => {
 };
 
 const App: React.FC = () => {
-  // ===== 공유 모드 감지 =====
+  // ===== 공유 모드 감지 (hooks 전에 조건부 return) =====
   const shareId = new URLSearchParams(window.location.search).get('share');
   if (shareId) {
     return <SharedReportView shareId={shareId} />;
   }
+  return <MainEditor />;
+};
 
+const MainEditor: React.FC = () => {
   const lastMode = getLastMode();
   const initialData = loadSavedTemplate(lastMode) || (lastMode === '장전' ? PRE_MARKET_REPORT_TEMPLATE : CLOSE_REPORT_TEMPLATE);
   const { state: reportData, setState: setReportData, undo, redo, canUndo, canRedo, reset } = useUndoRedo<ReportData>(initialData);

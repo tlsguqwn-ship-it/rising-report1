@@ -15,6 +15,8 @@ export const publishReport = async (
   data: ReportData,
   darkMode: boolean
 ): Promise<string> => {
+  if (!supabase) throw new Error('Supabase가 설정되지 않았습니다.');
+
   const { data: result, error } = await supabase
     .from('shared_reports')
     .insert({
@@ -32,6 +34,8 @@ export const publishReport = async (
 
 /** 공유 ID로 리포트 데이터 조회 */
 export const getSharedReport = async (id: string): Promise<SharedReport | null> => {
+  if (!supabase) return null;
+
   const { data, error } = await supabase
     .from('shared_reports')
     .select('*')
