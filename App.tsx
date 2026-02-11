@@ -18,8 +18,18 @@ const loadSavedTemplate = (type: '장전' | '마감'): ReportData | null => {
   return null;
 };
 
+const getLastMode = (): '장전' | '마감' => {
+  try {
+    const saved = localStorage.getItem('rising-report-lastMode');
+    if (saved === '장전' || saved === '마감') return saved;
+  } catch { /* ignore */ }
+  return INITIAL_REPORT.reportType;
+};
+
 const App: React.FC = () => {
-  const { state: reportData, setState: setReportData, undo, redo, canUndo, canRedo, reset } = useUndoRedo<ReportData>(loadSavedTemplate(INITIAL_REPORT.reportType) || INITIAL_REPORT);
+  const lastMode = getLastMode();
+  const initialData = loadSavedTemplate(lastMode) || (lastMode === '장전' ? PRE_MARKET_REPORT_TEMPLATE : CLOSE_REPORT_TEMPLATE);
+  const { state: reportData, setState: setReportData, undo, redo, canUndo, canRedo, reset } = useUndoRedo<ReportData>(initialData);
   const [showExport, setShowExport] = useState(false);
   const [zoom, setZoom] = useState(1.0);
   const [activeSection, setActiveSection] = useState<string | null>('setup');
@@ -31,6 +41,9 @@ const App: React.FC = () => {
   // ===========================
   const handleModeSwitch = useCallback(() => {
     const next = reportData.reportType === '장전' ? '마감' : '장전';
+
+    // 마지막 모드 저장
+    try { localStorage.setItem('rising-report-lastMode', next); } catch { /* ignore */ }
 
     // 전환 대상 타입의 저장된 데이터 확인
     const savedForNext = loadSavedTemplate(next);
