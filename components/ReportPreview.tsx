@@ -650,9 +650,9 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                   <span className="block text-center">국내 관련주</span>
                 ) : (
                   <div className="grid grid-cols-[90px_12px_60px] items-center gap-0">
-                    <span className="text-center">종가</span>
+                    <span className="text-right">종가</span>
                     <div />
-                    <span className="text-left">등락률</span>
+                    <span className="text-center">등락률</span>
                   </div>
                 )}
               </th>
@@ -722,7 +722,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                     </div>
                   )}
                 </td>
-                <td className={`pl-6 pr-3 py-2 text-[15px] font-medium ${subText} leading-[1.5] align-middle`} style={{ width: '56%' }}>
+                <td className={`pl-4 pr-3 py-2 text-[15px] font-medium ${subText} leading-[1.5] align-middle`} style={{ width: '56%' }}>
                   <EditableText value={stock.reason} onSave={(v) => updateArr('featuredStocks', idx, 'reason', v)} isModal={isModalView} placeholder="EX. 미국 AI 칩 수요 폭증 및 실적 호조"  />
                 </td>
               </tr>
