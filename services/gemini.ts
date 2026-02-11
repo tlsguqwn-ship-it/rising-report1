@@ -310,9 +310,8 @@ const fetchNightFuturesInvesting = async (): Promise<{
 const fetchNightFutures = async (): Promise<{
   label: string; value: string; subText: string; trend: 'up' | 'down' | 'neutral';
 }> => {
-  const investingResult = await fetchNightFuturesInvesting();
-  if (investingResult) return investingResult;
-  return { label: '야간선물', value: 'N/A', subText: 'N/A', trend: 'neutral' };
+  // 야간선물은 전문가가 직접 입력 (자동 파싱 제거)
+  return { label: '야간선물', value: '-', subText: '직접입력', trend: 'neutral' };
 };
 
 /**
@@ -484,16 +483,13 @@ const fetchNaverBitcoin = async (): Promise<{
       }
     }
 
-    // 등락률: "fluctuationsRatio" 또는 "changeRate" 필드
-    // 0.0012 형태(소수) → *100 변환, 또는 이미 퍼센트일 수 있음
-    const changeMatch = html.match(/"fluctuationsRatio"\s*:\s*"?(-?[\d.]+)"?/) ||
-                         html.match(/"changeRate"\s*:\s*"?(-?[\d.]+)"?/);
+    // 등락률: changeRate는 이미 퍼센트 값 (예: -0.82 = -0.82%)
+    const changeMatch = html.match(/"changeRate"\s*:\s*"?(-?[\d.]+)"?/) ||
+                         html.match(/"fluctuationsRatio"\s*:\s*"?(-?[\d.]+)"?/);
     if (changeMatch) {
-      const raw = parseFloat(changeMatch[1]);
-      if (!isNaN(raw)) {
-        // 0.xx 형태이면 *100, 이미 퍼센트면 그대로
-        const pctValue = Math.abs(raw) < 1 ? raw * 100 : raw;
-        subText = `${pctValue >= 0 ? '+' : ''}${pctValue.toFixed(1)}%`;
+      const pctValue = parseFloat(changeMatch[1]);
+      if (!isNaN(pctValue)) {
+        subText = `${pctValue >= 0 ? '+' : ''}${pctValue.toFixed(2)}%`;
         trend = pctValue > 0 ? 'up' : pctValue < 0 ? 'down' : 'neutral';
       }
     }

@@ -456,14 +456,14 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
         {data.subIndicators && data.subIndicators.length > 0 && (
           <div className="grid grid-cols-3 gap-1.5 mt-1.5">
             {data.subIndicators.map((item, idx) => (
-              <div key={`sub-${idx}`} className="bg-white/70 px-2 py-1.5 rounded-lg border border-slate-100/80 flex items-center justify-between">
-                <span className="text-[8px] font-extrabold text-slate-400 uppercase leading-none tracking-tight">{item.label}</span>
-                <div className="flex items-center gap-1.5">
-                  <span className={`text-[10px] font-[800] leading-none tracking-tight ${
+              <div key={`sub-${idx}`} className="bg-white/70 px-2 py-1.5 rounded-lg border border-slate-100/80 flex items-center gap-2">
+                <span className="text-[8px] font-extrabold text-slate-400 uppercase leading-none tracking-tight whitespace-nowrap">{item.label}</span>
+                <div className="flex items-center gap-1 ml-auto">
+                  <span className={`text-[10px] font-[800] leading-none tracking-tight whitespace-nowrap ${
                     item.trend === 'up' ? 'text-[#f04452]' :
                     item.trend === 'down' ? 'text-[#3182f6]' : 'text-slate-700'
                   }`}>{item.value}</span>
-                  <span className={`text-[8px] font-bold leading-none ${
+                  <span className={`text-[8px] font-bold leading-none whitespace-nowrap ${
                     item.trend === 'up' ? 'text-[#f04452]' :
                     item.trend === 'down' ? 'text-[#3182f6]' : 'text-slate-400'
                   }`}>
