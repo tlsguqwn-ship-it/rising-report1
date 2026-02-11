@@ -689,38 +689,34 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                   ) : (
                     <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-0 text-[13px] font-[900] leading-snug">
                       <div className="flex items-center justify-end">
-                        <input
-                          type="text"
-                          defaultValue={hasSlash ? formatPrice(rawPrice) : ''}
-                          placeholder="111,000"
-                          onFocus={(e) => { e.target.value = e.target.value.replace(/,/g, ''); }}
-                          onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+                        <span
+                          contentEditable={!isModalView}
+                          suppressContentEditableWarning
+                          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
                           onBlur={(e) => {
-                            const num = e.target.value.replace(/[^0-9]/g, '');
-                            const formatted = num ? Number(num).toLocaleString() : '';
-                            e.target.value = formatted;
+                            const raw = (e.currentTarget.textContent || '').replace(/[^0-9]/g, '');
+                            const formatted = raw ? Number(raw).toLocaleString() : '';
+                            e.currentTarget.textContent = formatted;
                             const currentRate = (stock.change.split('/')[1] || '').replace(/[%\s]/g, '').trim();
                             updateArr('featuredStocks', idx, 'change', `${formatted}원 / ${currentRate}%`);
                           }}
-                          className={`${pageText} bg-transparent border-none outline-none font-[900] text-[13px] text-right placeholder-slate-300 w-full`}
-                        />
+                          className={`${pageText} outline-none cursor-text`}
+                        >{hasSlash ? formatPrice(rawPrice) : ''}</span>
                         <span className={`${pageText} shrink-0`}>원</span>
                       </div>
                       <span className={`${pageText} shrink-0 px-1.5`}>/</span>
-                      <div className="flex items-center justify-start">
-                        <input
-                          type="text"
-                          defaultValue={hasSlash ? rawRate : ''}
-                          placeholder="-2.45"
-                          onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+                      <div className="flex items-center">
+                        <span
+                          contentEditable={!isModalView}
+                          suppressContentEditableWarning
+                          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
                           onBlur={(e) => {
-                            const val = e.target.value.trim();
+                            const val = (e.currentTarget.textContent || '').trim();
                             const currentPrice = formatPrice((stock.change.split('/')[0] || '').replace(/[원,\s]/g, ''));
                             updateArr('featuredStocks', idx, 'change', `${currentPrice}원 / ${val}%`);
                           }}
-                          className={`${rateColor} bg-transparent border-none outline-none font-[900] text-[13px] text-left placeholder-slate-300`}
-                          style={{ width: `${Math.max((hasSlash ? rawRate : '-2.45').length, 3) + 1}ch`, padding: 0 }}
-                        />
+                          className={`${rateColor} outline-none cursor-text`}
+                        >{hasSlash ? rawRate : ''}</span>
                         <span className={`${rateColor} shrink-0`}>%</span>
                       </div>
                     </div>
