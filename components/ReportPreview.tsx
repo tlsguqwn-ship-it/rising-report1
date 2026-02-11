@@ -401,7 +401,16 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
           <EditableText value={data.title} {...ep('title')} tag="h1" className={`text-[28px] font-[900] tracking-tighter leading-tight ${pageText}`} />
           <EditableText value={data.date} {...ep('date')} className={`text-[13px] font-semibold ${labelText} tracking-tight`} />
         </div>
-        <span className={`text-[36px] font-[900] tracking-[-0.05em] ${pageText} uppercase shrink-0 ml-6 leading-none self-center`} style={{ fontStretch: 'condensed' }}>RISING</span>
+        <div className="shrink-0 ml-6 self-center flex flex-col items-center">
+          <span className={`text-[28px] font-[900] tracking-[-0.06em] uppercase leading-none ${
+            isDark 
+              ? 'text-transparent bg-clip-text bg-gradient-to-b from-white to-slate-400' 
+              : 'text-transparent bg-clip-text bg-gradient-to-b from-slate-800 to-slate-500'
+          }`} style={{ fontStretch: 'condensed', letterSpacing: '0.12em' }}>RISING</span>
+          <span className={`text-[7px] font-bold tracking-[0.35em] uppercase leading-none mt-1 ${
+            isDark ? 'text-slate-500' : 'text-slate-400'
+          }`}>STOCK REPORT</span>
+        </div>
       </div>
     </div>
   );
