@@ -38,6 +38,17 @@ const EditableText: React.FC<{
       ref.current.style.whiteSpace = '';
       ref.current.style.overflow = '';
       ref.current.style.textOverflow = '';
+    } else if (ref.current) {
+      // 기존 텍스트가 있으면 전체 선택 → 바로 타이핑으로 교체 가능
+      setTimeout(() => {
+        const sel = window.getSelection();
+        if (sel && ref.current) {
+          const range = document.createRange();
+          range.selectNodeContents(ref.current);
+          sel.removeAllRanges();
+          sel.addRange(range);
+        }
+      }, 0);
     }
   }, [editPath, onSelect, value, isEmpty, placeholder]);
 
