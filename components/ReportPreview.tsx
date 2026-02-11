@@ -101,8 +101,6 @@ const ChipInput: React.FC<{
   vertical?: boolean;
 }> = ({ value, onSave, isModal = false, placeholder = '', chipClassName, size = 'sm', vertical = false }) => {
   const [inputVal, setInputVal] = useState('');
-  const [isAdding, setIsAdding] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
   const chipRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const chips = value ? value.split(',').map(s => s.trim()).filter(Boolean) : [];
 
@@ -111,28 +109,34 @@ const ChipInput: React.FC<{
 
   const isLg = size === 'lg';
 
-  const addChip = () => {
-    const trimmed = inputVal.trim();
-    if (!trimmed) { setIsAdding(false); return; }
-    const newChips = [...chips, trimmed];
-    onSave(newChips.join(', '));
-    setInputVal('');
-    setIsAdding(false);
-  };
-
   const removeChip = (idx: number) => {
     const newChips = chips.filter((_, i) => i !== idx);
     onSave(newChips.join(', '));
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') { e.preventDefault(); addChip(); }
-    if (e.key === 'Escape') { setInputVal(''); setIsAdding(false); }
+  // 빈 상태 input에서 Enter/blur 시 칩 추가
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const trimmed = inputVal.trim();
+      if (trimmed) { onSave(trimmed); setInputVal(''); }
+    }
+    if (e.key === 'Escape') { setInputVal(''); }
   };
 
-  const startAdding = () => {
-    setIsAdding(true);
-    setTimeout(() => inputRef.current?.focus(), 50);
+  const handleInputBlur = () => {
+    const trimmed = inputVal.trim();
+    if (trimmed) { onSave(trimmed); setInputVal(''); }
+  };
+
+  // + 버튼: 바로 칩 형태로 추가 + 포커스
+  const addChipDirect = () => {
+    const newChips = [...chips, '종목명'];
+    onSave(newChips.join(', '));
+    setTimeout(() => {
+      const el = chipRefs.current[newChips.length - 1];
+      if (el) el.focus();
+    }, 80);
   };
 
   // contentEditable 칩 편집 완료 (blur/Enter)
@@ -174,16 +178,15 @@ const ChipInput: React.FC<{
   }
 
   // 빈 상태: placeholder + input 바로 보이기
-  if (chips.length === 0 && !isAdding) {
+  if (chips.length === 0) {
     return (
       <div className={`flex items-center ${isLg ? 'min-h-[32px]' : 'min-h-[24px]'}`}>
         <input
-          ref={inputRef}
           type="text"
           value={inputVal}
           onChange={e => setInputVal(e.target.value)}
-          onKeyDown={handleKeyDown} 
-          onFocus={() => setIsAdding(true)}
+          onKeyDown={handleInputKeyDown}
+          onBlur={handleInputBlur}
           placeholder={placeholder}
           className={`outline-none bg-transparent ${isLg ? 'text-[13px]' : 'text-[10px]'} font-bold min-w-[60px] flex-1 py-0.5 text-slate-700 placeholder:text-slate-300`}
           style={{ color: '#cbd5e1' }}
@@ -219,20 +222,8 @@ const ChipInput: React.FC<{
     </span>
   );
 
-  const addBtn = isAdding ? (
-    <input
-      ref={inputRef}
-      type="text"
-      value={inputVal}
-      onChange={e => setInputVal(e.target.value)}
-      onKeyDown={handleKeyDown}
-      onBlur={addChip}
-      placeholder="종목명"
-      className={`outline-none bg-transparent ${isLg ? 'text-[13px] min-w-[60px] max-w-[120px]' : 'text-[11px] min-w-[40px] max-w-[80px]'} font-bold py-0 text-slate-700 placeholder:text-slate-300 border-b border-blue-300 ${isLg ? '' : 'leading-[20px]'}`}
-      autoFocus
-    />
-  ) : (
-    <button onClick={startAdding} className={`${isLg ? 'w-7 h-7 text-[14px]' : 'w-[18px] h-[18px] text-[11px]'} shrink-0 rounded-full bg-slate-100 hover:bg-blue-100 text-slate-400 hover:text-blue-500 font-bold flex items-center justify-center transition-colors no-print border border-slate-200/80`}>+</button>
+  const addBtn = (
+    <button onClick={addChipDirect} className={`${isLg ? 'w-7 h-7 text-[14px]' : 'w-[18px] h-[18px] text-[11px]'} shrink-0 rounded-full bg-slate-100 hover:bg-blue-100 text-slate-400 hover:text-blue-500 font-bold flex items-center justify-center transition-colors no-print border border-slate-200/80`}>+</button>
   );
 
   if (vertical && chips.length > 0) {
@@ -626,7 +617,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
         </div>
         <div className="flex flex-col gap-2">
           {data.sectors.map((sector, idx) => (
-            <div key={sector.id || idx} className={`${cardBg} rounded-xl border ${isDark ? 'border-[#2a2a3a] hover:border-amber-400/30' : 'border-slate-200/60 hover:border-blue-300'} p-3 shadow-sm transition-all group/sector relative`}>
+            <div key={sector.id || idx} data-arr="sectors" className={`${cardBg} rounded-xl border ${isDark ? 'border-[#2a2a3a] hover:border-amber-400/30' : 'border-slate-200/60 hover:border-blue-300'} p-3 shadow-sm transition-all group/sector relative`}>
               {!isModalView && data.sectors.length > MIN_ITEMS && (
                 <button onClick={() => removeItem('sectors', idx)} className={`absolute -right-2 -top-2 w-5 h-5 rounded-full ${isPreMarket ? 'bg-red-500' : 'bg-amber-500'} text-white text-[10px] font-bold opacity-0 group-hover/sector:opacity-100 transition-opacity no-print flex items-center justify-center shadow-sm ${isPreMarket ? 'hover:bg-red-600' : 'hover:bg-amber-600'} z-10`}>×</button>
               )}
@@ -661,7 +652,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
           <div className="space-y-4 relative">
             <div className={`absolute left-[4px] top-1 bottom-1 w-[2px] ${isDark ? 'bg-[#2a2a3a]' : 'bg-slate-200'}`} />
             {data.marketSchedule.map((item, idx) => (
-              <div key={item.id || idx} className="relative group/sched">
+              <div key={item.id || idx} data-arr="marketSchedule" className="relative group/sched">
                 {!isModalView && data.marketSchedule.length > MIN_ITEMS && (
                   <button onClick={() => removeItem('marketSchedule', idx)} className={`absolute -right-2 -top-1 w-5 h-5 rounded-full ${isPreMarket ? 'bg-red-500' : 'bg-amber-500'} text-white text-[10px] font-bold opacity-0 group-hover/sched:opacity-100 transition-opacity no-print flex items-center justify-center shadow-sm ${isPreMarket ? 'hover:bg-red-600' : 'hover:bg-amber-600'} z-10`}>×</button>
                 )}
