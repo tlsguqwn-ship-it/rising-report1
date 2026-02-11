@@ -207,8 +207,8 @@ const fetchNaverExchangeRate = async (): Promise<{
     // 현재가
     const priceEl = doc.querySelector('.no_today');
     let value = priceEl?.textContent?.trim() || 'N/A';
-    // "1,462.20원" -> "1,462.20"
-    value = value.replace(/[^\d,.]/g, '').trim();
+    // "1,462.20원" -> "1,462"
+    value = value.replace(/[^\d,.]/g, '').replace(/\.\d+$/, '').trim();
 
     // 등락 정보
     const changeEl = doc.querySelector('.no_exday');
