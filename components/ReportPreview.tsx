@@ -643,7 +643,15 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
           <thead>
             <tr className={`h-[8mm] border-b ${cardBorder} ${labelText}`}>
               <th className="px-3 text-[11px] font-bold uppercase tracking-tight pl-4" style={{ width: '20%' }}>{isPreMarket ? '이슈 키워드' : '종목명'}</th>
-              <th className="px-2 text-[11px] font-bold uppercase tracking-tight" style={{ width: '25%' }}>{isPreMarket ? '국내 관련주' : '종가 / 등락률'}</th>
+              <th className="px-2 text-[11px] font-bold uppercase tracking-tight" style={{ width: '25%' }}>
+                {isPreMarket ? '국내 관련주' : (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center' }}>
+                    <span className="text-right">종가</span>
+                    <span className="px-[3px]">/</span>
+                    <span>등락률</span>
+                  </div>
+                )}
+              </th>
               <th className="px-3 text-[11px] font-bold uppercase tracking-tight" style={{ width: '55%' }}>{isPreMarket ? '투자 포인트' : '등락 사유 및 분석'}</th>
             </tr>
           </thead>
@@ -707,7 +715,8 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                             const currentPrice = formatPrice((stock.change.split('/')[0] || '').replace(/[원,\s]/g, ''));
                             updateArr('featuredStocks', idx, 'change', `${currentPrice}원 / ${val}%`);
                           }}
-                          className={`${rateColor} bg-transparent border-none outline-none font-[900] text-[13px] text-left placeholder-slate-300 w-[36px]`}
+                          className={`${rateColor} bg-transparent border-none outline-none font-[900] text-[13px] text-left placeholder-slate-300`}
+                          style={{ width: `${Math.max((hasSlash ? rawRate : '-1.5').length, 3) * 8 + 2}px` }}
                         />
                         <span className={`${rateColor} text-[13px] font-[900] shrink-0`}>%</span>
                       </div>
