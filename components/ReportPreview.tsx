@@ -215,7 +215,7 @@ const ChipInput: React.FC<{
     return (
       <div className={`flex flex-wrap ${isLg ? 'gap-2' : 'gap-1'}`}>
         {chips.map((chip, i) => (
-          <span key={i} className={`inline-flex items-center ${isLg ? 'px-3.5 py-1.5 rounded-lg text-[13px]' : 'px-2 py-0.5 rounded-md text-[10px]'} font-bold border whitespace-nowrap ${chipStyle}`}>
+          <span key={i} className={`inline-flex items-center ${isLg ? 'px-3.5 py-1.5 rounded-full text-[13px]' : 'px-2 py-0.5 rounded-md text-[10px]'} font-bold border whitespace-nowrap ${chipStyle}`}>
             {chip}
           </span>
         ))}
@@ -243,7 +243,7 @@ const ChipInput: React.FC<{
 
   // 칩을 처음부터 칩 형태로 표시 & contentEditable로 인라인 편집
   const renderChip = (chip: string, i: number) => (
-    <span key={i} className={`group/chip relative inline-flex items-center cursor-text ${isLg ? 'px-3.5 py-1.5 rounded-lg text-[13px]' : 'px-2 py-0.5 rounded-md text-[11px] leading-[18px]'} font-bold border whitespace-nowrap ${chipStyle} hover:shadow-sm transition-shadow focus-within:ring-2 focus-within:ring-blue-300 focus-within:shadow-sm`}>
+    <span key={i} className={`group/chip relative inline-flex items-center cursor-text ${isLg ? 'px-3.5 py-1.5 rounded-full text-[13px]' : 'px-2 py-0.5 rounded-md text-[11px] leading-[18px]'} font-bold border whitespace-nowrap ${chipStyle} hover:shadow-sm transition-shadow focus-within:ring-2 focus-within:ring-blue-300 focus-within:shadow-sm`}>
       <span
         ref={el => { chipRefs.current[i] = el; }}
         contentEditable
@@ -600,7 +600,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
             value={isPreMarket ? (data.featuredStockLabel || '금일 공략주') : (data.featuredStockLabel || '내일 관심주')}
             onSave={(v) => onChange({ ...data, featuredStockLabel: v })}
             isModal={isModalView}
-            className={`shrink-0 uppercase tracking-widest text-[12px] font-[900] ${isPreMarket ? 'bg-sky-200/70 text-sky-700' : (isDark ? 'bg-amber-400/20 text-amber-500' : 'bg-amber-100 text-amber-700')} px-3.5 py-1.5 rounded-lg`}
+            className={`shrink-0 uppercase tracking-widest text-[12px] font-[900] ${isPreMarket ? 'bg-sky-200/70 text-sky-700' : (isDark ? 'bg-amber-400/20 text-amber-500' : 'bg-amber-100 text-amber-700')} px-3.5 py-1.5 rounded-full`}
           />
           <div className="flex-1">
             <ChipInput
