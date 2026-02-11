@@ -1,12 +1,8 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+// Supabase anon key는 공개용(publishable)이므로 코드에 직접 포함해도 안전합니다.
+// RLS 정책으로 서버측에서 접근이 제어됩니다.
+const SUPABASE_URL = 'https://evxgitndgulmtyyueavr.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_4CfX_HbeHNVilqlGxq0SjA_I0RsaU_i';
 
-let supabase: SupabaseClient | null = null;
-
-if (supabaseUrl && supabaseAnonKey) {
-  supabase = createClient(supabaseUrl, supabaseAnonKey);
-}
-
-export { supabase };
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
