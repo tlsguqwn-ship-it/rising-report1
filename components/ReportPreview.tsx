@@ -650,13 +650,13 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                   <span className="block text-center">국내 관련주</span>
                 ) : (
                   <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-0">
-                    <span className="text-right">종가</span>
-                    <span className="px-1.5">/</span>
-                    <span className="text-left">등락률</span>
+                    <span className="text-center">종가</span>
+                    <span className="px-1.5 invisible">/</span>
+                    <span className="text-center">등락률</span>
                   </div>
                 )}
               </th>
-              <th className="px-3 text-[11px] font-bold uppercase tracking-tight" style={{ width: '60%' }}>{isPreMarket ? '투자 포인트' : '등락 사유 및 분석'}</th>
+              <th className="px-3 text-[11px] font-bold uppercase tracking-tight text-center" style={{ width: '60%' }}>{isPreMarket ? '투자 포인트' : '등락 사유 및 분석'}</th>
             </tr>
           </thead>
           <tbody className={`divide-y ${isDark ? 'divide-[#1a1a24]' : 'divide-slate-50'}`}>
