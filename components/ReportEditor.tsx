@@ -97,7 +97,7 @@ const AccordionSection: React.FC<{
             <h3 className={`text-[13px] font-extrabold ${isOpen ? 'text-slate-900' : 'text-slate-600'} tracking-tight`}>{label}</h3>
             {badge && <span className="text-[10px] font-bold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md">{badge}</span>}
           </div>
-          {!isOpen && summaryNode ? summaryNode : (!isOpen && summary && <p className="text-[11px] text-slate-400 font-medium truncate max-w-[360px] mt-0.5">{summary}</p>)}
+
         </div>
       </div>
       <ChevronDown size={16} className={`text-slate-300 transition-transform duration-300 shrink-0 ${isOpen ? 'rotate-180 text-slate-600' : ''}`} />
@@ -344,10 +344,10 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
                             e.stopPropagation();
                             onDeleteHistory?.(idx);
                           }}
-                          className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-0.5"
+                          className="text-slate-400 hover:text-red-500 transition-all p-1 rounded hover:bg-red-50"
                           title="삭제"
                         >
-                          <Trash2 size={11} />
+                          <Trash2 size={13} />
                         </button>
                       </div>
                     </div>
