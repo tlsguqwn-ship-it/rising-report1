@@ -54,7 +54,7 @@ export const CLOSE_REPORT_TEMPLATE: ReportData = {
   date: "2026년 2월 10일 (월) 15:40 발행",
   reportType: "마감",
   summaryTitle: "국내 증시 및 수급 현황",
-  currentMarketView: "코스피 2,540선 하회. 외국인 반도체 집중 매도로 지수 하방 압력 심화. 원/달러 환율 1,460원 돌파하며 수급 환경 악화. 다만 제약/바이오 섹터로의 순환매 유입은 긍정적.",
+  currentMarketView: "코스피 2,540선 하회. 외국인 반도체 집중 매도로 지수 하방 압력 심화. 제약/바이오 섹터 순환매 유입은 긍정적.",
   summaryItems: [
     { label: "KOSPI", value: "0", subText: "0%", trend: "neutral" },
     { label: "KOSDAQ", value: "0", subText: "0%", trend: "neutral" },

@@ -668,6 +668,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                         defaultValue={hasSlash ? formatPrice(rawPrice) : ''}
                         placeholder="523,100"
                         onFocus={(e) => { e.target.value = e.target.value.replace(/,/g, ''); }}
+                        onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
                         onBlur={(e) => {
                           const num = e.target.value.replace(/[^0-9]/g, '');
                           const formatted = num ? Number(num).toLocaleString() : '';
@@ -682,6 +683,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                         type="text"
                         defaultValue={hasSlash ? rawRate : ''}
                         placeholder="-1.5"
+                        onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
                         onBlur={(e) => {
                           const val = e.target.value.trim();
                           const currentPrice = formatPrice((stock.change.split('/')[0] || '').replace(/[원,\s]/g, ''));
