@@ -440,14 +440,14 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
               const trendColor = item.trend === 'up' ? 'text-[#f04452]' :
                 item.trend === 'down' ? 'text-[#3182f6]' : pageText;
               return (
-                <div key={idx} className={`${cardBg} px-4 py-3.5 rounded-xl border ${cardBorder} shadow-sm flex items-baseline justify-between`}>
-                  <div className="flex items-baseline gap-2.5">
-                    <span className={`text-[11px] font-extrabold ${labelText} uppercase leading-none tracking-tight shrink-0`}>{item.label}</span>
+                <div key={idx} className={`${cardBg} px-4 py-3.5 rounded-xl border ${cardBorder} shadow-sm flex items-center justify-between`}>
+                  <div className="flex items-center gap-2.5">
+                    <span className={`text-[11px] font-extrabold ${labelText} uppercase leading-none tracking-tight w-[52px] shrink-0`}>{item.label}</span>
                     <EditableText
                       value={item.value}
                       onSave={(v) => updateArr('summaryItems', idx, 'value', v)}
                       isModal={isModalView}
-                      className={`text-[17px] font-[900] leading-none tracking-tight ${trendColor}`}
+                      className={`text-[19px] font-[900] leading-none tracking-tight w-[90px] ${trendColor}`}
                     />
                   </div>
                   <span className={`text-[12px] font-bold leading-none shrink-0 whitespace-nowrap ${trendColor}`}>
