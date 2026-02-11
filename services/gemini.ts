@@ -223,7 +223,7 @@ const fetchNaverExchangeRate = async (): Promise<{
     const trend: 'up' | 'down' | 'neutral' = isDown ? 'down' : 'up';
 
     console.log(`Naver [USD/KRW]: ${value} ${sign}${changePct}%`);
-    return { label: '원달러환율', value, subText: `${sign}${changePct}%`, trend };
+    return { label: '원달러환율', value: `${value} 원`, subText: `${sign}${changePct}%`, trend };
   } catch (e) {
     console.error('Naver exchange rate fetch failed:', e);
     return { label: '원달러환율', value: 'N/A', subText: 'N/A', trend: 'neutral' };

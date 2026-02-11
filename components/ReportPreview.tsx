@@ -440,14 +440,14 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
               const trendColor = item.trend === 'up' ? 'text-[#f04452]' :
                 item.trend === 'down' ? 'text-[#3182f6]' : pageText;
               return (
-                <div key={idx} className={`${cardBg} px-4 py-3.5 rounded-xl border ${cardBorder} shadow-sm flex items-center justify-between`}>
-                  <div className="flex items-center gap-2.5">
-                    <span className={`text-[11px] font-extrabold ${labelText} uppercase leading-none tracking-tight w-[52px] shrink-0`}>{item.label}</span>
+                <div key={idx} className={`${cardBg} px-4 py-3.5 rounded-xl border ${cardBorder} shadow-sm flex items-center gap-3`}>
+                  <span className={`text-[11px] font-extrabold ${labelText} uppercase leading-none tracking-tight w-[52px] shrink-0`}>{item.label}</span>
+                  <div className="flex-1 flex items-center justify-center">
                     <EditableText
                       value={item.value}
                       onSave={(v) => updateArr('summaryItems', idx, 'value', v)}
                       isModal={isModalView}
-                      className={`text-[19px] font-[900] leading-none tracking-tight w-[90px] ${trendColor}`}
+                      className={`text-[19px] font-[900] leading-none tracking-tight text-center ${trendColor}`}
                     />
                   </div>
                   <span className={`text-[12px] font-bold leading-none shrink-0 whitespace-nowrap ${trendColor}`}>
@@ -596,9 +596,12 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
             className={`text-[17px] font-bold ${isDark ? 'text-slate-300' : 'text-slate-800'} leading-[2.0] text-justify`} placeholder="EX. 전문가 분석을 적어주세요" />
         </div>
         <div className={`mt-2.5 pt-2.5 border-t ${isDark ? 'border-white/5' : 'border-black/5'} flex items-center gap-3 shrink-0 flex-wrap`}>
-          <span className={`shrink-0 uppercase tracking-widest text-[12px] font-[900] ${isPreMarket ? 'bg-sky-200/70 text-sky-700' : (isDark ? 'bg-amber-400/20 text-amber-500' : 'bg-amber-100 text-amber-700')} px-3.5 py-1.5 rounded-lg`}>
-            {isPreMarket ? '금일 관심주' : '내일 관심주'}
-          </span>
+          <EditableText
+            value={isPreMarket ? (data.featuredStockLabel || '금일 공략주') : (data.featuredStockLabel || '내일 관심주')}
+            onSave={(v) => onChange({ ...data, featuredStockLabel: v })}
+            isModal={isModalView}
+            className={`shrink-0 uppercase tracking-widest text-[12px] font-[900] ${isPreMarket ? 'bg-sky-200/70 text-sky-700' : (isDark ? 'bg-amber-400/20 text-amber-500' : 'bg-amber-100 text-amber-700')} px-3.5 py-1.5 rounded-lg`}
+          />
           <div className="flex-1">
             <ChipInput
               value={data.expertInterestedStocks}

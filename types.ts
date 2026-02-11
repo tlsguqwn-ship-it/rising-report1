@@ -40,6 +40,7 @@ export interface ReportData {
   expertAnalysis: string;
   expertAnalysisTitle: string;
   expertInterestedStocks: string;
+  featuredStockLabel?: string;
   marketSchedule: MarketSchedule[];
   featuredStocks: FeaturedStock[];
   featuredStocksTitle: string;
