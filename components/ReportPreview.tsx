@@ -705,7 +705,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                         >{hasSlash ? formatPrice(rawPrice) : ''}</span>
                         <span className={`${rateColor} shrink-0 ml-[2px]`}>원</span>
                       </div>
-                      <span className={`${rateColor} shrink-0 px-1.5`}>/</span>
+                      <span className={`${rateColor} shrink-0 px-1.5 invisible`}>/</span>
                       <div className="flex items-center">
                         <span
                           contentEditable={!isModalView}
