@@ -227,21 +227,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
           <span className="text-[10px] opacity-50">클릭 전환</span>
         </button>
 
-        {/* 마감 모드: 다크/화이트 모드 토글 */}
-        {!isPreMarket && onDarkModeToggle && (
-          <button
-            onClick={onDarkModeToggle}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 border ${
-              darkMode
-                ? 'bg-slate-800 text-yellow-300 border-slate-600 hover:bg-slate-700'
-                : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-            }`}
-            title={darkMode ? '화이트 모드로 전환' : '블랙 모드로 전환'}
-          >
-            {darkMode ? <Sun size={13} /> : <Moon size={13} />}
-            {darkMode ? 'White' : 'Black'}
-          </button>
-        )}
+
       </div>
 
       {/* Center: Edit Controls + Zoom + Rich Text Tools */}
@@ -440,14 +426,20 @@ const Toolbar: React.FC<ToolbarProps> = ({
 
         <div className="h-6 w-px bg-slate-200 mx-1" />
 
-        {/* 새로고침 (초기화) */}
-        <button
-          onClick={onReset}
-          className="p-2 rounded-lg hover:bg-slate-100 transition-all text-slate-400 hover:text-slate-600"
-          title="새로고침 (데이터 초기화)"
-        >
-          <RotateCcw size={16} />
-        </button>
+        {/* 마감 모드: 다크/화이트 모드 토글 */}
+        {!isPreMarket && onDarkModeToggle && (
+          <button
+            onClick={onDarkModeToggle}
+            className={`p-2 rounded-lg transition-all ${
+              darkMode
+                ? 'text-yellow-400 hover:bg-slate-100'
+                : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'
+            }`}
+            title={darkMode ? '화이트 모드로 전환' : '블랙 모드로 전환'}
+          >
+            {darkMode ? <Sun size={16} /> : <Moon size={16} />}
+          </button>
+        )}
       </div>
 
       {/* Right: Actions */}
