@@ -92,6 +92,9 @@ const ChipInput: React.FC<{
   const [inputVal, setInputVal] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [editingIdx, setEditingIdx] = useState<number | null>(null);
+  const [editVal, setEditVal] = useState('');
+  const editRef = useRef<HTMLInputElement>(null);
   const chips = value ? value.split(',').map(s => s.trim()).filter(Boolean) : [];
 
   const defaultChipClass = 'bg-slate-100 text-slate-700 border-slate-200/80';
@@ -121,6 +124,31 @@ const ChipInput: React.FC<{
   const startAdding = () => {
     setIsAdding(true);
     setTimeout(() => inputRef.current?.focus(), 50);
+  };
+
+  const startEdit = (idx: number) => {
+    setEditingIdx(idx);
+    setEditVal(chips[idx]);
+    setTimeout(() => editRef.current?.focus(), 50);
+  };
+
+  const finishEdit = () => {
+    if (editingIdx === null) return;
+    const trimmed = editVal.trim();
+    if (trimmed) {
+      const newChips = [...chips];
+      newChips[editingIdx] = trimmed;
+      onSave(newChips.join(', '));
+    } else {
+      removeChip(editingIdx);
+    }
+    setEditingIdx(null);
+    setEditVal('');
+  };
+
+  const handleEditKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') { e.preventDefault(); finishEdit(); }
+    if (e.key === 'Escape') { setEditingIdx(null); setEditVal(''); }
   };
 
   if (isModal) {
@@ -153,35 +181,6 @@ const ChipInput: React.FC<{
       </div>
     );
   }
-
-  const [editingIdx, setEditingIdx] = useState<number | null>(null);
-  const [editVal, setEditVal] = useState('');
-  const editRef = useRef<HTMLInputElement>(null);
-
-  const startEdit = (idx: number) => {
-    setEditingIdx(idx);
-    setEditVal(chips[idx]);
-    setTimeout(() => editRef.current?.focus(), 50);
-  };
-
-  const finishEdit = () => {
-    if (editingIdx === null) return;
-    const trimmed = editVal.trim();
-    if (trimmed) {
-      const newChips = [...chips];
-      newChips[editingIdx] = trimmed;
-      onSave(newChips.join(', '));
-    } else {
-      removeChip(editingIdx);
-    }
-    setEditingIdx(null);
-    setEditVal('');
-  };
-
-  const handleEditKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') { e.preventDefault(); finishEdit(); }
-    if (e.key === 'Escape') { setEditingIdx(null); setEditVal(''); }
-  };
 
   const renderChip = (chip: string, i: number) => (
     editingIdx === i ? (
