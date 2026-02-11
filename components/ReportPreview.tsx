@@ -632,19 +632,15 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
           <thead>
             <tr className={`h-[8mm] border-b ${cardBorder} ${labelText}`}>
               <th className="px-3 text-[11px] font-bold uppercase tracking-tight pl-4" style={{ width: '20%' }}>{isPreMarket ? '이슈 키워드' : '종목명'}</th>
-              <th className="px-2 text-[11px] font-bold uppercase tracking-tight" style={{ width: '25%' }}>{isPreMarket ? '국내 관련주' : '현재가 / 등락률'}</th>
+              <th className="px-2 text-[11px] font-bold uppercase tracking-tight" style={{ width: '25%' }}>{isPreMarket ? '국내 관련주' : '종가 / 등락률'}</th>
               <th className="px-3 text-[11px] font-bold uppercase tracking-tight" style={{ width: '55%' }}>{isPreMarket ? '투자 포인트' : '등락 사유 및 분석'}</th>
             </tr>
           </thead>
           <tbody className={`divide-y ${isDark ? 'divide-[#1a1a24]' : 'divide-slate-50'}`}>
             {data.featuredStocks.map((stock, idx) => {
-              // change 필드에서 가격/등락률 파싱 (예: "153,000원 / -2.45%")
-              const changeParts = stock.change.split('/').map(s => s.trim());
-              const priceVal = changeParts[0]?.replace(/원\s*$/, '').trim() || '';
-              const rateVal = changeParts[1]?.replace(/%\s*$/, '').trim() || (changeParts.length === 1 ? changeParts[0]?.replace(/%\s*$/, '').trim() : '');
               // 색상 결정
-              const rateColor = rateVal.includes('-') || rateVal.includes('▼') ? 'text-[#3182f6]' :
-                (rateVal.includes('+') || rateVal.includes('▲') || (parseFloat(rateVal) > 0)) ? 'text-[#f04452]' : pageText;
+              const changeColor = stock.change.includes('-') || stock.change.includes('▼') ? 'text-[#3182f6]' :
+                (stock.change.includes('+') || stock.change.includes('▲')) ? 'text-[#f04452]' : pageText;
               return (
               <tr key={stock.id || idx} data-arr="featuredStocks" className={`${isDark ? 'hover:bg-[#22222e]' : 'hover:bg-slate-50'} transition-colors group/row relative`}>
                 <td className={`px-3 py-2 text-[15px] font-black ${pageText} border-r ${isDark ? 'border-[#1a1a24]' : 'border-slate-50'} align-middle pl-4 relative`} style={{ width: '20%', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -657,34 +653,9 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                   {isPreMarket ? (
                     <ChipInput value={stock.change} onSave={(v) => updateArr('featuredStocks', idx, 'change', v)} isModal={isModalView} placeholder="EX. 종목명 입력 후 Enter" vertical />
                   ) : (
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-1">
-                        <EditableText
-                          value={priceVal}
-                          onSave={(v) => {
-                            const clean = v.replace(/원\s*$/, '').trim();
-                            updateArr('featuredStocks', idx, 'change', `${clean}원 / ${rateVal}%`);
-                          }}
-                          isModal={isModalView}
-                          placeholder="153,000"
-                          className={`text-[13px] font-[900] ${pageText} leading-snug inline`}
-                        />
-                        <span className={`text-[11px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'} shrink-0`}>원</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <EditableText
-                          value={rateVal}
-                          onSave={(v) => {
-                            const clean = v.replace(/%\s*$/, '').trim();
-                            updateArr('featuredStocks', idx, 'change', `${priceVal}원 / ${clean}%`);
-                          }}
-                          isModal={isModalView}
-                          placeholder="-2.45"
-                          className={`text-[13px] font-[900] ${rateColor} leading-snug inline`}
-                        />
-                        <span className={`text-[11px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'} shrink-0`}>%</span>
-                      </div>
-                    </div>
+                    <EditableText value={stock.change} onSave={(v) => updateArr('featuredStocks', idx, 'change', v)} isModal={isModalView}
+                      placeholder="153,000원 / -2.45%"
+                      className={`text-[13px] font-[900] ${changeColor} leading-snug`} />
                   )}
                 </td>
                 <td className={`px-3 py-2 text-[15px] font-medium ${subText} leading-[1.5] align-middle`} style={{ width: '55%' }}>
