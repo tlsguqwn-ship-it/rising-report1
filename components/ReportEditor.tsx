@@ -294,11 +294,10 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
       )}
 
       {/* Template History */}
-      {templateHistory.length > 0 && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <button
-            onClick={() => setShowHistory(!showHistory)}
-            className="w-full px-5 py-3 flex items-center justify-between text-left hover:bg-slate-50 transition-colors"
+            onClick={() => templateHistory.length > 0 && setShowHistory(!showHistory)}
+            className={`w-full px-5 py-3 flex items-center justify-between text-left transition-colors ${templateHistory.length > 0 ? 'hover:bg-slate-50 cursor-pointer' : 'cursor-default'}`}
           >
             <div className="flex items-center gap-2.5">
               <div className="w-7 h-7 bg-slate-100 rounded-lg flex items-center justify-center">
@@ -306,12 +305,14 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
               </div>
               <div>
                 <span className="text-[12px] font-bold text-slate-700">저장 히스토리</span>
-                <span className="text-[10px] text-slate-400 ml-2">최근 {templateHistory.length}개</span>
+                <span className="text-[10px] text-slate-400 ml-2">{templateHistory.length > 0 ? `최근 ${templateHistory.length}개` : '없음'}</span>
               </div>
             </div>
-            <ChevronDown size={14} className={`text-slate-400 transition-transform ${showHistory ? 'rotate-180' : ''}`} />
+            {templateHistory.length > 0 && (
+              <ChevronDown size={14} className={`text-slate-400 transition-transform ${showHistory ? 'rotate-180' : ''}`} />
+            )}
           </button>
-          {showHistory && (
+          {showHistory && templateHistory.length > 0 && (
             <div className="px-4 pb-4 space-y-2 border-t border-slate-100 pt-3">
               {templateHistory.map((entry, idx) => {
                 const displayNum = templateHistory.length - idx;
@@ -364,7 +365,6 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
             </div>
           )}
         </div>
-      )}
 
 
       {/* Editor Sections */}
