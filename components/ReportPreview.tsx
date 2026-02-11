@@ -103,9 +103,7 @@ const ChipInput: React.FC<{
   const [inputVal, setInputVal] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const [editingIdx, setEditingIdx] = useState<number | null>(null);
-  const [editVal, setEditVal] = useState('');
-  const editRef = useRef<HTMLInputElement>(null);
+  const chipRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const chips = value ? value.split(',').map(s => s.trim()).filter(Boolean) : [];
 
   const defaultChipClass = 'bg-slate-100 text-slate-700 border-slate-200/80';
@@ -137,29 +135,30 @@ const ChipInput: React.FC<{
     setTimeout(() => inputRef.current?.focus(), 50);
   };
 
-  const startEdit = (idx: number) => {
-    setEditingIdx(idx);
-    setEditVal(chips[idx]);
-    setTimeout(() => editRef.current?.focus(), 50);
-  };
-
-  const finishEdit = () => {
-    if (editingIdx === null) return;
-    const trimmed = editVal.trim();
-    if (trimmed) {
+  // contentEditable 칩 편집 완료 (blur/Enter)
+  const finishChipEdit = (idx: number) => {
+    const el = chipRefs.current[idx];
+    if (!el) return;
+    const newText = el.innerText.trim();
+    if (!newText) {
+      removeChip(idx);
+    } else if (newText !== chips[idx]) {
       const newChips = [...chips];
-      newChips[editingIdx] = trimmed;
+      newChips[idx] = newText;
       onSave(newChips.join(', '));
-    } else {
-      removeChip(editingIdx);
     }
-    setEditingIdx(null);
-    setEditVal('');
   };
 
-  const handleEditKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') { e.preventDefault(); finishEdit(); }
-    if (e.key === 'Escape') { setEditingIdx(null); setEditVal(''); }
+  const handleChipKeyDown = (e: React.KeyboardEvent<HTMLSpanElement>, idx: number) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      (e.target as HTMLSpanElement).blur();
+    }
+    if (e.key === 'Escape') {
+      const el = chipRefs.current[idx];
+      if (el) el.innerText = chips[idx];
+      el?.blur();
+    }
   };
 
   if (isModal) {
@@ -193,19 +192,31 @@ const ChipInput: React.FC<{
     );
   }
 
+  // 칩을 처음부터 칩 형태로 표시 & contentEditable로 인라인 편집
   const renderChip = (chip: string, i: number) => (
-    editingIdx === i ? (
-      <input key={i} ref={editRef} type="text" value={editVal}
-        onChange={e => setEditVal(e.target.value)} onKeyDown={handleEditKeyDown} onBlur={finishEdit}
-        className={`outline-none bg-white ${isLg ? 'text-[13px] min-w-[60px] max-w-[120px] px-3 py-1.5 rounded-lg' : 'text-[11px] min-w-[40px] max-w-[80px] px-2 py-0.5 rounded-md'} font-bold text-slate-700 border border-blue-400 shadow-sm`}
-      />
-    ) : (
-      <span key={i} className={`group/chip relative inline-flex items-center cursor-pointer ${isLg ? 'px-3 py-1.5 rounded-lg text-[13px]' : 'px-2 py-0.5 rounded-md text-[11px] leading-[18px]'} font-bold border whitespace-nowrap ${chipStyle} hover:shadow-sm transition-shadow`}
-        onClick={() => startEdit(i)}>
-        {chip}
-        <button onClick={(e) => { e.stopPropagation(); removeChip(i); }} className={`absolute ${isLg ? '-top-1.5 -right-1.5 w-4 h-4 text-[9px]' : '-top-1 -right-1 w-3.5 h-3.5 text-[8px]'} rounded-full bg-slate-400 hover:bg-red-500 text-white flex items-center justify-center leading-none no-print opacity-0 group-hover/chip:opacity-100 transition-opacity shadow-sm`}>×</button>
-      </span>
-    )
+    <span key={i} className={`group/chip relative inline-flex items-center cursor-text ${isLg ? 'px-3 py-1.5 rounded-lg text-[13px]' : 'px-2 py-0.5 rounded-md text-[11px] leading-[18px]'} font-bold border whitespace-nowrap ${chipStyle} hover:shadow-sm transition-shadow focus-within:ring-2 focus-within:ring-blue-300 focus-within:shadow-sm`}>
+      <span
+        ref={el => { chipRefs.current[i] = el; }}
+        contentEditable
+        suppressContentEditableWarning
+        onBlur={() => finishChipEdit(i)}
+        onKeyDown={(e) => handleChipKeyDown(e, i)}
+        onFocus={(e) => {
+          // 포커스 시 전체 선택
+          setTimeout(() => {
+            const sel = window.getSelection();
+            if (sel && e.target) {
+              const range = document.createRange();
+              range.selectNodeContents(e.target as Node);
+              sel.removeAllRanges();
+              sel.addRange(range);
+            }
+          }, 0);
+        }}
+        className="outline-none min-w-[1ch]"
+      >{chip}</span>
+      <button onClick={(e) => { e.stopPropagation(); removeChip(i); }} className={`absolute ${isLg ? '-top-1.5 -right-1.5 w-4 h-4 text-[9px]' : '-top-1 -right-1 w-3.5 h-3.5 text-[8px]'} rounded-full bg-slate-400 hover:bg-red-500 text-white flex items-center justify-center leading-none no-print opacity-0 group-hover/chip:opacity-100 transition-opacity shadow-sm`}>×</button>
+    </span>
   );
 
   const addBtn = isAdding ? (
@@ -305,6 +316,17 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
     const creators = { featuredStocks: createEmptyStock, sectors: createEmptySector, marketSchedule: createEmptySchedule };
     const items = [...(data as any)[arrKey], creators[arrKey]()];
     onChange({ ...data, [arrKey]: items });
+    // 새 행 추가 후 자동 스크롤
+    setTimeout(() => {
+      const rows = document.querySelectorAll(`[data-arr="${arrKey}"]`);
+      const lastRow = rows[rows.length - 1];
+      if (lastRow) {
+        lastRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // 첫 번째 편집 가능한 요소에 포커스
+        const firstEditable = lastRow.querySelector('[contenteditable]') as HTMLElement;
+        if (firstEditable) firstEditable.focus();
+      }
+    }, 100);
   }, [data, onChange]);
 
   const removeItem = useCallback((arrKey: string, idx: number) => {
@@ -557,7 +579,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
           </thead>
           <tbody className={`divide-y ${isDark ? 'divide-[#1a1a24]' : 'divide-slate-50'}`}>
             {data.featuredStocks.map((stock, idx) => (
-              <tr key={stock.id || idx} className={`${isDark ? 'hover:bg-[#22222e]' : 'hover:bg-slate-50'} transition-colors group/row relative`}>
+              <tr key={stock.id || idx} data-arr="featuredStocks" className={`${isDark ? 'hover:bg-[#22222e]' : 'hover:bg-slate-50'} transition-colors group/row relative`}>
                 <td className={`px-3 py-2 text-[15px] font-black ${pageText} border-r ${isDark ? 'border-[#1a1a24]' : 'border-slate-50'} align-middle pl-4 relative`} style={{ width: '22%', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {!isModalView && data.featuredStocks.length > MIN_ITEMS && (
                     <button onClick={() => removeItem('featuredStocks', idx)} className="absolute -left-1 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold opacity-0 group-hover/row:opacity-100 transition-opacity no-print flex items-center justify-center shadow-sm hover:bg-red-600 z-10">×</button>
