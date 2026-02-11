@@ -311,6 +311,162 @@ const fetchNightFutures = async (): Promise<{
 };
 
 /**
+ * Investing.com에서 VIX 지수 스크래핑
+ * 야간선물과 동일한 HTML 파싱 패턴 사용
+ */
+const fetchVIX = async (): Promise<{
+  label: string; value: string; subText: string; trend: 'up' | 'down' | 'neutral';
+}> => {
+  try {
+    const targetUrl = 'https://kr.investing.com/indices/volatility-s-p-500';
+    const proxyUrl = IS_VERCEL
+      ? `/api/proxy?url=${encodeURIComponent(targetUrl)}`
+      : targetUrl;
+
+    const res = await fetch(proxyUrl, { method: 'GET' });
+    if (!res.ok) throw new Error(`Investing.com VIX HTTP ${res.status}`);
+
+    const html = await res.text();
+    console.log('Investing.com [VIX] HTML length:', html.length);
+
+    let value = 'N/A';
+    let subText = 'N/A';
+    let trend: 'up' | 'down' | 'neutral' = 'neutral';
+
+    // 가격 추출
+    const priceMatch = html.match(/data-test="instrument-price-last"[^>]*>([0-9.,]+)</) ||
+                        html.match(/"last":\s*"?([0-9.,]+)"?/) ||
+                        html.match(/class="[^"]*last-price[^"]*"[^>]*>([0-9.,]+)</) ||
+                        html.match(/pid-\d+-last[^>]*>([0-9.,]+)</);
+    if (priceMatch) {
+      value = priceMatch[1];
+    }
+
+    // 등락률 추출
+    const pctEl = html.match(/data-test="instrument-price-change-percent"[^>]*>([\s\S]*?)<\/span>/);
+    if (pctEl) {
+      const pctText = pctEl[1].replace(/<!--[\s\S]*?-->/g, '').replace(/<[^>]*>/g, '').replace(/[()]/g, '').trim();
+      const pctNum = parseFloat(pctText.replace('%', ''));
+      if (!isNaN(pctNum)) {
+        subText = `${pctNum >= 0 ? '+' : ''}${pctNum}%`;
+        // VIX는 반대: VIX 상승 = 시장 불안 = down(파란색), VIX 하락 = 안정 = up(빨간색) → 일반 표시로 유지
+        trend = pctNum > 0 ? 'up' : pctNum < 0 ? 'down' : 'neutral';
+      }
+    }
+
+    if (value === 'N/A') {
+      console.log('Investing.com [VIX] parsing failed');
+      return { label: 'VIX', value: 'N/A', subText: 'N/A', trend: 'neutral' };
+    }
+
+    console.log(`Investing.com [VIX] parsed: ${value} | ${subText} | ${trend}`);
+    return { label: 'VIX', value, subText, trend };
+  } catch (e) {
+    console.error('VIX fetch failed:', e);
+    return { label: 'VIX', value: 'N/A', subText: 'N/A', trend: 'neutral' };
+  }
+};
+
+/**
+ * 네이버 금융 원자재 상세 페이지에서 가격/등락률 파싱
+ * 원유(OIL_CL), 국제금(CMDT_GC) 등에 사용
+ */
+const fetchNaverCommodity = async (code: string, label: string): Promise<{
+  label: string; value: string; subText: string; trend: 'up' | 'down' | 'neutral';
+}> => {
+  try {
+    const url = code.startsWith('OIL_')
+      ? naverUrl(`/marketindex/worldOilDetail.naver?marketindexCd=${code}&fdtc=2`)
+      : naverUrl(`/marketindex/worldGoldDetail.naver?marketindexCd=${code}&fdtc=2`);
+    const res = await fetch(url);
+    const html = await res.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+
+    // 현재가
+    const priceEl = doc.querySelector('.no_today');
+    let value = priceEl?.textContent?.trim() || 'N/A';
+    value = value.replace(/[^\d,.]/g, '').trim();
+
+    // 등락정보
+    const changeEl = doc.querySelector('.no_exday');
+    const changeText = changeEl?.textContent?.trim() || '';
+    const nums = changeText.match(/[\d,.]+/g) || [];
+    const changePct = nums[1] || '0';
+
+    const isDown = !!doc.querySelector('.no_exday .no_down') ||
+                   !!doc.querySelector('.head_info .down') ||
+                   changeText.includes('하락');
+    const sign = isDown ? '-' : '+';
+    const trend: 'up' | 'down' | 'neutral' = isDown ? 'down' : 'up';
+
+    console.log(`Naver [${label}]: ${value} ${sign}${changePct}%`);
+    return { label, value, subText: `${sign}${changePct}%`, trend };
+  } catch (e) {
+    console.error(`Naver commodity [${label}] failed:`, e);
+    return { label, value: 'N/A', subText: 'N/A', trend: 'neutral' };
+  }
+};
+
+/**
+ * 네이버 크립토에서 비트코인(BTC) 가격 파싱
+ */
+const fetchNaverBitcoin = async (): Promise<{
+  label: string; value: string; subText: string; trend: 'up' | 'down' | 'neutral';
+}> => {
+  try {
+    const targetUrl = 'https://m.stock.naver.com/crypto/UPBIT/BTC';
+    const proxyUrl = IS_VERCEL
+      ? `/api/proxy?url=${encodeURIComponent(targetUrl)}`
+      : targetUrl;
+    const res = await fetch(proxyUrl);
+    const html = await res.text();
+
+    // JSON-LD 또는 메타 태그에서 가격 추출 시도
+    let value = 'N/A';
+    let subText = 'N/A';
+    let trend: 'up' | 'down' | 'neutral' = 'neutral';
+
+    // SSR JSON 데이터에서 가격 파싱: "now":숫자 또는 "closePrice":"숫자"
+    const priceMatch = html.match(/"now"\s*:\s*"?([0-9,]+)"?/) ||
+                        html.match(/"closePrice"\s*:\s*"?([0-9,]+)"?/) ||
+                        html.match(/"tradePrice"\s*:\s*"?([0-9,]+)"?/);
+    if (priceMatch) {
+      const num = parseInt(priceMatch[1].replace(/,/g, ''), 10);
+      if (!isNaN(num)) {
+        // 만원 단위로 표시: 142,350,000 → 1억4235만
+        if (num >= 100000000) {
+          const eok = Math.floor(num / 100000000);
+          const man = Math.floor((num % 100000000) / 10000);
+          value = `${eok}억${man > 0 ? man.toLocaleString() + '만' : ''}`;
+        } else {
+          value = num.toLocaleString();
+        }
+      }
+    }
+
+    // 등락률
+    const changeMatch = html.match(/"changeRate"\s*:\s*"?(-?[0-9.]+)"?/) ||
+                         html.match(/"fluctuationsRatio"\s*:\s*"?(-?[0-9.]+)"?/);
+    if (changeMatch) {
+      const pct = parseFloat(changeMatch[1]);
+      if (!isNaN(pct)) {
+        // changeRate가 0.0x 형태면 %로 변환
+        const pctValue = Math.abs(pct) < 1 ? pct * 100 : pct;
+        subText = `${pctValue >= 0 ? '+' : ''}${pctValue.toFixed(1)}%`;
+        trend = pctValue > 0 ? 'up' : pctValue < 0 ? 'down' : 'neutral';
+      }
+    }
+
+    console.log(`Naver [BTC]: ${value} | ${subText}`);
+    return { label: 'BTC', value, subText, trend };
+  } catch (e) {
+    console.error('Naver BTC fetch failed:', e);
+    return { label: 'BTC', value: 'N/A', subText: 'N/A', trend: 'neutral' };
+  }
+};
+
+/**
  * Perplexity API로 단일 지표 조회 (마감 시황용)
  */
 const fetchOnePerplexity = async (apiKey: string, label: string, query: string): Promise<{
@@ -459,28 +615,37 @@ const fetchNaverDomesticAll = async (code: 'KOSPI' | 'KOSDAQ'): Promise<{
 
 /**
  * Fetches real-time market indicators.
- * 장전: 네이버 금융 스크래핑(S&P, NASDAQ, SOX, USD/KRW) + Perplexity(야간선물)
+ * 장전: 네이버 금융(NASDAQ, 다우존스) + Investing.com(VIX, 야간선물) + 환율 + 보조(원유, 금, BTC)
  * 마감: 네이버 금융 직접 크롤링(KOSPI, KOSDAQ, 투자자별 매매동향, USD/KRW)
  */
 export const fetchMarketIndicators = async (reportType: '장전' | '마감'): Promise<{
   items: Array<{ label: string; value: string; subText: string; trend: 'up' | 'down' | 'neutral' }>;
+  subItems?: Array<{ label: string; value: string; subText: string; trend: 'up' | 'down' | 'neutral' }>;
 } | null> => {
   try {
     const apiKey = import.meta.env.VITE_PERPLEXITY_API_KEY;
 
     if (reportType === '장전') {
-      // 네이버 금융 4개 + 야간선물(Investing.com) 병렬
-      const results = await Promise.allSettled([
-        fetchNaverWorldIndex('SPI@SPX', 'S&P 500'),
-        fetchNaverWorldIndex('NAS@IXIC', 'NASDAQ'),
-        fetchNaverWorldIndex('NAS@SOX', 'SOX(반도체)'),
-        fetchNightFutures(),
-        fetchNaverExchangeRate(),
+      // 메인 5개: NASDAQ, 다우존스, VIX, 야간선물, 환율
+      // 보조 3개: WTI원유, 국제금, BTC
+      const [mainResults, subResults] = await Promise.all([
+        Promise.allSettled([
+          fetchNaverWorldIndex('NAS@IXIC', 'NASDAQ'),
+          fetchNaverWorldIndex('DJI@DJI', '다우존스'),
+          fetchVIX(),
+          fetchNightFutures(),
+          fetchNaverExchangeRate(),
+        ]),
+        Promise.allSettled([
+          fetchNaverCommodity('OIL_CL', 'WTI'),
+          fetchNaverCommodity('CMDT_GC', '금'),
+          fetchNaverBitcoin(),
+        ]),
       ]);
-      const items = results.map(r =>
-        r.status === 'fulfilled' ? r.value : { label: 'Error', value: 'N/A', subText: 'N/A', trend: 'neutral' as const }
-      );
-      return { items };
+      const fallback = { label: 'Error', value: 'N/A', subText: 'N/A', trend: 'neutral' as const };
+      const items = mainResults.map(r => r.status === 'fulfilled' ? r.value : fallback);
+      const subItems = subResults.map(r => r.status === 'fulfilled' ? r.value : fallback);
+      return { items, subItems };
     } else {
       // 마감: 네이버 금융 직접 크롤링 (통합 함수로 지수+투자자 한번에 추출)
       const [kospiResult, kosdaqResult, fxResult] = await Promise.allSettled([

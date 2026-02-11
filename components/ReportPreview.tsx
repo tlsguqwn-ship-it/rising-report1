@@ -427,7 +427,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
       );
     }
 
-    // 장전 리포트: 기존 5열 그리드
+    // 장전 리포트: 기존 5열 그리드 + 보조 지표 행
     return (
       <div className="shrink-0 bg-slate-50/80 p-2.5 rounded-2xl border border-slate-100">
         <div className={`grid grid-cols-${itemCount} gap-2`}>
@@ -452,6 +452,28 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
             </div>
           ))}
         </div>
+        {/* 보조 지표: 원유/금/BTC 소형 가로 배치 */}
+        {data.subIndicators && data.subIndicators.length > 0 && (
+          <div className="grid grid-cols-3 gap-1.5 mt-1.5">
+            {data.subIndicators.map((item, idx) => (
+              <div key={`sub-${idx}`} className="bg-white/70 px-2 py-1.5 rounded-lg border border-slate-100/80 flex items-center justify-between">
+                <span className="text-[8px] font-extrabold text-slate-400 uppercase leading-none tracking-tight">{item.label}</span>
+                <div className="flex items-center gap-1.5">
+                  <span className={`text-[10px] font-[800] leading-none tracking-tight ${
+                    item.trend === 'up' ? 'text-[#f04452]' :
+                    item.trend === 'down' ? 'text-[#3182f6]' : 'text-slate-700'
+                  }`}>{item.value}</span>
+                  <span className={`text-[8px] font-bold leading-none ${
+                    item.trend === 'up' ? 'text-[#f04452]' :
+                    item.trend === 'down' ? 'text-[#3182f6]' : 'text-slate-400'
+                  }`}>
+                    {item.trend === 'up' && '▲'}{item.trend === 'down' && '▼'}{item.subText}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     );
   };

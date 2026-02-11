@@ -35,6 +35,7 @@ export interface ReportData {
   summaryTitle: string;
   currentMarketView: string;
   summaryItems: MarketSummaryItem[];
+  subIndicators?: MarketSummaryItem[];
   sectors: Sector[];
   expertAnalysis: string;
   expertAnalysisTitle: string;

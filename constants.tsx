@@ -121,11 +121,16 @@ export const PRE_MARKET_REPORT_TEMPLATE: ReportData = {
   summaryTitle: "미국 증시 및 글로벌 지표",
   currentMarketView: "나스닥 1.6% 하락. 연준의 매파적 금리 동결 시사로 빅테크 위주 차익실현 매물 출회. 반면 필라델피아 반도체 지수는 2.4% 반등에 성공하며 국내 IT 섹터 하방 경직성 확보 기대.",
   summaryItems: [
-    { label: "S&P 500", value: "0", subText: "0%", trend: "neutral" },
     { label: "NASDAQ", value: "0", subText: "0%", trend: "neutral" },
-    { label: "SOX(반도체)", value: "0", subText: "0%", trend: "neutral" },
+    { label: "다우존스", value: "0", subText: "0%", trend: "neutral" },
+    { label: "VIX", value: "0", subText: "0%", trend: "neutral" },
     { label: "야간선물", value: "0", subText: "0%", trend: "neutral" },
     { label: "USD/KRW", value: "0", subText: "0%", trend: "neutral" }
+  ],
+  subIndicators: [
+    { label: "WTI", value: "0", subText: "0%", trend: "neutral" },
+    { label: "금", value: "0", subText: "0%", trend: "neutral" },
+    { label: "BTC", value: "0", subText: "0%", trend: "neutral" }
   ],
   marketSchedule: [
     { id: genId(), time: "09:00", event: "국내 증시 시초가 형성 - 미국 반도체주 반등 영향으로 갭상승 출발" },

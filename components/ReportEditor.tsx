@@ -194,7 +194,11 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
     try {
       const result = await fetchMarketIndicators(data.reportType as '장전' | '마감');
       if (result && result.items && result.items.length > 0) {
-        onChange({ ...data, summaryItems: result.items });
+        const updates: any = { ...data, summaryItems: result.items };
+        if (result.subItems && result.subItems.length > 0) {
+          updates.subIndicators = result.subItems;
+        }
+        onChange(updates);
         const now = new Date();
         setLastFetched(now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }));
         // 지표 업데이트 후 자동 저장
