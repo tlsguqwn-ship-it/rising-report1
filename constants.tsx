@@ -104,7 +104,7 @@ export const CLOSE_REPORT_TEMPLATE: ReportData = {
   expertAnalysisTitle: "RISING STOCK 마감 브리핑",
   expertInterestedStocks: "알테오젠, HLB, 현대중공업",
   featuredStocksTitle: "오늘의 주요 종목",
-  sectorsTitle: "주요 섹터 트렌드",
+  sectorsTitle: "금일 마감 섹터 트렌드",
   scheduleTitle: "내일 주요 일정",
   coreViewTitle: "마감 시황 요약",
   expertAnalysisSubtitle: "장 마감 총평 및 전략",
