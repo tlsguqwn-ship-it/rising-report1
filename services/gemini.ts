@@ -478,8 +478,16 @@ const fetchNaverBitcoin = async (): Promise<{
     if (priceMatch) {
       const num = parseInt(priceMatch[1], 10);
       if (!isNaN(num)) {
-        // 전체 숫자를 쉼표 포함하여 표시 (예: 100,939,000)
-        value = num.toLocaleString();
+        // 억/만 단위 한국식 표기 (예: 101,497,000 → "1억 149만")
+        const eok = Math.floor(num / 100000000);
+        const man = Math.floor((num % 100000000) / 10000);
+        if (eok > 0) {
+          value = `${eok}억 ${man}만`;
+        } else if (man > 0) {
+          value = `${man}만`;
+        } else {
+          value = num.toLocaleString();
+        }
       }
     }
 
