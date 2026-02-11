@@ -130,7 +130,7 @@ export const PRE_MARKET_REPORT_TEMPLATE: ReportData = {
   subIndicators: [
     { label: "WTI/USD", value: "0", subText: "0%", trend: "neutral" },
     { label: "금/USD", value: "0", subText: "0%", trend: "neutral" },
-    { label: "BTC/KRW", value: "0", subText: "0%", trend: "neutral" }
+    { label: "BTC", value: "0", subText: "0%", trend: "neutral" }
   ],
   marketSchedule: [
     { id: genId(), time: "09:00", event: "국내 증시 시초가 형성 - 미국 반도체주 반등 영향으로 갭상승 출발" },

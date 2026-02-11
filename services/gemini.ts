@@ -503,10 +503,10 @@ const fetchNaverBitcoin = async (): Promise<{
     }
 
     console.log(`Naver [BTC]: ${value} | ${subText}`);
-    return { label: 'BTC/KRW', value, subText, trend };
+    return { label: 'BTC', value, subText, trend };
   } catch (e) {
     console.error('Naver BTC fetch failed:', e);
-    return { label: 'BTC/KRW', value: 'N/A', subText: 'N/A', trend: 'neutral' };
+    return { label: 'BTC', value: 'N/A', subText: 'N/A', trend: 'neutral' };
   }
 };
 
