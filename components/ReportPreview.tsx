@@ -1,4 +1,4 @@
-import React, { useRef, useCallback, useState } from 'react';
+import React, { useRef, useCallback, useState, useEffect } from 'react';
 import { ReportData } from '../types';
 import { createEmptyStock, createEmptySector, createEmptySchedule, MAX_STOCKS, MAX_SECTORS, MAX_SCHEDULE, MIN_ITEMS } from '../constants';
 
@@ -12,7 +12,8 @@ interface Props {
 
 // ===========================
 // 인라인 편집 가능 텍스트 컴포넌트
-// Enter → 줄바꿈, Escape → 편집 종료
+// placeholder: 클릭해도 사라지지 않고, 실제 입력 시에만 사라짐 (input placeholder 동작)
+// 기존 텍스트: 클릭 시 전체 선택 → 바로 타이핑으로 교체 가능
 // ===========================
 const EditableText: React.FC<{
   value: string;
@@ -27,37 +28,33 @@ const EditableText: React.FC<{
   const ref = useRef<HTMLElement>(null);
   const savedValue = useRef(value);
   const isEmpty = !value || value.trim() === '';
+  const [localEmpty, setLocalEmpty] = useState(isEmpty);
+
+  useEffect(() => {
+    setLocalEmpty(!value || value.trim() === '');
+  }, [value]);
 
   const handleFocus = useCallback(() => {
     if (editPath && onSelect) onSelect(editPath);
-    savedValue.current = ref.current?.innerText || value;
-    // placeholder 표시 중이면 비우고 색상 복원
-    if (isEmpty && ref.current && placeholder) {
-      ref.current.innerText = '';
-      ref.current.style.color = '';
-      ref.current.style.whiteSpace = '';
-      ref.current.style.overflow = '';
-      ref.current.style.textOverflow = '';
-      // 빈 상태에서 커서(캐럿) 표시
+    savedValue.current = value;
+    // 기존 텍스트가 있으면 전체 선택 → 바로 타이핑으로 교체 가능
+    if (!isEmpty && ref.current) {
       setTimeout(() => {
-        if (ref.current) {
-          ref.current.focus();
-          const sel = window.getSelection();
-          if (sel) {
-            const range = document.createRange();
-            range.setStart(ref.current, 0);
-            range.collapse(true);
-            sel.removeAllRanges();
-            sel.addRange(range);
-          }
+        const sel = window.getSelection();
+        if (sel && ref.current) {
+          const range = document.createRange();
+          range.selectNodeContents(ref.current);
+          sel.removeAllRanges();
+          sel.addRange(range);
         }
       }, 0);
     }
-    // 기존 텍스트가 있으면 자동선택 없이 커서만 표시 (사용자가 직접 삭제/편집)
-  }, [editPath, onSelect, value, isEmpty, placeholder]);
+    // 빈 상태(placeholder)일 때는 아무 것도 안 함 — 커서만 자연스럽게 표시
+  }, [editPath, onSelect, value, isEmpty]);
 
   const handleBlur = useCallback(() => {
     const newVal = ref.current?.innerText || '';
+    setLocalEmpty(!newVal.trim());
     if (newVal !== savedValue.current) {
       onSave(newVal);
     }
@@ -70,25 +67,59 @@ const EditableText: React.FC<{
     }
   }, []);
 
+  const handleInput = useCallback(() => {
+    const text = ref.current?.innerText?.trim() || '';
+    setLocalEmpty(!text);
+  }, []);
+
   const TagEl = Tag as any;
 
+  // 모달(미리보기) 모드
+  if (isModal) {
+    return (
+      <TagEl className={className}>
+        {isEmpty && placeholder ? placeholder : value}
+      </TagEl>
+    );
+  }
+
+  const showPlaceholder = localEmpty && placeholder;
+
   return (
-    <TagEl
-      ref={ref}
-      contentEditable={!isModal}
-      suppressContentEditableWarning
-      onFocus={handleFocus}
-      onBlur={handleBlur}
-      onKeyDown={handleKeyDown}
-      className={`outline-none transition-all duration-150 rounded-sm whitespace-pre-wrap ${
-        !isModal
-          ? 'hover:ring-1 hover:ring-blue-200/60 focus:ring-2 focus:ring-blue-400/40 focus:bg-blue-50/30 cursor-text'
-          : ''
-      } ${isEmpty && placeholder ? 'truncate overflow-hidden' : ''} ${className}`}
-      style={isEmpty && placeholder ? { minHeight: '1.2em', minWidth: '2em', color: '#cbd5e1', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } : { minHeight: '1.2em', minWidth: '2em' }}
-    >
-      {isEmpty && placeholder ? placeholder : value}
-    </TagEl>
+    <div style={{ position: 'relative' }}>
+      <TagEl
+        ref={ref}
+        contentEditable
+        suppressContentEditableWarning
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        onKeyDown={handleKeyDown}
+        onInput={handleInput}
+        className={`outline-none transition-all duration-150 rounded-sm whitespace-pre-wrap hover:ring-1 hover:ring-blue-200/60 focus:ring-2 focus:ring-blue-400/40 focus:bg-blue-50/30 cursor-text ${className}`}
+        style={{ minHeight: '1.2em', minWidth: '2em' }}
+      >
+        {value}
+      </TagEl>
+      {showPlaceholder && (
+        <span
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            pointerEvents: 'none',
+            color: '#cbd5e1',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            userSelect: 'none',
+          }}
+          className={className}
+        >
+          {placeholder}
+        </span>
+      )}
+    </div>
   );
 };
 
@@ -219,8 +250,17 @@ const ChipInput: React.FC<{
         suppressContentEditableWarning
         onBlur={() => finishChipEdit(i)}
         onKeyDown={(e) => handleChipKeyDown(e, i)}
-        onFocus={() => {
-          // 포커스 시 자동선택 없이 커서만 표시 (사용자가 직접 편집)
+        onFocus={(e) => {
+          // 포커스 시 전체 선택 (원상복구)
+          setTimeout(() => {
+            const sel = window.getSelection();
+            if (sel && e.target) {
+              const range = document.createRange();
+              range.selectNodeContents(e.target as Node);
+              sel.removeAllRanges();
+              sel.addRange(range);
+            }
+          }, 0);
         }}
         className="outline-none min-w-[1ch]"
       >{chip}</span>
