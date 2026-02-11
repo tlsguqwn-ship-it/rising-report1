@@ -454,16 +454,16 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
         </div>
         {/* 보조 지표: 원유/금/BTC 소형 가로 배치 */}
         {data.subIndicators && data.subIndicators.length > 0 && (
-          <div className="grid grid-cols-3 gap-1.5 mt-1.5">
+          <div className="flex gap-1.5 mt-1.5">
             {data.subIndicators.map((item, idx) => (
-              <div key={`sub-${idx}`} className="bg-white/70 px-2 py-1.5 rounded-lg border border-slate-100/80 flex items-center gap-1 overflow-hidden min-w-0">
-                <span className="text-[7px] font-extrabold text-slate-400 uppercase leading-none tracking-tight whitespace-nowrap shrink-0">{item.label}</span>
-                <div className="flex items-center gap-0.5 ml-auto min-w-0">
-                  <span className={`text-[9px] font-[800] leading-none tracking-tight whitespace-nowrap ${
+              <div key={`sub-${idx}`} className="flex-1 bg-white/70 px-2 py-1.5 rounded-lg border border-slate-100/80 flex items-center justify-between min-w-0">
+                <span className="text-[8px] font-extrabold text-slate-400 uppercase leading-none tracking-tight shrink-0">{item.label}</span>
+                <div className="flex items-center gap-1">
+                  <span className={`text-[9px] font-[800] leading-none tracking-tight ${
                     item.trend === 'up' ? 'text-[#f04452]' :
                     item.trend === 'down' ? 'text-[#3182f6]' : 'text-slate-700'
                   }`}>{item.value}</span>
-                  <span className={`text-[7.5px] font-bold leading-none whitespace-nowrap ${
+                  <span className={`text-[7.5px] font-bold leading-none ${
                     item.trend === 'up' ? 'text-[#f04452]' :
                     item.trend === 'down' ? 'text-[#3182f6]' : 'text-slate-400'
                   }`}>
