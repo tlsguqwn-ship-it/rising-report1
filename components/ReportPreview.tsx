@@ -831,8 +831,8 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
             {renderFeaturedStocks()}
           </div>
           {/* 페이지 번호 */}
-          <div className="absolute bottom-[6mm] left-0 right-0 flex justify-center">
-            <span className={`text-[9px] font-bold tracking-widest ${isDark ? 'text-slate-600' : 'text-slate-300'}`}>— 1 / 2 —</span>
+          <div className="absolute bottom-[3mm] left-0 right-0 flex justify-center">
+            <span className={`text-[7px] font-medium tracking-[0.2em] ${isDark ? 'text-slate-600' : 'text-slate-300'}`}>— 1 / 2 —</span>
           </div>
         </div>
 
@@ -865,15 +865,13 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
               </div>
             </div>
           </div>
-          {/* 페이지 번호 */}
-          <div className={`absolute bottom-[12mm] left-0 right-0 flex justify-center`}>
-            <span className={`text-[9px] font-bold tracking-widest ${isDark ? 'text-slate-600' : 'text-slate-300'}`}>— 2 / 2 —</span>
-          </div>
           {/* 하단 면책 */}
           <div className={`absolute bottom-0 left-0 right-0 px-[14mm] pb-[6mm] pt-2 border-t ${isDark ? 'border-white/5' : 'border-gray-100'} text-center opacity-40`}>
             <p className={`text-[7px] ${isDark ? 'text-slate-500' : 'text-gray-500'} font-bold tracking-tighter whitespace-nowrap`}>
               ◆ 본 리포트는 Rising 서비스의 주관적인 견해를 포함하며 투자 결과에 대한 법적 책임은 투자자 본인에게 있습니다.
             </p>
+            {/* 페이지 번호 - 면책 아래 */}
+            <span className={`text-[7px] font-medium tracking-[0.2em] mt-1 inline-block ${isDark ? 'text-slate-600' : 'text-slate-300'}`}>— 2 / 2 —</span>
           </div>
         </div>
       </div>

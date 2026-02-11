@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Download, X, ImageIcon, FileText, Loader2, Check, Eye, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Download, X, ImageIcon, FileText, Loader2, Check, Eye, ArrowRight, ArrowLeft, Link2, Copy } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import { ReportData } from '../types';
 import ReportPreview from './ReportPreview';
+import { publishReport } from '../services/shareReport';
 
 interface ExportModalProps {
   isOpen: boolean;
@@ -18,6 +19,8 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, reportType, 
   const [isExporting, setIsExporting] = useState(false);
   const [isDone, setIsDone] = useState(false);
   const [step, setStep] = useState<'preview' | 'export'>('preview');
+  const [isSharing, setIsSharing] = useState(false);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -130,6 +133,22 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, reportType, 
     window.print();
   };
 
+  const handleShare = async () => {
+    if (!reportData) return;
+    setIsSharing(true);
+    try {
+      const id = await publishReport(reportData, darkMode);
+      const url = `${window.location.origin}?share=${id}`;
+      setShareUrl(url);
+      await navigator.clipboard.writeText(url);
+    } catch (err) {
+      console.error('Share failed:', err);
+      alert('공유 링크 생성에 실패했습니다. 다시 시도해주세요.');
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
 
   // ========================
   // Step 1: 미리보기
@@ -236,6 +255,38 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, reportType, 
               <FileText size={16} /> PDF 출력
             </button>
           </div>
+
+          {/* Share Button */}
+          <button
+            onClick={handleShare}
+            disabled={isSharing}
+            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-6 py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50 text-sm shadow-lg"
+          >
+            {isSharing ? (
+              <><Loader2 size={16} className="animate-spin" /> 공유 링크 생성 중...</>
+            ) : shareUrl ? (
+              <><Check size={16} /> 링크 복사 완료!</>
+            ) : (
+              <><Link2 size={16} /> 공유 링크 생성</>
+            )}
+          </button>
+          {shareUrl && (
+            <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 flex items-center gap-2">
+              <input
+                type="text"
+                value={shareUrl}
+                readOnly
+                className="flex-1 text-[11px] font-mono text-slate-600 bg-transparent outline-none truncate"
+              />
+              <button
+                onClick={() => { navigator.clipboard.writeText(shareUrl); }}
+                className="shrink-0 text-slate-400 hover:text-blue-600 transition-colors p-1"
+                title="복사"
+              >
+                <Copy size={14} />
+              </button>
+            </div>
+          )}
 
           {/* Back Button */}
           <button onClick={() => setStep('preview')} className="w-full text-center text-sm font-bold text-slate-400 hover:text-slate-600 transition-all flex items-center justify-center gap-1.5 py-1">

@@ -7,6 +7,7 @@ import Toolbar from './components/Toolbar';
 import ExportModal from './components/ExportModal';
 import ReportEditor from './components/ReportEditor';
 import ReportPreview from './components/ReportPreview';
+import SharedReportView from './components/SharedReportView';
 
 const getStorageKey = (type: '장전' | '마감') => `rising-report-${type === '장전' ? 'pre' : 'close'}`;
 
@@ -47,6 +48,12 @@ const getLastMode = (): '장전' | '마감' => {
 };
 
 const App: React.FC = () => {
+  // ===== 공유 모드 감지 =====
+  const shareId = new URLSearchParams(window.location.search).get('share');
+  if (shareId) {
+    return <SharedReportView shareId={shareId} />;
+  }
+
   const lastMode = getLastMode();
   const initialData = loadSavedTemplate(lastMode) || (lastMode === '장전' ? PRE_MARKET_REPORT_TEMPLATE : CLOSE_REPORT_TEMPLATE);
   const { state: reportData, setState: setReportData, undo, redo, canUndo, canRedo, reset } = useUndoRedo<ReportData>(initialData);
