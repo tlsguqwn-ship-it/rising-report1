@@ -360,14 +360,14 @@ const fetchVIX = async (): Promise<{
 
     if (value === 'N/A') {
       console.log('Investing.com [VIX] parsing failed');
-      return { label: 'VIX', value: 'N/A', subText: 'N/A', trend: 'neutral' };
+      return { label: 'VIX(공포)', value: 'N/A', subText: 'N/A', trend: 'neutral' };
     }
 
     console.log(`Investing.com [VIX] parsed: ${value} | ${subText} | ${trend}`);
-    return { label: 'VIX', value, subText, trend };
+    return { label: 'VIX(공포)', value, subText, trend };
   } catch (e) {
     console.error('VIX fetch failed:', e);
-    return { label: 'VIX', value: 'N/A', subText: 'N/A', trend: 'neutral' };
+    return { label: 'VIX(공포)', value: 'N/A', subText: 'N/A', trend: 'neutral' };
   }
 };
 
