@@ -52,7 +52,7 @@ const App: React.FC = () => {
   const { state: reportData, setState: setReportData, undo, redo, canUndo, canRedo, reset } = useUndoRedo<ReportData>(initialData);
   const [showExport, setShowExport] = useState(false);
   const [zoom, setZoom] = useState(1.0);
-  const [activeSection, setActiveSection] = useState<string | null>('setup');
+  const [activeSection, setActiveSection] = useState<string | null>(null);
   const [saveToast, setSaveToast] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [templateHistory, setTemplateHistory] = useState<Array<{data: ReportData, savedAt: string}>>([]); 
@@ -269,6 +269,13 @@ const App: React.FC = () => {
             templateHistory={templateHistory}
             onRestoreHistory={(histData) => {
               reset(histData);
+            }}
+            onDeleteHistory={(idx) => {
+              const historyKey = `rising-report-history-${reportData.reportType === '장전' ? 'pre' : 'close'}`;
+              const newHistory = [...templateHistory];
+              newHistory.splice(idx, 1);
+              setTemplateHistory(newHistory);
+              try { localStorage.setItem(historyKey, JSON.stringify(newHistory)); } catch { /* ignore */ }
             }}
           />
         </aside>

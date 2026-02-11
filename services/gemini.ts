@@ -462,7 +462,7 @@ const fetchNaverBitcoin = async (): Promise<{
     const targetUrl = 'https://m.stock.naver.com/crypto/UPBIT/BTC';
     const proxyUrl = IS_VERCEL
       ? `/api/proxy?url=${encodeURIComponent(targetUrl)}`
-      : targetUrl;
+      : `/api/naver-mobile/crypto/UPBIT/BTC`;
     const res = await fetch(proxyUrl);
     const html = await res.text();
 

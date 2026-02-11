@@ -23,6 +23,7 @@ interface Props {
   onFullReset?: () => void;
   templateHistory?: Array<{data: ReportData, savedAt: string}>;
   onRestoreHistory?: (data: ReportData) => void;
+  onDeleteHistory?: (idx: number) => void;
 }
 
 // ===========================
@@ -135,7 +136,7 @@ const FieldTip: React.FC<{ text: string }> = ({ text }) => {
 // ===========================
 // Main Editor Component
 // ===========================
-const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectionChange, onSave, onFullReset, templateHistory = [], onRestoreHistory }) => {
+const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectionChange, onSave, onFullReset, templateHistory = [], onRestoreHistory, onDeleteHistory }) => {
   const [isFetching, setIsFetching] = useState(false);
   const [lastFetched, setLastFetched] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
@@ -312,32 +313,54 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
           </button>
           {showHistory && (
             <div className="px-4 pb-4 space-y-2 border-t border-slate-100 pt-3">
-              {templateHistory.map((entry, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => {
-                    if (confirm(`${entry.savedAt} 시점의 템플릿으로 복원하시겠습니까?`)) {
-                      onRestoreHistory?.(entry.data);
-                    }
-                  }}
-                  className="w-full p-3 bg-slate-50 hover:bg-blue-50 border border-slate-100 hover:border-blue-200 rounded-xl text-left transition-all group"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[11px] font-bold text-slate-500 bg-white px-2 py-0.5 rounded-md border border-slate-100">
-                        #{idx + 1}
-                      </span>
-                      <span className="text-[12px] font-bold text-slate-700">{entry.savedAt}</span>
+              {templateHistory.map((entry, idx) => {
+                const displayNum = templateHistory.length - idx;
+                return (
+                  <div
+                    key={idx}
+                    className="w-full p-3 bg-slate-50 hover:bg-blue-50 border border-slate-100 hover:border-blue-200 rounded-xl text-left transition-all group"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 cursor-pointer flex-1" onClick={() => {
+                        if (confirm(`${entry.savedAt} 시점의 템플릿으로 복원하시겠습니까?`)) {
+                          onRestoreHistory?.(entry.data);
+                        }
+                      }}>
+                        <span className="text-[11px] font-bold text-slate-500 bg-white px-2 py-0.5 rounded-md border border-slate-100">
+                          #{displayNum}
+                        </span>
+                        <span className="text-[12px] font-bold text-slate-700">{entry.savedAt}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] font-bold text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer" onClick={() => {
+                          if (confirm(`${entry.savedAt} 시점의 템플릿으로 복원하시겠습니까?`)) {
+                            onRestoreHistory?.(entry.data);
+                          }
+                        }}>
+                          복원
+                        </span>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDeleteHistory?.(idx);
+                          }}
+                          className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-0.5"
+                          title="삭제"
+                        >
+                          <Trash2 size={11} />
+                        </button>
+                      </div>
                     </div>
-                    <span className="text-[10px] font-bold text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                      복원
-                    </span>
+                    <p className="text-[10px] text-slate-400 mt-1 truncate cursor-pointer" onClick={() => {
+                      if (confirm(`${entry.savedAt} 시점의 템플릿으로 복원하시겠습니까?`)) {
+                        onRestoreHistory?.(entry.data);
+                      }
+                    }}>
+                      {entry.data.title} · {entry.data.featuredStocks?.map(s => s.name).filter(Boolean).join(', ') || '데이터 없음'}
+                    </p>
                   </div>
-                  <p className="text-[10px] text-slate-400 mt-1 truncate">
-                    {entry.data.title} · {entry.data.featuredStocks?.map(s => s.name).filter(Boolean).join(', ') || '데이터 없음'}
-                  </p>
-                </button>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
