@@ -164,18 +164,26 @@ const fetchNaverWorldIndex = async (symbol: string, label: string): Promise<{
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, 'text/html');
 
-    // 현재가
-    const priceEl = doc.querySelector('.no_today');
-    const value = priceEl?.textContent?.trim() || 'N/A';
+    // 현재가 - span 태그 조합으로 추출 후 소수점 제거
+    const priceEmMatch = html.match(/no_today[\s\S]*?<em[^>]*>([\s\S]*?)<\/em>/);
+    let value = 'N/A';
+    if (priceEmMatch) {
+      const raw = parseNaverSpanNumber(priceEmMatch[1]);
+      // 나스닥/다우존스는 소수점 제거
+      const dotIdx = raw.indexOf('.');
+      value = dotIdx !== -1 ? raw.substring(0, dotIdx) : raw;
+    }
 
-    // 등락 정보
-    const changeEl = doc.querySelector('.no_exday');
-    const changeText = changeEl?.textContent?.trim() || '';
-    const nums = changeText.match(/[\d,.]+/g) || [];
-    const changePct = nums[1] || '0';
+    // 등락 정보: 두 번째 em 태그에서 등락률
+    const exdayMatch = html.match(/no_exday[\s\S]*?<em[^>]*>[\s\S]*?<\/em>\s*<em[^>]*>([\s\S]*?)<\/em>/);
+    let changePct = '0';
+    if (exdayMatch) {
+      const rawPct = parseNaverSpanNumber(exdayMatch[1]);
+      changePct = rawPct.replace(/[^0-9.]/g, '');
+    }
 
     // 상승/하락
-    const isDown = !!doc.querySelector('.no_exday em.no_down');
+    const isDown = /no_today[\s\S]*?class="no_down"/.test(html);
     const sign = isDown ? '-' : '+';
     const trend = isDown ? 'down' : 'up';
 
@@ -368,9 +376,41 @@ const fetchVIX = async (): Promise<{
 };
 
 /**
+ * 네이버 금융 원자재 HTML에서 span 태그 기반 숫자 조합
+ * <span class="no5">5</span><span class="shim">,</span> → "5,"
+ * class: noX→숫자, shim→쉼표, jum→소수점, per→%, ico minus→-
+ */
+const parseNaverSpanNumber = (html: string): string => {
+  const spans = [...html.matchAll(/<span\s+class="([^"]+)"[^>]*>([^<]*)<\/span>/g)];
+  let result = '';
+  for (const s of spans) {
+    const cls = s[1];
+    const txt = s[2];
+    if (cls.startsWith('no')) {
+      // noX → digit X
+      const digit = cls.replace('no', '');
+      if (/^\d$/.test(digit)) result += digit;
+    } else if (cls === 'shim') {
+      result += ',';
+    } else if (cls === 'jum') {
+      result += '.';
+    } else if (cls === 'per') {
+      result += '%';
+    } else if (cls.includes('minus')) {
+      result += '-';
+    } else if (cls === 'blind' || cls.includes('ico') || cls.includes('parenthesis')) {
+      // skip blind labels, icons, parentheses
+    } else {
+      result += txt;
+    }
+  }
+  return result;
+};
+
+/**
  * 네이버 금융 원자재 상세 페이지에서 가격/등락률 파싱
  * 원유(OIL_CL), 국제금(CMDT_GC) 등에 사용
- * DOM 파싱 대신 정규식으로 raw HTML에서 직접 추출
+ * 각 숫자가 개별 span 태그에 들어있는 구조를 span class명으로 조합
  */
 const fetchNaverCommodity = async (code: string, label: string): Promise<{
   label: string; value: string; subText: string; trend: 'up' | 'down' | 'neutral';
@@ -385,33 +425,25 @@ const fetchNaverCommodity = async (code: string, label: string): Promise<{
     let value = 'N/A';
     let changePct = '0';
 
-    // 정규식으로 가격 추출: "no_today" 클래스 영역에서 첫 번째 숫자 패턴
-    const priceMatch = html.match(/no_today[\s\S]*?<em[^>]*>[\s]*([0-9][0-9,.]*)/);
-    if (priceMatch) {
-      let raw = priceMatch[1].trim();
+    // no_today 영역에서 첫 번째 em 태그 내 span들을 조합하여 가격 추출
+    const priceEmMatch = html.match(/no_today[\s\S]*?<em[^>]*>([\s\S]*?)<\/em>/);
+    if (priceEmMatch) {
+      const raw = parseNaverSpanNumber(priceEmMatch[1]);
       // 소수점 2자리까지만 유지
       const dotIdx = raw.indexOf('.');
-      if (dotIdx !== -1) {
-        raw = raw.substring(0, dotIdx + 3);
-      }
-      value = raw;
+      value = dotIdx !== -1 ? raw.substring(0, dotIdx + 3) : raw;
     }
 
-    // 등락률 추출: "no_exday" 클래스 영역에서 em 태그 내 숫자들
-    const changeSection = html.match(/no_exday[\s\S]*?<em[^>]*>[\s]*([0-9][0-9,.]*)/);
-    const pctMatch = html.match(/no_exday[\s\S]*?<em[^>]*>[^<]*<\/em>[\s\S]*?<em[^>]*>[\s]*([0-9][0-9,.]*)/);
-    if (pctMatch) {
-      changePct = pctMatch[1].trim();
-    } else if (changeSection) {
-      changePct = changeSection[1].trim();
+    // no_exday 영역에서 두 번째 em 태그 = 등락률 (예: -0.95%)
+    const exdayMatch = html.match(/no_exday[\s\S]*?<em[^>]*>[\s\S]*?<\/em>\s*<em[^>]*>([\s\S]*?)<\/em>/);
+    if (exdayMatch) {
+      const rawPct = parseNaverSpanNumber(exdayMatch[1]);
+      // 숫자와 소수점만 추출
+      changePct = rawPct.replace(/[^0-9.]/g, '');
     }
 
-    // 상승/하락 판별
-    const isDown = html.includes('no_exday') && (
-      html.match(/no_exday[\s\S]*?no_down/) !== null ||
-      html.match(/class="[^"]*down[^"]*"[\s\S]*?no_exday/) !== null ||
-      html.includes('하락')
-    );
+    // 상승/하락 판별: em class에 no_down이 있으면 하락
+    const isDown = /no_today[\s\S]*?class="no_down"/.test(html);
     const sign = isDown ? '-' : '+';
     const trend: 'up' | 'down' | 'neutral' = isDown ? 'down' : 'up';
 
@@ -425,7 +457,7 @@ const fetchNaverCommodity = async (code: string, label: string): Promise<{
 
 /**
  * 네이버 크립토에서 비트코인(BTC) 가격 파싱
- * HTML 스크래핑 + SSR JSON에서 정규식 추출
+ * SSR JSON의 __NEXT_DATA__ 또는 인라인 JSON에서 정규식 추출
  */
 const fetchNaverBitcoin = async (): Promise<{
   label: string; value: string; subText: string; trend: 'up' | 'down' | 'neutral';
@@ -442,12 +474,13 @@ const fetchNaverBitcoin = async (): Promise<{
     let subText = 'N/A';
     let trend: 'up' | 'down' | 'neutral' = 'neutral';
 
-    // SSR JSON 데이터에서 가격 파싱
-    const priceMatch = html.match(/"now"\s*:\s*"?([0-9,]+)"?/) ||
-                        html.match(/"closePrice"\s*:\s*"?([0-9,]+)"?/) ||
-                        html.match(/"tradePrice"\s*:\s*"?([0-9,]+)"?/);
+    // SSR JSON에서 closePrice 또는 tradePrice 추출 (BTC 전용 패턴)
+    // "closePrice":"102136000" 또는 "tradePrice":102136000 형태
+    const priceMatch = html.match(/"closePrice"\s*:\s*"?(\d{6,})"?/) ||
+                        html.match(/"tradePrice"\s*:\s*"?(\d{6,})"?/) ||
+                        html.match(/"now"\s*:\s*"?(\d{6,})"?/);
     if (priceMatch) {
-      const num = parseInt(priceMatch[1].replace(/,/g, ''), 10);
+      const num = parseInt(priceMatch[1], 10);
       if (!isNaN(num)) {
         if (num >= 100000000) {
           const eok = Math.floor(num / 100000000);
@@ -459,13 +492,15 @@ const fetchNaverBitcoin = async (): Promise<{
       }
     }
 
-    // 등락률
-    const changeMatch = html.match(/"changeRate"\s*:\s*"?(-?[0-9.]+)"?/) ||
-                         html.match(/"fluctuationsRatio"\s*:\s*"?(-?[0-9.]+)"?/);
+    // 등락률: "fluctuationsRatio" 필드 우선 (BTC 페이지에서 사용)
+    // 0.0012 형태(소수) → *100 변환, 또는 이미 퍼센트일 수 있음
+    const changeMatch = html.match(/"fluctuationsRatio"\s*:\s*"?(-?[\d.]+)"?/) ||
+                         html.match(/"changeRate"\s*:\s*"?(-?0\.\d+)"?/);
     if (changeMatch) {
-      const pct = parseFloat(changeMatch[1]);
-      if (!isNaN(pct)) {
-        const pctValue = Math.abs(pct) < 1 ? pct * 100 : pct;
+      const raw = parseFloat(changeMatch[1]);
+      if (!isNaN(raw)) {
+        // 0.xx 형태이면 *100, 이미 퍼센트면 그대로
+        const pctValue = Math.abs(raw) < 1 ? raw * 100 : raw;
         subText = `${pctValue >= 0 ? '+' : ''}${pctValue.toFixed(1)}%`;
         trend = pctValue > 0 ? 'up' : pctValue < 0 ? 'down' : 'neutral';
       }
