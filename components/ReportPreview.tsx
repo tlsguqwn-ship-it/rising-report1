@@ -95,7 +95,7 @@ const EditableText: React.FC<{
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
         onInput={handleInput}
-        className={`outline-none transition-all duration-150 rounded-sm whitespace-pre-wrap hover:ring-1 hover:ring-blue-200/60 focus:ring-2 focus:ring-blue-400/40 focus:bg-blue-50/30 cursor-text ${className}`}
+        className={`outline-none transition-all duration-150 whitespace-pre-wrap hover:ring-1 hover:ring-blue-200/60 focus:ring-2 focus:ring-blue-400/40 focus:bg-blue-50/30 cursor-text ${className}`}
         style={{ minHeight: '1.2em', minWidth: '2em' }}
       >
         {value}
@@ -600,7 +600,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
             value={isPreMarket ? (data.featuredStockLabel || '금일 공략주') : (data.featuredStockLabel || '내일 관심주')}
             onSave={(v) => onChange({ ...data, featuredStockLabel: v })}
             isModal={isModalView}
-            className={`shrink-0 uppercase tracking-widest text-[12px] font-[900] ${isPreMarket ? 'bg-sky-200/70 text-sky-700' : (isDark ? 'bg-amber-400/20 text-amber-500' : 'bg-amber-100 text-amber-700')} px-3.5 py-1.5 rounded-full`}
+            className={`shrink-0 uppercase tracking-widest text-[12px] font-[900] ${isPreMarket ? 'bg-sky-200/70 text-sky-700' : (isDark ? 'bg-amber-400/20 text-amber-500' : 'bg-amber-100 text-amber-700')} px-3.5 py-1.5 rounded-lg`}
           />
           <div className="flex-1">
             <ChipInput
