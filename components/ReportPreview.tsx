@@ -295,10 +295,11 @@ const ChipInput: React.FC<{
 // ===========================
 // 감성 배지
 // ===========================
-const SENTIMENTS = ['긍정', '중립', '부정'];
+const SENTIMENTS_PRE = ['긍정', '중립', '부정'];
+const SENTIMENTS_CLOSE = ['강세', '보합', '약세'];
 const SentimentBadge = ({ sentiment, onClick }: { sentiment: string; onClick?: () => void }) => {
-  const isPos = sentiment.includes('긍정');
-  const isNeg = sentiment.includes('부정');
+  const isPos = sentiment.includes('긍정') || sentiment.includes('강세');
+  const isNeg = sentiment.includes('부정') || sentiment.includes('약세');
   return (
     <span onClick={onClick} className={`px-2.5 py-0.5 rounded text-[9px] font-black tracking-tighter uppercase ${onClick ? 'cursor-pointer hover:opacity-80 active:scale-95 transition-all' : ''} ${
       isPos ? 'bg-[#f04452] text-white' :
@@ -374,10 +375,12 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
   }, [data, onChange]);
 
   const cycleSentiment = useCallback((idx: number) => {
+    const SENTIMENTS = isPreMarket ? SENTIMENTS_PRE : SENTIMENTS_CLOSE;
     const current = data.sectors[idx].sentiment;
-    const nextIdx = (SENTIMENTS.indexOf(current) + 1) % SENTIMENTS.length;
+    let nextIdx = SENTIMENTS.indexOf(current);
+    nextIdx = nextIdx === -1 ? 0 : (nextIdx + 1) % SENTIMENTS.length;
     updateArr('sectors', idx, 'sentiment', SENTIMENTS[nextIdx]);
-  }, [data.sectors, updateArr]);
+  }, [data.sectors, updateArr, isPreMarket]);
 
   const ep = (path: string) => ({
     isModal: isModalView,
@@ -751,7 +754,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
               <EditableText value={sector.issue} onSave={(v) => updateArr('sectors', idx, 'issue', v)} isModal={isModalView}
                 className={`text-[11px] font-medium ${subText} leading-[1.5]`} placeholder="EX. 미국 의회 생물보안법 추진 가속화" />
               <div className={`flex gap-2 items-center mt-1.5 border-t ${isDark ? 'border-white/5' : 'border-slate-50'} pt-1.5`}>
-                <span className={`text-[9px] font-black ${isDark ? 'text-slate-300' : 'text-slate-600'} uppercase leading-none tracking-widest shrink-0`}>관심</span>
+                <span className={`text-[9px] font-black ${isDark ? 'text-slate-300' : 'text-slate-600'} uppercase leading-none tracking-widest shrink-0`}>{isPreMarket ? '관심' : '주도'}</span>
                 <div className="flex-1">
                   <ChipInput value={sector.stocks} onSave={(v) => updateArr('sectors', idx, 'stocks', v)} isModal={isModalView}
                     placeholder="EX. 종목명 입력 후 Enter" size="sm" />

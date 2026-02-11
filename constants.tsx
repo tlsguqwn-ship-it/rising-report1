@@ -78,7 +78,7 @@ export const CLOSE_REPORT_TEMPLATE: ReportData = {
     {
       id: genId(),
       name: "바이오 & CDMO",
-      sentiment: "긍정",
+      sentiment: "강세",
       issue: "미국 생물보안법 수혜 및 금리 인하 기대감에 따른 성장주 중심 수급 개선세 뚜렷.",
       stocks: "삼성바이오로직스, 셀트리온, 유한양행",
       perspective: "섹터 대장주 위주 홀딩 전략 유효.",
@@ -86,7 +86,7 @@ export const CLOSE_REPORT_TEMPLATE: ReportData = {
     {
       id: genId(),
       name: "반도체 소부장",
-      sentiment: "부정",
+      sentiment: "약세",
       issue: "글로벌 빅테크 차익실현 매물 출회 및 삼성전자 수급 이탈 여파로 업항 우려 확산.",
       stocks: "한미반도체, 이오테크닉스, 리노공업",
       perspective: "추세 전환 확인 전까지 보수적 접근.",
@@ -94,7 +94,7 @@ export const CLOSE_REPORT_TEMPLATE: ReportData = {
     {
       id: genId(),
       name: "방위산업",
-      sentiment: "중립",
+      sentiment: "보합",
       issue: "지정학적 리스크 지속되나 단기 급등에 따른 피로감 누적으로 숨고르기 장세 진입.",
       stocks: "현대로템, LIG넥스원",
       perspective: "눌림목 매수 관점 유지.",

@@ -24,6 +24,14 @@ const loadSavedTemplate = (type: '장전' | '마감'): ReportData | null => {
       if (data.title && titleMigrations[data.title]) {
         data.title = titleMigrations[data.title];
       }
+      // 마감 리포트 sentiment 마이그레이션: 긍정→강세, 부정→약세, 중립→보합
+      if (type === '마감' && data.sectors) {
+        const sentimentMap: Record<string, string> = { '긍정': '강세', '부정': '약세', '중립': '보합' };
+        data.sectors = data.sectors.map(s => ({
+          ...s,
+          sentiment: sentimentMap[s.sentiment] || s.sentiment,
+        }));
+      }
       return data;
     }
   } catch { /* ignore */ }
