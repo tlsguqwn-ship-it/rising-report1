@@ -638,9 +638,20 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
           </thead>
           <tbody className={`divide-y ${isDark ? 'divide-[#1a1a24]' : 'divide-slate-50'}`}>
             {data.featuredStocks.map((stock, idx) => {
-              // 색상 결정
-              const changeColor = stock.change.includes('-') || stock.change.includes('▼') ? 'text-[#3182f6]' :
-                (stock.change.includes('+') || stock.change.includes('▲')) ? 'text-[#f04452]' : pageText;
+              // change 필드 파싱: "523,100원 / -1.5%" → price="523100", rate="-1.5"
+              const parts = stock.change.split('/').map(s => s.trim());
+              const rawPrice = (parts[0] || '').replace(/[원,\s]/g, '');
+              const rawRate = (parts[1] || parts[0] || '').replace(/[%\s]/g, '');
+              const hasSlash = stock.change.includes('/');
+              // 가격 포맷 (천단위 콤마)
+              const formatPrice = (v: string) => {
+                const num = v.replace(/[^0-9]/g, '');
+                if (!num) return '';
+                return Number(num).toLocaleString();
+              };
+              // 등락률 색상
+              const rateColor = rawRate.includes('-') || rawRate.includes('▼') ? 'text-[#3182f6]' :
+                (rawRate.includes('+') || rawRate.includes('▲') || (parseFloat(rawRate) > 0)) ? 'text-[#f04452]' : pageText;
               return (
               <tr key={stock.id || idx} data-arr="featuredStocks" className={`${isDark ? 'hover:bg-[#22222e]' : 'hover:bg-slate-50'} transition-colors group/row relative`}>
                 <td className={`px-3 py-2 text-[15px] font-black ${pageText} border-r ${isDark ? 'border-[#1a1a24]' : 'border-slate-50'} align-middle pl-4 relative`} style={{ width: '20%', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -653,9 +664,35 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                   {isPreMarket ? (
                     <ChipInput value={stock.change} onSave={(v) => updateArr('featuredStocks', idx, 'change', v)} isModal={isModalView} placeholder="EX. 종목명 입력 후 Enter" vertical />
                   ) : (
-                    <EditableText value={stock.change} onSave={(v) => updateArr('featuredStocks', idx, 'change', v)} isModal={isModalView}
-                      placeholder="153,000원 / -2.45%"
-                      className={`text-[13px] font-[900] ${changeColor} leading-snug`} />
+                    <div className="flex items-center gap-0.5 text-[13px] font-[900] leading-snug whitespace-nowrap">
+                      <input
+                        type="text"
+                        defaultValue={hasSlash ? formatPrice(rawPrice) : ''}
+                        placeholder="523,100"
+                        onFocus={(e) => { e.target.value = e.target.value.replace(/,/g, ''); }}
+                        onBlur={(e) => {
+                          const num = e.target.value.replace(/[^0-9]/g, '');
+                          const formatted = num ? Number(num).toLocaleString() : '';
+                          e.target.value = formatted;
+                          const currentRate = (stock.change.split('/')[1] || '').replace(/[%\s]/g, '').trim();
+                          updateArr('featuredStocks', idx, 'change', `${formatted}원 / ${currentRate}%`);
+                        }}
+                        className={`${pageText} bg-transparent border-none outline-none font-[900] text-[13px] w-[72px] text-right placeholder-slate-300`}
+                      />
+                      <span className={`${isDark ? 'text-slate-500' : 'text-slate-400'} text-[11px] font-bold shrink-0`}>원 /</span>
+                      <input
+                        type="text"
+                        defaultValue={hasSlash ? rawRate : ''}
+                        placeholder="-1.5"
+                        onBlur={(e) => {
+                          const val = e.target.value.trim();
+                          const currentPrice = formatPrice((stock.change.split('/')[0] || '').replace(/[원,\s]/g, ''));
+                          updateArr('featuredStocks', idx, 'change', `${currentPrice}원 / ${val}%`);
+                        }}
+                        className={`${rateColor} bg-transparent border-none outline-none font-[900] text-[13px] w-[52px] text-right placeholder-slate-300`}
+                      />
+                      <span className={`${isDark ? 'text-slate-500' : 'text-slate-400'} text-[11px] font-bold shrink-0`}>%</span>
+                    </div>
                   )}
                 </td>
                 <td className={`px-3 py-2 text-[15px] font-medium ${subText} leading-[1.5] align-middle`} style={{ width: '55%' }}>
