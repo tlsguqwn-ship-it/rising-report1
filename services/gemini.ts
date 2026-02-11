@@ -311,7 +311,7 @@ const fetchNightFutures = async (): Promise<{
   label: string; value: string; subText: string; trend: 'up' | 'down' | 'neutral';
 }> => {
   // 야간선물은 전문가가 직접 입력 (자동 파싱 제거)
-  return { label: '야간선물', value: '-', subText: '직접입력', trend: 'neutral' };
+  return { label: '야간선물', value: '직접입력', subText: '직접입력', trend: 'neutral' };
 };
 
 /**

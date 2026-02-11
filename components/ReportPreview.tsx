@@ -38,6 +38,20 @@ const EditableText: React.FC<{
       ref.current.style.whiteSpace = '';
       ref.current.style.overflow = '';
       ref.current.style.textOverflow = '';
+      // 빈 상태에서 커서(캐럿) 표시
+      setTimeout(() => {
+        if (ref.current) {
+          ref.current.focus();
+          const sel = window.getSelection();
+          if (sel) {
+            const range = document.createRange();
+            range.setStart(ref.current, 0);
+            range.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(range);
+          }
+        }
+      }, 0);
     } else if (ref.current) {
       // 기존 텍스트가 있으면 전체 선택 → 바로 타이핑으로 교체 가능
       setTimeout(() => {
@@ -81,7 +95,7 @@ const EditableText: React.FC<{
           ? 'hover:ring-1 hover:ring-blue-200/60 focus:ring-2 focus:ring-blue-400/40 focus:bg-blue-50/30 cursor-text'
           : ''
       } ${isEmpty && placeholder ? 'truncate overflow-hidden' : ''} ${className}`}
-      style={isEmpty && placeholder ? { minHeight: '1.2em', color: '#cbd5e1', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } : undefined}
+      style={isEmpty && placeholder ? { minHeight: '1.2em', minWidth: '2em', color: '#cbd5e1', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } : { minHeight: '1.2em', minWidth: '2em' }}
     >
       {isEmpty && placeholder ? placeholder : value}
     </TagEl>
@@ -119,14 +133,25 @@ const ChipInput: React.FC<{
     if (e.key === 'Enter') {
       e.preventDefault();
       const trimmed = inputVal.trim();
-      if (trimmed) { onSave(trimmed); setInputVal(''); }
+      if (trimmed) {
+        // 기존 칩에 추가
+        const existing = value ? value.split(',').map(s => s.trim()).filter(Boolean) : [];
+        existing.push(trimmed);
+        onSave(existing.join(', '));
+        setInputVal('');
+      }
     }
     if (e.key === 'Escape') { setInputVal(''); }
   };
 
   const handleInputBlur = () => {
     const trimmed = inputVal.trim();
-    if (trimmed) { onSave(trimmed); setInputVal(''); }
+    if (trimmed) {
+      const existing = value ? value.split(',').map(s => s.trim()).filter(Boolean) : [];
+      existing.push(trimmed);
+      onSave(existing.join(', '));
+      setInputVal('');
+    }
   };
 
   // + 버튼: 바로 칩 형태로 추가 + 포커스
@@ -188,8 +213,8 @@ const ChipInput: React.FC<{
           onKeyDown={handleInputKeyDown}
           onBlur={handleInputBlur}
           placeholder={placeholder}
-          className={`outline-none bg-transparent ${isLg ? 'text-[13px]' : 'text-[10px]'} font-bold min-w-[60px] flex-1 py-0.5 text-slate-700 placeholder:text-slate-300`}
-          style={{ color: '#cbd5e1' }}
+          className={`outline-none bg-transparent ${isLg ? 'text-[13px]' : 'text-[10px]'} font-bold min-w-[60px] flex-1 py-0.5 text-slate-700 placeholder:text-slate-300 caret-slate-500`}
+          style={{ caretColor: '#64748b' }}
         />
       </div>
     );
