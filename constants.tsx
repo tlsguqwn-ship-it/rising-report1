@@ -65,22 +65,22 @@ export const CLOSE_REPORT_TEMPLATE: ReportData = {
     { label: "원달러환율", value: "0", subText: "0%", trend: "neutral" }
   ],
   marketSchedule: [
-    { id: genId(), time: "", event: "" },
+    { id: genId(), time: "장마감", event: "국내 소비자물가지수(CPI) 발표" },
     { id: genId(), time: "", event: "" },
     { id: genId(), time: "", event: "" }
   ],
   featuredStocks: [
-    { id: genId(), name: "", change: "", reason: "" },
+    { id: genId(), name: "삼성전자", change: "50,000원 / -2.5%", reason: "외인 대규모 매도세 집중 출회" },
     { id: genId(), name: "", change: "", reason: "" },
     { id: genId(), name: "", change: "", reason: "" }
   ],
   sectors: [
     {
       id: genId(),
-      name: "",
-      sentiment: "중립",
-      issue: "",
-      stocks: "",
+      name: "바이오 & CDMO",
+      sentiment: "강세",
+      issue: "생물보안법 수혜 및 금리 인하 기대감에 따른 수급 개선",
+      stocks: "삼성바이오로직스, 셀트리온",
       perspective: "",
     },
     {
@@ -133,22 +133,22 @@ export const PRE_MARKET_REPORT_TEMPLATE: ReportData = {
     { label: "BTC", value: "0", subText: "0%", trend: "neutral" }
   ],
   marketSchedule: [
-    { id: genId(), time: "", event: "" },
+    { id: genId(), time: "09:00", event: "국내 증시 시초가 형성" },
     { id: genId(), time: "", event: "" },
     { id: genId(), time: "", event: "" }
   ],
   featuredStocks: [
-    { id: genId(), name: "", change: "", reason: "" },
+    { id: genId(), name: "엔비디아 AI 실적", change: "한미반도체, HPSP", reason: "미국 AI 칩 수요 폭증 및 장비주 낙수효과" },
     { id: genId(), name: "", change: "", reason: "" },
     { id: genId(), name: "", change: "", reason: "" }
   ],
   sectors: [
     {
       id: genId(),
-      name: "",
-      sentiment: "중립",
-      issue: "",
-      stocks: "",
+      name: "AI & HBM 장비",
+      sentiment: "긍정",
+      issue: "미국 반도체 지수 강세로 소부장 테마 매수세 유입",
+      stocks: "HPSP, 주성엔지니어링",
       perspective: "",
     },
     {
