@@ -51,7 +51,7 @@ export const SHARED_FIELDS: (keyof ReportData)[] = [
 // ===========================
 export const CLOSE_REPORT_TEMPLATE: ReportData = {
   title: "[마감 REPORT] RISING STOCK 마감 시황 리포트",
-  date: "2026년 2월 10일(월) 15:40 발행",
+  date: "2026년 2월 10일 (월) 15:40 발행",
   reportType: "마감",
   summaryTitle: "국내 증시 및 수급 현황",
   currentMarketView: "코스피 2,540선 하회. 외국인 반도체 집중 매도로 지수 하방 압력 심화. 원/달러 환율 1,460원 돌파하며 수급 환경 악화. 다만 제약/바이오 섹터로의 순환매 유입은 긍정적.",
@@ -116,7 +116,7 @@ export const CLOSE_REPORT_TEMPLATE: ReportData = {
 // ===========================
 export const PRE_MARKET_REPORT_TEMPLATE: ReportData = {
   title: "[장전 REPORT] RISING STOCK 마켓 데일리 리포트",
-  date: "2026년 2월 10일(월) 08:20 발행",
+  date: "2026년 2월 10일 (월) 08:20 발행",
   reportType: "장전",
   summaryTitle: "미국 증시 및 글로벌 지표",
   currentMarketView: "나스닥 1.6% 하락, 빅테크 차익실현. 반도체 지수 2.4% 반등으로 국내 IT 하방 경직성 기대.",

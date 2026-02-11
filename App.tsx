@@ -160,7 +160,20 @@ const App: React.FC = () => {
         canUndo={canUndo}
         canRedo={canRedo}
         onReset={handleReset}
-        onExport={() => setShowExport(true)}
+        onExport={() => {
+          // 리포트 완성 시 현재시각 자동 적용
+          const now = new Date();
+          const year = now.getFullYear();
+          const month = now.getMonth() + 1;
+          const day = now.getDate();
+          const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+          const dayName = dayNames[now.getDay()];
+          const hours = String(now.getHours()).padStart(2, '0');
+          const minutes = String(now.getMinutes()).padStart(2, '0');
+          const dateStr = `${year}년 ${month}월 ${day}일 (${dayName}) ${hours}:${minutes} 발행`;
+          setReportData({ ...reportData, date: dateStr });
+          setShowExport(true);
+        }}
         zoom={zoom}
         onZoomChange={setZoom}
         darkMode={darkMode}

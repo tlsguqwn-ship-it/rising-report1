@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   Undo2, Redo2, Download, RotateCcw, Sun, Moon,
-  ZoomIn, ZoomOut, Palette, Smile, Eraser, Bold,
+  ZoomIn, ZoomOut, Palette, Smile, Bold,
   ChevronUp, ChevronDown
 } from 'lucide-react';
 import { PRESET_COLORS, EMOJI_CATEGORIES } from './FloatingToolbar';
@@ -212,16 +212,6 @@ const Toolbar: React.FC<ToolbarProps> = ({
         </div>
 
         <div className="h-8 w-px bg-slate-200 mx-1" />
-
-        {/* 새로고침 (초기화) 버튼 - 템플릿 전환 버튼 왼쪽 */}
-        <button
-          onClick={onReset}
-          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-700 hover:bg-slate-100 border border-slate-200 transition-all active:scale-95"
-          title="새로고침"
-        >
-          <RotateCcw size={15} />
-          새로고침
-        </button>
 
         {/* Mode Toggle */}
         <button
@@ -450,13 +440,13 @@ const Toolbar: React.FC<ToolbarProps> = ({
 
         <div className="h-6 w-px bg-slate-200 mx-1" />
 
-        {/* 서식 초기화 */}
+        {/* 새로고침 (초기화) */}
         <button
-          onMouseDown={(e) => { e.preventDefault(); resetFormat(); }}
-          className="p-2 rounded-lg hover:bg-red-50 hover:text-red-500 transition-all text-slate-400"
-          title="서식 초기화 (색상·크기 제거)"
+          onClick={onReset}
+          className="p-2 rounded-lg hover:bg-slate-100 transition-all text-slate-400 hover:text-slate-600"
+          title="새로고침 (데이터 초기화)"
         >
-          <Eraser size={16} />
+          <RotateCcw size={16} />
         </button>
       </div>
 
