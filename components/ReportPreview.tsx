@@ -722,7 +722,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                     </div>
                   )}
                 </td>
-                <td className={`pl-4 pr-3 py-2 text-[15px] font-medium ${subText} leading-[1.5] align-middle`} style={{ width: '56%' }}>
+                <td className={`pl-8 pr-3 py-2 text-[15px] font-medium ${subText} leading-[1.5] align-middle`} style={{ width: '56%' }}>
                   <EditableText value={stock.reason} onSave={(v) => updateArr('featuredStocks', idx, 'reason', v)} isModal={isModalView} placeholder="EX. 미국 AI 칩 수요 폭증 및 실적 호조"  />
                 </td>
               </tr>
