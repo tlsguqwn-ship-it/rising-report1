@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Download, X, ImageIcon, FileText, Loader2, Check, Eye, ArrowRight, ArrowLeft, Link2, Copy } from 'lucide-react';
 import { toPng } from 'html-to-image';
+import { jsPDF } from 'jspdf';
 import { ReportData } from '../types';
 import ReportPreview from './ReportPreview';
 import { publishReport } from '../services/shareReport';
@@ -129,8 +130,100 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, reportType, 
     }
   };
 
-  const handlePrint = () => {
-    window.print();
+  const handlePrint = async () => {
+    setIsExporting(true);
+    setIsDone(false);
+    try {
+      const content = document.getElementById('report-content');
+      if (!content) throw new Error('리포트 콘텐츠를 찾을 수 없습니다.');
+
+      const pixelRatio = 3;
+
+      // zoom 비율 무관하게 100% 크기로 캡처
+      const wrapper = content.parentElement;
+      const originalTransform = wrapper?.style.transform || '';
+      const originalTransition = wrapper?.style.transition || '';
+      if (wrapper) {
+        wrapper.style.transition = 'none';
+        wrapper.style.transform = 'scale(1)';
+      }
+      content.offsetHeight;
+
+      // 편집용 UI 요소 숨기기
+      const noPrintElements = content.querySelectorAll('.no-print') as NodeListOf<HTMLElement>;
+      const editableElements = content.querySelectorAll('[contenteditable]') as NodeListOf<HTMLElement>;
+      noPrintElements.forEach(el => {
+        el.dataset.origDisplay = el.style.display;
+        el.style.display = 'none';
+      });
+      editableElements.forEach(el => {
+        el.dataset.origOutline = el.style.outline;
+        el.dataset.origBg = el.style.background;
+        el.dataset.origBoxShadow = el.style.boxShadow;
+        el.style.outline = 'none';
+        el.style.background = 'transparent';
+        el.style.boxShadow = 'none';
+      });
+
+      // A4 사이즈 PDF 생성 (210mm x 297mm)
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pdfWidth = 210;
+      const pdfHeight = 297;
+
+      const pages = content.children;
+      const isDarkExport = darkMode && reportType === '마감';
+
+      for (let i = 0; i < pages.length; i++) {
+        const page = pages[i] as HTMLElement;
+        const dataUrl = await toPng(page, {
+          quality: 1.0,
+          pixelRatio,
+          backgroundColor: isDarkExport ? '#0f0f14' : '#ffffff',
+          cacheBust: true,
+          width: page.scrollWidth,
+          height: page.scrollHeight,
+          filter: (node: HTMLElement) => {
+            if (node.classList && node.classList.contains('no-print')) return false;
+            return true;
+          },
+        });
+
+        if (i > 0) pdf.addPage();
+        pdf.addImage(dataUrl, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      }
+
+      // 편집용 UI 요소 복원
+      noPrintElements.forEach(el => {
+        el.style.display = el.dataset.origDisplay || '';
+        delete el.dataset.origDisplay;
+      });
+      editableElements.forEach(el => {
+        el.style.outline = el.dataset.origOutline || '';
+        el.style.background = el.dataset.origBg || '';
+        el.style.boxShadow = el.dataset.origBoxShadow || '';
+        delete el.dataset.origOutline;
+        delete el.dataset.origBg;
+        delete el.dataset.origBoxShadow;
+      });
+
+      if (wrapper) {
+        wrapper.style.transform = originalTransform;
+        wrapper.style.transition = originalTransition;
+      }
+
+      // PDF 다운로드
+      const dateOnly = date.replace(/\s*\d{1,2}:\d{2}.*$/, '').trim();
+      const mode = reportType === '장전' ? '장전시황' : '마감시황';
+      pdf.save(`${dateOnly} ${mode}.pdf`);
+
+      setIsDone(true);
+      setTimeout(() => setIsDone(false), 3000);
+    } catch (err) {
+      console.error('PDF export failed:', err);
+      alert('PDF 생성에 실패했습니다. 다시 시도해주세요.');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const handleShare = async () => {
