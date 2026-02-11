@@ -115,7 +115,7 @@ export const CLOSE_REPORT_TEMPLATE: ReportData = {
 // 장전 리포트 템플릿
 // ===========================
 export const PRE_MARKET_REPORT_TEMPLATE: ReportData = {
-  title: "RISING STOCK 마켓 데일리",
+  title: "RISING STOCK 장전 시황",
   date: "2026년 2월 10일 (월) 08:20 발행",
   reportType: "장전",
   summaryTitle: "미국 증시 및 글로벌 지표",

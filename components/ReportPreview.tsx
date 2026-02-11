@@ -395,17 +395,22 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center gap-4">
             <span className={`px-3 py-1 text-[11px] font-black text-white rounded-lg ${typeBadge} uppercase tracking-tight shadow-sm`}>
-              {data.reportType}
+              {isPreMarket ? 'MORNING REPORT' : 'CLOSING REPORT'}
             </span>
           </div>
           <EditableText value={data.title} {...ep('title')} tag="h1" className={`text-[28px] font-[900] tracking-tighter leading-tight ${pageText}`} />
           <EditableText value={data.date} {...ep('date')} className={`text-[13px] font-semibold ${labelText} tracking-tight`} />
         </div>
-        <span className={`text-[28px] font-[900] uppercase leading-none shrink-0 ml-6 self-center ${
+        <div className="shrink-0 ml-6 self-center flex flex-col items-center">
+          <span className={`text-[28px] font-[900] uppercase leading-none ${
             isDark 
               ? 'text-transparent bg-clip-text bg-gradient-to-b from-white to-slate-400' 
               : 'text-transparent bg-clip-text bg-gradient-to-b from-slate-800 to-slate-500'
-          }`} style={{ fontStretch: 'condensed', letterSpacing: '0.12em' }}>RISING</span>
+          }`} style={{ fontStretch: 'condensed', letterSpacing: '0.08em' }}>RISING</span>
+          <span className={`text-[10px] font-medium uppercase leading-none mt-[3px] ${
+            isDark ? 'text-slate-400' : 'text-slate-500'
+          }`} style={{ letterSpacing: '0.38em' }}>STOCK</span>
+        </div>
       </div>
     </div>
   );
