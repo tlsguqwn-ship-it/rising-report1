@@ -656,7 +656,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                   </div>
                 )}
               </th>
-              <th className="pl-8 pr-3 text-[11px] font-bold uppercase tracking-tight" style={{ width: '56%' }}>{isPreMarket ? '투자 포인트' : '등락 사유 및 분석'}</th>
+              <th className={`${isPreMarket ? 'pl-4' : 'pl-8'} pr-3 text-[11px] font-bold uppercase tracking-tight`} style={{ width: '56%' }}>{isPreMarket ? '투자 포인트' : '등락 사유 및 분석'}</th>
             </tr>
           </thead>
           <tbody className={`divide-y ${isDark ? 'divide-[#1a1a24]' : 'divide-slate-50'}`}>
@@ -722,7 +722,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                     </div>
                   )}
                 </td>
-                <td className={`pl-8 pr-3 py-2 text-[15px] font-medium ${subText} leading-[1.5] align-middle`} style={{ width: '56%' }}>
+                <td className={`${isPreMarket ? 'pl-4' : 'pl-8'} pr-3 py-2 text-[15px] font-medium ${subText} leading-[1.5] align-middle`} style={{ width: '56%' }}>
                   <EditableText value={stock.reason} onSave={(v) => updateArr('featuredStocks', idx, 'reason', v)} isModal={isModalView} placeholder="EX. 미국 AI 칩 수요 폭증 및 실적 호조"  />
                 </td>
               </tr>
