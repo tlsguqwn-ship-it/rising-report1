@@ -456,7 +456,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
         {data.subIndicators && data.subIndicators.length > 0 && (
           <div className="flex gap-1.5 mt-1.5">
             {data.subIndicators.map((item, idx) => (
-              <div key={`sub-${idx}`} className="flex-1 bg-white px-2.5 py-2 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between min-w-0 whitespace-nowrap overflow-hidden">
+              <div key={`sub-${idx}`} className="flex-1 bg-white px-2.5 py-2 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between gap-2 min-w-0 whitespace-nowrap overflow-hidden">
                 <span className="text-[8px] font-extrabold text-slate-400 uppercase leading-none tracking-tight shrink-0">{item.label}</span>
                 <div className="flex items-center gap-1">
                   <span className={`text-[9px] font-[800] leading-none tracking-tight ${
