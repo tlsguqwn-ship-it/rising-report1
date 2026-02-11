@@ -715,7 +715,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                             const currentPrice = formatPrice((stock.change.split('/')[0] || '').replace(/[원,\s]/g, ''));
                             updateArr('featuredStocks', idx, 'change', `${currentPrice}원 / ${val}%`);
                           }}
-                          className={`${rateColor} outline-none cursor-text`}
+                          className={`${rateColor} outline-none cursor-text flex-1`}
                         >{hasSlash ? rawRate : ''}</span>
                         <span className={`${rateColor} shrink-0 ml-[2px]`}>%</span>
                       </div>
