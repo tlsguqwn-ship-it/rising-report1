@@ -645,8 +645,16 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
           <thead>
             <tr className={`h-[8mm] border-b ${cardBorder} ${labelText}`}>
               <th className="px-3 text-[11px] font-bold uppercase tracking-tight pl-4" style={{ width: '20%' }}>{isPreMarket ? '이슈 키워드' : '종목명'}</th>
-              <th className="px-2 text-[11px] font-bold uppercase tracking-tight text-center" style={{ width: '25%' }}>
-                {isPreMarket ? '국내 관련주' : '종가 / 등락률'}
+              <th className="px-2 text-[11px] font-bold uppercase tracking-tight" style={{ width: '25%' }}>
+                {isPreMarket ? (
+                  <span className="block text-center">국내 관련주</span>
+                ) : (
+                  <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-0">
+                    <span className="text-right">종가</span>
+                    <span className="px-1.5">/</span>
+                    <span className="text-left">등락률</span>
+                  </div>
+                )}
               </th>
               <th className="px-3 text-[11px] font-bold uppercase tracking-tight" style={{ width: '55%' }}>{isPreMarket ? '투자 포인트' : '등락 사유 및 분석'}</th>
             </tr>
@@ -679,18 +687,41 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                   {isPreMarket ? (
                     <ChipInput value={stock.change} onSave={(v) => updateArr('featuredStocks', idx, 'change', v)} isModal={isModalView} placeholder="EX. 종목명 입력 후 Enter" vertical />
                   ) : (
-                    <div className="flex items-center justify-center text-[13px] font-[900] leading-snug whitespace-nowrap">
-                      <input
-                        type="text"
-                        defaultValue={stock.change || ''}
-                        placeholder="523,100원 / -1.5%"
-                        onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
-                        onBlur={(e) => {
-                          const val = e.target.value.trim();
-                          updateArr('featuredStocks', idx, 'change', val);
-                        }}
-                        className={`bg-transparent border-none outline-none font-[900] text-[13px] text-center placeholder-slate-300 w-full ${rateColor}`}
-                      />
+                    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-0 text-[13px] font-[900] leading-snug">
+                      <div className="flex items-center justify-end">
+                        <input
+                          type="text"
+                          defaultValue={hasSlash ? formatPrice(rawPrice) : ''}
+                          placeholder="111,000"
+                          onFocus={(e) => { e.target.value = e.target.value.replace(/,/g, ''); }}
+                          onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+                          onBlur={(e) => {
+                            const num = e.target.value.replace(/[^0-9]/g, '');
+                            const formatted = num ? Number(num).toLocaleString() : '';
+                            e.target.value = formatted;
+                            const currentRate = (stock.change.split('/')[1] || '').replace(/[%\s]/g, '').trim();
+                            updateArr('featuredStocks', idx, 'change', `${formatted}원 / ${currentRate}%`);
+                          }}
+                          className={`${pageText} bg-transparent border-none outline-none font-[900] text-[13px] text-right placeholder-slate-300 w-full`}
+                        />
+                        <span className={`${pageText} shrink-0`}>원</span>
+                      </div>
+                      <span className={`${pageText} shrink-0 px-1.5`}>/</span>
+                      <div className="flex items-center justify-start">
+                        <input
+                          type="text"
+                          defaultValue={hasSlash ? rawRate : ''}
+                          placeholder="-2.45"
+                          onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+                          onBlur={(e) => {
+                            const val = e.target.value.trim();
+                            const currentPrice = formatPrice((stock.change.split('/')[0] || '').replace(/[원,\s]/g, ''));
+                            updateArr('featuredStocks', idx, 'change', `${currentPrice}원 / ${val}%`);
+                          }}
+                          className={`${rateColor} bg-transparent border-none outline-none font-[900] text-[13px] text-left placeholder-slate-300 w-full`}
+                        />
+                        <span className={`${rateColor} shrink-0`}>%</span>
+                      </div>
                     </div>
                   )}
                 </td>
