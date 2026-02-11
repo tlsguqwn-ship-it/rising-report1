@@ -383,16 +383,23 @@ const fetchNaverCommodity = async (code: string, label: string): Promise<{
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, 'text/html');
 
-    // 현재가
-    const priceEl = doc.querySelector('.no_today');
-    let value = priceEl?.textContent?.trim() || 'N/A';
+    // 현재가: .no_today 안의 첫 번째 em 태그에서 가격만 추출
+    const priceEm = doc.querySelector('.no_today em');
+    let value = priceEm?.textContent?.trim() || 'N/A';
     value = value.replace(/[^\d,.]/g, '').trim();
 
-    // 등락정보
+    // 등락정보: .no_exday 안의 em 태그들에서 개별 추출
+    const changeEms = doc.querySelectorAll('.no_exday em');
+    let changeAmt = '0';
+    let changePct = '0';
+    if (changeEms.length >= 2) {
+      changeAmt = changeEms[0]?.textContent?.trim().replace(/[^\d,.]/g, '') || '0';
+      changePct = changeEms[1]?.textContent?.trim().replace(/[^\d,.%]/g, '').replace('%', '') || '0';
+    } else if (changeEms.length === 1) {
+      changePct = changeEms[0]?.textContent?.trim().replace(/[^\d,.]/g, '') || '0';
+    }
     const changeEl = doc.querySelector('.no_exday');
     const changeText = changeEl?.textContent?.trim() || '';
-    const nums = changeText.match(/[\d,.]+/g) || [];
-    const changePct = nums[1] || '0';
 
     const isDown = !!doc.querySelector('.no_exday .no_down') ||
                    !!doc.querySelector('.head_info .down') ||
@@ -409,52 +416,77 @@ const fetchNaverCommodity = async (code: string, label: string): Promise<{
 };
 
 /**
- * 네이버 크립토에서 비트코인(BTC) 가격 파싱
+ * 네이버 크립토 API에서 비트코인(BTC) 가격 파싱
+ * REST API JSON 직접 호출로 안정적 파싱
  */
 const fetchNaverBitcoin = async (): Promise<{
   label: string; value: string; subText: string; trend: 'up' | 'down' | 'neutral';
 }> => {
   try {
-    const targetUrl = 'https://m.stock.naver.com/crypto/UPBIT/BTC';
+    // 네이버 금융 암호화폐 API 직접 호출
+    const targetUrl = 'https://m.stock.naver.com/front-api/crypto/otc/UPBIT/price?codes=BTC';
     const proxyUrl = IS_VERCEL
       ? `/api/proxy?url=${encodeURIComponent(targetUrl)}`
       : targetUrl;
     const res = await fetch(proxyUrl);
-    const html = await res.text();
+    const text = await res.text();
 
-    // JSON-LD 또는 메타 태그에서 가격 추출 시도
     let value = 'N/A';
     let subText = 'N/A';
     let trend: 'up' | 'down' | 'neutral' = 'neutral';
 
-    // SSR JSON 데이터에서 가격 파싱: "now":숫자 또는 "closePrice":"숫자"
-    const priceMatch = html.match(/"now"\s*:\s*"?([0-9,]+)"?/) ||
-                        html.match(/"closePrice"\s*:\s*"?([0-9,]+)"?/) ||
-                        html.match(/"tradePrice"\s*:\s*"?([0-9,]+)"?/);
-    if (priceMatch) {
-      const num = parseInt(priceMatch[1].replace(/,/g, ''), 10);
-      if (!isNaN(num)) {
-        // 만원 단위로 표시: 142,350,000 → 1억4235만
-        if (num >= 100000000) {
-          const eok = Math.floor(num / 100000000);
-          const man = Math.floor((num % 100000000) / 10000);
-          value = `${eok}억${man > 0 ? man.toLocaleString() + '만' : ''}`;
-        } else {
-          value = num.toLocaleString();
+    try {
+      const json = JSON.parse(text);
+      // API 응답에서 가격, 등락률 추출
+      const data = json?.result || json?.datas?.[0] || json;
+      const priceRaw = data?.tradePrice || data?.closePrice || data?.now;
+      
+      if (priceRaw) {
+        const num = typeof priceRaw === 'number' ? priceRaw : parseInt(String(priceRaw).replace(/,/g, ''), 10);
+        if (!isNaN(num)) {
+          if (num >= 100000000) {
+            const eok = Math.floor(num / 100000000);
+            const man = Math.floor((num % 100000000) / 10000);
+            value = `${eok}억${man > 0 ? man.toLocaleString() + '만' : ''}`;
+          } else {
+            value = num.toLocaleString();
+          }
         }
       }
-    }
 
-    // 등락률
-    const changeMatch = html.match(/"changeRate"\s*:\s*"?(-?[0-9.]+)"?/) ||
-                         html.match(/"fluctuationsRatio"\s*:\s*"?(-?[0-9.]+)"?/);
-    if (changeMatch) {
-      const pct = parseFloat(changeMatch[1]);
-      if (!isNaN(pct)) {
-        // changeRate가 0.0x 형태면 %로 변환
-        const pctValue = Math.abs(pct) < 1 ? pct * 100 : pct;
-        subText = `${pctValue >= 0 ? '+' : ''}${pctValue.toFixed(1)}%`;
-        trend = pctValue > 0 ? 'up' : pctValue < 0 ? 'down' : 'neutral';
+      const changeRate = data?.changeRate || data?.fluctuationsRatio;
+      if (changeRate !== undefined) {
+        const pct = typeof changeRate === 'number' ? changeRate : parseFloat(String(changeRate));
+        if (!isNaN(pct)) {
+          const pctValue = Math.abs(pct) < 1 ? pct * 100 : pct;
+          subText = `${pctValue >= 0 ? '+' : ''}${pctValue.toFixed(1)}%`;
+          trend = pctValue > 0 ? 'up' : pctValue < 0 ? 'down' : 'neutral';
+        }
+      }
+    } catch {
+      // JSON 파싱 실패 시 HTML에서 정규식으로 fallback
+      const priceMatch = text.match(/"tradePrice"\s*:\s*"?([0-9,]+)"?/) ||
+                          text.match(/"closePrice"\s*:\s*"?([0-9,]+)"?/);
+      if (priceMatch) {
+        const num = parseInt(priceMatch[1].replace(/,/g, ''), 10);
+        if (!isNaN(num)) {
+          if (num >= 100000000) {
+            const eok = Math.floor(num / 100000000);
+            const man = Math.floor((num % 100000000) / 10000);
+            value = `${eok}억${man > 0 ? man.toLocaleString() + '만' : ''}`;
+          } else {
+            value = num.toLocaleString();
+          }
+        }
+      }
+      const changeMatch = text.match(/"changeRate"\s*:\s*"?(-?[0-9.]+)"?/);
+      if (changeMatch) {
+        const pct = parseFloat(changeMatch[1]);
+        if (!isNaN(pct)) {
+          const pctValue = Math.abs(pct) < 1 ? pct * 100 : pct;
+          subText = `${pctValue >= 0 ? '+' : ''}${pctValue.toFixed(1)}%`;
+          trend = pctValue > 0 ? 'up' : pctValue < 0 ? 'down' : 'neutral';
+        }
       }
     }
 
