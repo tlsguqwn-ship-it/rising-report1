@@ -442,12 +442,8 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
         >
           <div className="space-y-3">
             <div>
-              <label className={labelStyle}>섹션 제목 <FieldTip text="핵심시각 영역의 제목. 장전=MORNING CORE VIEW, 마감=MARKET CORE VIEW" /></label>
-              <input type="text" value={data.coreViewTitle} onChange={(e) => handleChange('coreViewTitle', e.target.value)} className={`${inputStyle} mt-1.5`} />
-            </div>
-            <div>
               <label className={labelStyle}>핵심 분석 <FieldTip text="오늘 시장의 핵심을 2-3문장으로 요약하세요. 이 영역이 리포트의 첫인상을 결정합니다." /></label>
-              <textarea value={data.currentMarketView} onChange={(e) => handleChange('currentMarketView', e.target.value)} className={`${inputStyle} mt-1.5 min-h-[100px] resize-y`} />
+              <textarea value={data.currentMarketView} onChange={(e) => handleChange('currentMarketView', e.target.value)} className={`${inputStyle} mt-1.5 min-h-[100px] resize-y`} placeholder={data.reportType === '장전' ? 'EX. 미국 증시 강세에 따른 국내 시장 갭업 출발 전망...' : 'EX. 오늘 국내 증시는 외인 매수세에 힘입어...'} />
             </div>
           </div>
         </AccordionSection>
@@ -463,10 +459,6 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
           badge={`${data.featuredStocks.length}/${MAX_STOCKS}`}
         >
           <div className="space-y-3">
-            <div>
-              <label className={labelStyle}>섹션 제목</label>
-              <input type="text" value={data.featuredStocksTitle} onChange={(e) => handleChange('featuredStocksTitle', e.target.value)} className={`${inputStyle} mt-1.5`} />
-            </div>
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd('featuredStocks')}>
               <SortableContext items={data.featuredStocks.map(s => s.id)} strategy={verticalListSortingStrategy}>
                 {data.featuredStocks.map((stock, idx) => (
@@ -499,23 +491,13 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
           onToggle={() => toggleSection('insight')}
         >
           <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className={labelStyle}>메인 타이틀</label>
-                <input type="text" value={data.expertAnalysisTitle} onChange={(e) => handleChange('expertAnalysisTitle', e.target.value)} className={`${inputStyle} mt-1.5`} />
-              </div>
-              <div>
-                <label className={labelStyle}>서브 타이틀</label>
-                <input type="text" value={data.expertAnalysisSubtitle} onChange={(e) => handleChange('expertAnalysisSubtitle', e.target.value)} className={`${inputStyle} mt-1.5`} />
-              </div>
-            </div>
             <div>
               <label className={labelStyle}>인사이트 본문 <FieldTip text="BLUF(Bottom Line Up Front) 스타일: 결론을 먼저, 근거를 뒤에 배치하세요." /></label>
-              <textarea value={data.expertAnalysis} onChange={(e) => handleChange('expertAnalysis', e.target.value)} className={`${inputStyle} mt-1.5 min-h-[120px] resize-y`} />
+              <textarea value={data.expertAnalysis} onChange={(e) => handleChange('expertAnalysis', e.target.value)} className={`${inputStyle} mt-1.5 min-h-[120px] resize-y`} placeholder={data.reportType === '장전' ? 'EX. 오늘 시장은 미국 증시 강세의 여파로...' : 'EX. 금일 장 마감 후 종합적으로 분석하면...'} />
             </div>
             <div>
               <label className={labelStyle}>핵심 관심 종목 <FieldTip text="쉼표로 구분하여 입력. 예: 알테오젠, HLB, 현대중공업" /></label>
-              <input type="text" value={data.expertInterestedStocks} onChange={(e) => handleChange('expertInterestedStocks', e.target.value)} className={`${inputStyle} mt-1.5`} />
+              <input type="text" value={data.expertInterestedStocks} onChange={(e) => handleChange('expertInterestedStocks', e.target.value)} className={`${inputStyle} mt-1.5`} placeholder="EX. 알테오젠, HLB, 현대중공업" />
             </div>
           </div>
         </AccordionSection>
@@ -530,10 +512,6 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
           badge={`${data.sectors.length}/${MAX_SECTORS}`}
         >
           <div className="space-y-3">
-            <div>
-              <label className={labelStyle}>섹션 제목</label>
-              <input type="text" value={data.sectorsTitle} onChange={(e) => handleChange('sectorsTitle', e.target.value)} className={`${inputStyle} mt-1.5`} />
-            </div>
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd('sectors')}>
               <SortableContext items={data.sectors.map(s => s.id)} strategy={verticalListSortingStrategy}>
                 {data.sectors.map((sector, idx) => (
@@ -572,10 +550,6 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
           badge={`${data.marketSchedule.length}/${MAX_SCHEDULE}`}
         >
           <div className="space-y-3">
-            <div>
-              <label className={labelStyle}>섹션 제목</label>
-              <input type="text" value={data.scheduleTitle} onChange={(e) => handleChange('scheduleTitle', e.target.value)} className={`${inputStyle} mt-1.5`} />
-            </div>
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd('marketSchedule')}>
               <SortableContext items={data.marketSchedule.map(s => s.id)} strategy={verticalListSortingStrategy}>
                 {data.marketSchedule.map((item, idx) => (

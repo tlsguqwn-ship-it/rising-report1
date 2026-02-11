@@ -86,7 +86,7 @@ const EditableText: React.FC<{
   const showPlaceholder = localEmpty && placeholder;
 
   return (
-    <div style={{ position: 'relative' }}>
+    <div style={{ position: 'relative' }} className={className}>
       <TagEl
         ref={ref}
         contentEditable
@@ -95,7 +95,7 @@ const EditableText: React.FC<{
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
         onInput={handleInput}
-        className={`outline-none transition-all duration-150 whitespace-pre-wrap hover:ring-1 hover:ring-blue-200/60 focus:ring-2 focus:ring-blue-400/40 focus:bg-blue-50/30 cursor-text ${className}`}
+        className="outline-none transition-all duration-150 whitespace-pre-wrap hover:ring-1 hover:ring-blue-200/60 focus:ring-2 focus:ring-blue-400/40 cursor-text"
         style={{ minHeight: '1.2em', minWidth: '2em' }}
       >
         {value}
@@ -104,9 +104,10 @@ const EditableText: React.FC<{
         <span
           style={{
             position: 'absolute',
-            top: 0,
+            top: '50%',
             left: 0,
             right: 0,
+            transform: 'translateY(-50%)',
             pointerEvents: 'none',
             color: '#cbd5e1',
             whiteSpace: 'nowrap',
@@ -114,7 +115,6 @@ const EditableText: React.FC<{
             textOverflow: 'ellipsis',
             userSelect: 'none',
           }}
-          className={className}
         >
           {placeholder}
         </span>
@@ -807,7 +807,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
           </div>
         </div>
         {!isModalView && data.marketSchedule.length < MAX_SCHEDULE && (
-          <button onClick={() => addItem('marketSchedule')} className={`w-full py-1.5 flex items-center justify-center gap-1 text-[11px] font-bold ${isDark ? 'text-slate-500 hover:text-amber-400' : 'text-slate-400 hover:text-amber-600 hover:bg-amber-50/50'} rounded-xl transition-colors no-print mt-2`}>
+          <button onClick={() => addItem('marketSchedule')} className={`w-full py-1.5 flex items-center justify-center gap-1 text-[11px] font-bold ${isDark ? 'text-slate-500 hover:text-amber-400 hover:bg-amber-400/5' : 'text-slate-400 hover:text-amber-600 hover:bg-amber-50/50'} rounded-xl border border-dashed ${isDark ? 'border-[#2a2a3a]' : 'border-slate-200'} transition-colors no-print mt-2`}>
             <span className="text-base leading-none">+</span> 일정 추가
           </button>
         )}
@@ -869,7 +869,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
             </div>
           </div>
           {/* 하단 면책 */}
-          <div className={`absolute bottom-0 left-0 right-0 px-[14mm] pb-[6mm] pt-2 border-t ${isDark ? 'border-white/5' : 'border-gray-100'} text-center opacity-40`}>
+          <div className={`absolute bottom-0 left-0 right-0 px-[14mm] pb-[10mm] pt-2 border-t ${isDark ? 'border-white/5' : 'border-gray-100'} text-center opacity-40`}>
             <p className={`text-[7px] ${isDark ? 'text-slate-500' : 'text-gray-500'} font-bold tracking-tighter whitespace-nowrap`}>
               ◆ 본 리포트는 Rising 서비스의 주관적인 견해를 포함하며 투자 결과에 대한 법적 책임은 투자자 본인에게 있습니다.
             </p>

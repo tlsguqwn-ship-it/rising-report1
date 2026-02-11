@@ -18,16 +18,33 @@ interface ExportModalProps {
 const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, reportType, date, reportData, darkMode = false }) => {
 
   const [isExporting, setIsExporting] = useState(false);
-  const [isDone, setIsDone] = useState(false);
+  const [isPngDone, setIsPngDone] = useState(false);
+  const [isPdfDone, setIsPdfDone] = useState(false);
   const [step, setStep] = useState<'preview' | 'export'>('preview');
   const [isSharing, setIsSharing] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [totalPages, setTotalPages] = useState(1);
+
+  // 페이지 수 감지: export 모달 열릴 때 + step 전환 시
+  React.useEffect(() => {
+    if (isOpen) {
+      // 약간의 딜레이 후 DOM에서 페이지 수 확인 (오프스크린 렌더 후)
+      const timer = setTimeout(() => {
+        const content = document.getElementById('report-content');
+        if (content) {
+          setTotalPages(content.children.length);
+        }
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
   const handleClose = () => {
     setStep('preview');
-    setIsDone(false);
+    setIsPngDone(false);
+    setIsPdfDone(false);
     onClose();
   };
 
@@ -59,7 +76,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, reportType, 
 
   const handleExportPng = async () => {
     setIsExporting(true);
-    setIsDone(false);
+    setIsPngDone(false);
     try {
       const content = document.getElementById('report-content');
       if (!content) throw new Error('리포트 콘텐츠를 찾을 수 없습니다.');
@@ -117,7 +134,8 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, reportType, 
         link.href = dataUrl;
         link.click();
 
-        await new Promise(r => setTimeout(r, 500));
+        // 브라우저 다운로드 간격: 충분한 시간을 두어 팝업 차단 방지
+        await new Promise(r => setTimeout(r, 1200));
       }
 
       // 편집용 UI 요소 복원
@@ -139,8 +157,8 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, reportType, 
         wrapper.style.transition = originalTransition;
       }
 
-      setIsDone(true);
-      setTimeout(() => setIsDone(false), 3000);
+      setIsPngDone(true);
+      setTimeout(() => setIsPngDone(false), 3000);
     } catch (err) {
       console.error('Export failed:', err);
       alert('이미지 생성에 실패했습니다. 다시 시도해주세요.');
@@ -151,7 +169,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, reportType, 
 
   const handlePrint = async () => {
     setIsExporting(true);
-    setIsDone(false);
+    setIsPdfDone(false);
     try {
       const content = document.getElementById('report-content');
       if (!content) throw new Error('리포트 콘텐츠를 찾을 수 없습니다.');
@@ -186,6 +204,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, reportType, 
 
       // A4 사이즈 PDF 생성 (210mm x 297mm)
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      (pdf as any).setDisplayMode('fullpage');
       const pdfWidth = 210;
       const pdfHeight = 297;
 
@@ -233,8 +252,8 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, reportType, 
       // PDF 다운로드
       pdf.save(generatePdfFilename());
 
-      setIsDone(true);
-      setTimeout(() => setIsDone(false), 3000);
+      setIsPdfDone(true);
+      setTimeout(() => setIsPdfDone(false), 3000);
     } catch (err) {
       console.error('PDF export failed:', err);
       alert('PDF 생성에 실패했습니다. 다시 시도해주세요.');
@@ -356,8 +375,12 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, reportType, 
           <div className="p-6 space-y-5">
             {/* Info */}
             <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">파일명</span>
-              <p className="text-sm font-bold text-slate-700 mt-1 font-mono">{generateFilename(1)}.PNG</p>
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">파일명 ({totalPages}페이지)</span>
+              <div className="mt-1 space-y-0.5">
+                {Array.from({ length: totalPages }, (_, i) => (
+                  <p key={i} className="text-sm font-bold text-slate-700 font-mono">{generateFilename(i + 1)}.PNG</p>
+                ))}
+              </div>
               <p className="text-[11px] text-slate-400 mt-2">고해상도 4x (인쇄/발표용 최고 품질)</p>
             </div>
 
@@ -370,7 +393,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, reportType, 
               >
                 {isExporting ? (
                   <><Loader2 size={16} className="animate-spin" /> 생성 중...</>
-                ) : isDone ? (
+                ) : isPngDone ? (
                   <><Check size={16} /> 완료!</>
                 ) : (
                   <><ImageIcon size={16} /> PNG 저장</>
@@ -383,6 +406,8 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, reportType, 
               >
                 {isExporting ? (
                   <><Loader2 size={16} className="animate-spin" /> 생성 중...</>
+                ) : isPdfDone ? (
+                  <><Check size={16} /> 완료!</>
                 ) : (
                   <><FileText size={16} /> PDF 출력</>
                 )}
