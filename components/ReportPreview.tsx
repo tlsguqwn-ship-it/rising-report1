@@ -600,7 +600,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
             value={isPreMarket ? (data.featuredStockLabel || '금일 공략주') : (data.featuredStockLabel || '내일 관심주')}
             onSave={(v) => onChange({ ...data, featuredStockLabel: v })}
             isModal={isModalView}
-            className={`shrink-0 uppercase tracking-widest text-[12px] font-[900] ${isPreMarket ? 'bg-sky-200/70 text-sky-700' : (isDark ? 'bg-amber-400/20 text-amber-500' : 'bg-amber-100 text-amber-700')} px-3.5 py-1.5 rounded-lg`}
+            className={`shrink-0 uppercase tracking-widest text-[12px] font-[900] ${isPreMarket ? 'bg-sky-200/70 text-sky-700' : (isDark ? 'bg-amber-400/20 text-amber-500' : 'bg-amber-100 text-amber-700')} px-3.5 py-1.5 rounded-full`}
           />
           <div className="flex-1">
             <ChipInput
@@ -725,7 +725,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                     </div>
                   )}
                 </td>
-                <td className={`${isPreMarket ? 'pl-2' : 'pl-8'} pr-3 py-2 text-[15px] font-medium ${subText} leading-[1.5] align-middle`} style={{ width: '56%' }}>
+                <td className={`${isPreMarket ? 'pl-2' : 'pl-8'} pr-3 py-2 text-[15px] font-bold ${subText} leading-[1.5] align-middle`} style={{ width: '56%' }}>
                   <EditableText value={stock.reason} onSave={(v) => updateArr('featuredStocks', idx, 'reason', v)} isModal={isModalView} placeholder="EX. 미국 AI 칩 수요 폭증 및 실적 호조"  />
                 </td>
               </tr>

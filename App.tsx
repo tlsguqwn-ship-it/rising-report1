@@ -80,7 +80,7 @@ const MainEditor: React.FC = () => {
     const dayName = dayNames[now.getDay()];
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
-    return `${year}년 ${month}월 ${day}일 (${dayName}) ${hours}:${minutes} 발행`;
+    return `${year}년 ${month}월 ${day}일(${dayName}) ${hours}:${minutes} 발행`;
   };
 
   // ===========================
