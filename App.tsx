@@ -62,6 +62,9 @@ const App: React.FC = () => {
   const handleModeSwitch = useCallback(() => {
     const next = reportData.reportType === '장전' ? '마감' : '장전';
 
+    // 현재 데이터를 localStorage에 저장 (되돌아올 때 유지)
+    try { localStorage.setItem(getStorageKey(reportData.reportType), JSON.stringify(reportData)); } catch { /* ignore */ }
+
     // 마지막 모드 저장
     try { localStorage.setItem('rising-report-lastMode', next); } catch { /* ignore */ }
 
