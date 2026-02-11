@@ -482,9 +482,9 @@ const fetchNaverBitcoin = async (): Promise<{
         const eok = Math.floor(num / 100000000);
         const man = Math.floor((num % 100000000) / 10000);
         if (eok > 0) {
-          value = `${eok}억 ${man}만`;
+          value = `${eok}억 ${man}만원`;
         } else if (man > 0) {
-          value = `${man}만`;
+          value = `${man}만원`;
         } else {
           value = num.toLocaleString();
         }
