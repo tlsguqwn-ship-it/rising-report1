@@ -402,7 +402,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
             </span>
           </div>
           <EditableText value={data.title} {...ep('title')} tag="h1" className={`text-[28px] font-[900] tracking-tighter leading-tight ${pageText}`} />
-          <EditableText value={data.date} {...ep('date')} className={`text-[13px] font-semibold ${labelText} tracking-tight`} />
+          <EditableText value={data.date} {...ep('date')} className={`text-[13px] font-semibold ${labelText} tracking-tight`} placeholder="EX. 2026년 2월 11일 (화) 15:40 발행" />
         </div>
         <span className={`text-[36px] font-[900] uppercase leading-none shrink-0 ml-6 self-center text-transparent bg-clip-text`}
           style={{
@@ -560,7 +560,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
         </div>
       </div>
       <EditableText value={data.currentMarketView} {...ep('currentMarketView')}
-        className="text-[15px] font-bold leading-[1.7] text-slate-50 tracking-tight flex-1" />
+        className="text-[15px] font-bold leading-[1.7] text-slate-50 tracking-tight flex-1" placeholder="EX. 시황을 적어주세요" />
     </div>
   );
 
@@ -593,7 +593,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
         </div>
         <div className={`border-t ${isDark ? 'border-white/5' : 'border-black/5'} pt-3`}>
           <EditableText value={data.expertAnalysis} {...ep('expertAnalysis')}
-            className={`text-[17px] font-bold ${isDark ? 'text-slate-300' : 'text-slate-800'} leading-[2.0] text-justify`} />
+            className={`text-[17px] font-bold ${isDark ? 'text-slate-300' : 'text-slate-800'} leading-[2.0] text-justify`} placeholder="EX. 전문가 분석을 적어주세요" />
         </div>
         <div className={`mt-2.5 pt-2.5 border-t ${isDark ? 'border-white/5' : 'border-black/5'} flex items-center gap-3 shrink-0 flex-wrap`}>
           <span className={`shrink-0 uppercase tracking-widest text-[12px] font-[900] ${isPreMarket ? 'bg-sky-200/70 text-sky-700' : (isDark ? 'bg-amber-400/20 text-amber-500' : 'bg-amber-100 text-amber-700')} px-3.5 py-1.5 rounded-lg`}>
@@ -856,7 +856,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                 <span className="text-[18px] leading-none mt-[3px]">💬</span>
                 <div className="flex-1">
                   <span className={`text-[10px] font-black ${isDark ? 'text-amber-400' : (isPreMarket ? 'text-slate-300' : 'text-amber-400')} uppercase tracking-widest`}>오늘의 한마디</span>
-                  <EditableText value={data.dailyComment} {...ep('dailyComment')} className="text-[12px] font-bold text-white/90 leading-[1.6] mt-1" />
+                  <EditableText value={data.dailyComment} {...ep('dailyComment')} className="text-[12px] font-bold text-white/90 leading-[1.6] mt-1" placeholder="EX. 오늘의 한마디를 적어주세요" />
                 </div>
               </div>
             </div>
