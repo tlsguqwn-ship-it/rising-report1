@@ -830,6 +830,10 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
             {renderInsight()}
             {renderFeaturedStocks()}
           </div>
+          {/* 페이지 번호 */}
+          <div className="absolute bottom-[6mm] left-0 right-0 flex justify-center">
+            <span className={`text-[9px] font-bold tracking-widest ${isDark ? 'text-slate-600' : 'text-slate-300'}`}>— 1 / 2 —</span>
+          </div>
         </div>
 
         {/* ========== 2페이지 ========== */}
@@ -860,6 +864,10 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                 </div>
               </div>
             </div>
+          </div>
+          {/* 페이지 번호 */}
+          <div className={`absolute bottom-[12mm] left-0 right-0 flex justify-center`}>
+            <span className={`text-[9px] font-bold tracking-widest ${isDark ? 'text-slate-600' : 'text-slate-300'}`}>— 2 / 2 —</span>
           </div>
           {/* 하단 면책 */}
           <div className={`absolute bottom-0 left-0 right-0 px-[14mm] pb-[6mm] pt-2 border-t ${isDark ? 'border-white/5' : 'border-gray-100'} text-center opacity-40`}>
