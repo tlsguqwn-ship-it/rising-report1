@@ -213,6 +213,16 @@ const Toolbar: React.FC<ToolbarProps> = ({
 
         <div className="h-8 w-px bg-slate-200 mx-1" />
 
+        {/* 새로고침 (초기화) 버튼 - 템플릿 전환 버튼 왼쪽 */}
+        <button
+          onClick={onReset}
+          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-700 hover:bg-slate-100 border border-slate-200 transition-all active:scale-95"
+          title="새로고침"
+        >
+          <RotateCcw size={15} />
+          새로고침
+        </button>
+
         {/* Mode Toggle */}
         <button
           onClick={onModeSwitch}
@@ -452,14 +462,6 @@ const Toolbar: React.FC<ToolbarProps> = ({
 
       {/* Right: Actions */}
       <div className="flex gap-2 items-center">
-        <button
-          onClick={onReset}
-          className="px-3 py-2 text-[11px] font-bold text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all flex items-center gap-1.5"
-          title="초기화"
-        >
-          <RotateCcw size={13} />
-          Reset
-        </button>
         <button
           onClick={onExport}
           className="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg transition-all active:scale-95 flex items-center gap-2 text-xs"
