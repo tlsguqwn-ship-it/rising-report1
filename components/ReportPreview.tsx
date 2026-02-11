@@ -402,12 +402,12 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
           <EditableText value={data.date} {...ep('date')} className={`text-[13px] font-semibold ${labelText} tracking-tight`} />
         </div>
         <div className="shrink-0 ml-6 self-center flex flex-col items-center">
-          <span className={`text-[28px] font-[900] uppercase leading-none ${
+          <span className={`text-[36px] font-[900] uppercase leading-none ${
             isDark 
               ? 'text-transparent bg-clip-text bg-gradient-to-b from-white to-slate-400' 
               : 'text-transparent bg-clip-text bg-gradient-to-b from-slate-800 to-slate-500'
           }`} style={{ fontStretch: 'condensed', letterSpacing: '0.08em' }}>RISING</span>
-          <span className={`text-[10px] font-medium uppercase leading-none mt-[3px] ${
+          <span className={`text-[12px] font-medium uppercase leading-none mt-[3px] ${
             isDark ? 'text-slate-400' : 'text-slate-500'
           }`} style={{ letterSpacing: '0.38em' }}>STOCK</span>
         </div>

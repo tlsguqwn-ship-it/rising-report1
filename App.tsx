@@ -13,7 +13,19 @@ const getStorageKey = (type: '장전' | '마감') => `rising-report-${type === '
 const loadSavedTemplate = (type: '장전' | '마감'): ReportData | null => {
   try {
     const saved = localStorage.getItem(getStorageKey(type));
-    if (saved) return JSON.parse(saved);
+    if (saved) {
+      const data = JSON.parse(saved) as ReportData;
+      // 타이틀 마이그레이션: 구 타이틀 → 새 타이틀
+      const titleMigrations: Record<string, string> = {
+        '[마감 REPORT] RISING STOCK 마감 시황 리포트': 'RISING STOCK 마감 시황',
+        '[장전 REPORT] RISING STOCK 마켓 데일리 리포트': 'RISING STOCK 장전 시황',
+        'RISING STOCK 마켓 데일리': 'RISING STOCK 장전 시황',
+      };
+      if (data.title && titleMigrations[data.title]) {
+        data.title = titleMigrations[data.title];
+      }
+      return data;
+    }
   } catch { /* ignore */ }
   return null;
 };
