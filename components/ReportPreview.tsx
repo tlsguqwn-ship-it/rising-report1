@@ -451,7 +451,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                     />
                   </div>
                   <span className={`text-[12px] font-bold leading-none shrink-0 whitespace-nowrap ${trendColor}`}>
-                    {arrow && <span className="mr-0.5">{arrow}</span>}{changeAmt}{changePct && <span className="ml-1">{changePct}</span>}
+                    {arrow && <span className="mr-0.5">{arrow}</span>}{changeAmt}{changePct && <span className="ml-2">{changePct}</span>}
                   </span>
                 </div>
               );
