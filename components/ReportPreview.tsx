@@ -215,7 +215,7 @@ const ChipInput: React.FC<{
     return (
       <div className={`flex flex-wrap ${isLg ? 'gap-2' : 'gap-1'}`}>
         {chips.map((chip, i) => (
-          <span key={i} className={`inline-flex items-center ${isLg ? 'px-3 py-1.5 rounded-lg text-[13px]' : 'px-2 py-0.5 rounded-md text-[10px]'} font-bold border whitespace-nowrap ${chipStyle}`}>
+          <span key={i} className={`inline-flex items-center ${isLg ? 'px-3.5 py-1.5 rounded-lg text-[13px]' : 'px-2 py-0.5 rounded-md text-[10px]'} font-bold border whitespace-nowrap ${chipStyle}`}>
             {chip}
           </span>
         ))}
@@ -243,7 +243,7 @@ const ChipInput: React.FC<{
 
   // 칩을 처음부터 칩 형태로 표시 & contentEditable로 인라인 편집
   const renderChip = (chip: string, i: number) => (
-    <span key={i} className={`group/chip relative inline-flex items-center cursor-text ${isLg ? 'px-3 py-1.5 rounded-lg text-[13px]' : 'px-2 py-0.5 rounded-md text-[11px] leading-[18px]'} font-bold border whitespace-nowrap ${chipStyle} hover:shadow-sm transition-shadow focus-within:ring-2 focus-within:ring-blue-300 focus-within:shadow-sm`}>
+    <span key={i} className={`group/chip relative inline-flex items-center cursor-text ${isLg ? 'px-3.5 py-1.5 rounded-lg text-[13px]' : 'px-2 py-0.5 rounded-md text-[11px] leading-[18px]'} font-bold border whitespace-nowrap ${chipStyle} hover:shadow-sm transition-shadow focus-within:ring-2 focus-within:ring-blue-300 focus-within:shadow-sm`}>
       <span
         ref={el => { chipRefs.current[i] = el; }}
         contentEditable

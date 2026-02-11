@@ -32,10 +32,29 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, reportType, 
   };
 
   const generateFilename = (pageNum: number) => {
-    // date에서 시간 부분 제거 (예: "2026년 2월 10일(월) 08:20 발행" → "2026년 2월 10일(월)")
-    const dateOnly = date.replace(/\s*\d{1,2}:\d{2}.*$/, '').trim();
+    const now = new Date();
+    const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+    const yy = String(now.getFullYear()).slice(2);
+    const mm = now.getMonth() + 1;
+    const dd = now.getDate();
+    const dayName = dayNames[now.getDay()];
+    const hh = String(now.getHours()).padStart(2, '0');
+    const min = String(now.getMinutes()).padStart(2, '0');
     const mode = reportType === '장전' ? '장전시황' : '마감시황';
-    return `${dateOnly} ${mode} (${pageNum})`;
+    return `${yy}년${mm}월${dd}일(${dayName}) ${hh}:${min} ${mode} ${pageNum}P`;
+  };
+
+  const generatePdfFilename = () => {
+    const now = new Date();
+    const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+    const yy = String(now.getFullYear()).slice(2);
+    const mm = now.getMonth() + 1;
+    const dd = now.getDate();
+    const dayName = dayNames[now.getDay()];
+    const hh = String(now.getHours()).padStart(2, '0');
+    const min = String(now.getMinutes()).padStart(2, '0');
+    const mode = reportType === '장전' ? '장전시황' : '마감시황';
+    return `${yy}년${mm}월${dd}일(${dayName}) ${hh}:${min} ${mode}.pdf`;
   };
 
   const handleExportPng = async () => {
@@ -94,7 +113,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, reportType, 
         });
 
         const link = document.createElement('a');
-        link.download = `${generateFilename(i + 1)}.png`;
+        link.download = `${generateFilename(i + 1)}.PNG`;
         link.href = dataUrl;
         link.click();
 
@@ -212,9 +231,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, reportType, 
       }
 
       // PDF 다운로드
-      const dateOnly = date.replace(/\s*\d{1,2}:\d{2}.*$/, '').trim();
-      const mode = reportType === '장전' ? '장전시황' : '마감시황';
-      pdf.save(`${dateOnly} ${mode}.pdf`);
+      pdf.save(generatePdfFilename());
 
       setIsDone(true);
       setTimeout(() => setIsDone(false), 3000);
@@ -244,11 +261,34 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, reportType, 
 
 
   // ========================
-  // Step 1: 미리보기
+  // Render
   // ========================
-  if (step === 'preview') {
-    return (
-      <div className="fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-xl flex items-center justify-center p-4 no-print animate-fade-in">
+  return (
+    <div className="fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-xl flex items-center justify-center p-4 no-print animate-fade-in">
+
+      {/* 오프스크린 캡처용 ReportPreview (항상 렌더링, PDF/PNG 캡처에 사용) */}
+      <div
+        style={{
+          position: 'fixed',
+          left: '-9999px',
+          top: '0',
+          width: '210mm',
+          zIndex: -1,
+          pointerEvents: 'none',
+        }}
+      >
+        {reportData && (
+          <ReportPreview
+            data={reportData}
+            onChange={() => {}}
+            isModalView={true}
+            darkMode={darkMode}
+          />
+        )}
+      </div>
+
+      {/* Step 1: 미리보기 */}
+      {step === 'preview' && (
         <div className="bg-white rounded-3xl w-full max-w-[900px] max-h-[90vh] shadow-2xl overflow-hidden animate-scale-in flex flex-col">
           {/* Header */}
           <div className="p-5 border-b border-slate-100 flex justify-between items-center flex-shrink-0">
@@ -291,105 +331,107 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, reportType, 
             </button>
           </div>
         </div>
-      </div>
-    );
-  }
+      )}
 
-  // ========================
-  // Step 2: 내보내기 옵션
-  // ========================
-  return (
-    <div className="fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-xl flex items-center justify-center p-4 no-print animate-fade-in">
-      <div className="bg-white rounded-3xl w-full max-w-[520px] shadow-2xl overflow-hidden animate-scale-in">
-        {/* Header */}
-        <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white shadow-lg">
-              <Download size={18} />
+      {/* Step 2: 내보내기 옵션 */}
+      {step === 'export' && (
+        <div className="bg-white rounded-3xl w-full max-w-[520px] shadow-2xl overflow-hidden animate-scale-in">
+          {/* Header */}
+          <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white shadow-lg">
+                <Download size={18} />
+              </div>
+              <div>
+                <h3 className="text-base font-black text-slate-900 tracking-tight">리포트 내보내기</h3>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.15em]">Export & Download</p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-base font-black text-slate-900 tracking-tight">리포트 내보내기</h3>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.15em]">Export & Download</p>
-            </div>
-          </div>
-          <button onClick={handleClose} className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-all">
-            <X size={18} />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="p-6 space-y-5">
-          {/* Info */}
-          <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">파일명</span>
-            <p className="text-sm font-bold text-slate-700 mt-1 font-mono">{generateFilename(1)}.png</p>
-            <p className="text-[11px] text-slate-400 mt-2">고해상도 4x (인쇄/발표용 최고 품질)</p>
-          </div>
-
-          {/* Export Buttons */}
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              onClick={handleExportPng}
-              disabled={isExporting}
-              className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50 text-sm shadow-lg"
-            >
-              {isExporting ? (
-                <><Loader2 size={16} className="animate-spin" /> 생성 중...</>
-              ) : isDone ? (
-                <><Check size={16} /> 완료!</>
-              ) : (
-                <><ImageIcon size={16} /> PNG 저장</>
-              )}
-            </button>
-            <button
-              onClick={handlePrint}
-              className="bg-white border border-slate-200 text-slate-700 px-6 py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-50 transition-all active:scale-95 text-sm shadow-sm"
-            >
-              <FileText size={16} /> PDF 출력
+            <button onClick={handleClose} className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-all">
+              <X size={18} />
             </button>
           </div>
 
-          {/* Share Button */}
-          <button
-            onClick={handleShare}
-            disabled={isSharing}
-            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-6 py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50 text-sm shadow-lg"
-          >
-            {isSharing ? (
-              <><Loader2 size={16} className="animate-spin" /> 공유 링크 생성 중...</>
-            ) : shareUrl ? (
-              <><Check size={16} /> 링크 복사 완료!</>
-            ) : (
-              <><Link2 size={16} /> 공유 링크 생성</>
-            )}
-          </button>
-          {shareUrl && (
-            <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 flex items-center gap-2">
-              <input
-                type="text"
-                value={shareUrl}
-                readOnly
-                className="flex-1 text-[11px] font-mono text-slate-600 bg-transparent outline-none truncate"
-              />
+          {/* Content */}
+          <div className="p-6 space-y-5">
+            {/* Info */}
+            <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">파일명</span>
+              <p className="text-sm font-bold text-slate-700 mt-1 font-mono">{generateFilename(1)}.PNG</p>
+              <p className="text-[11px] text-slate-400 mt-2">고해상도 4x (인쇄/발표용 최고 품질)</p>
+            </div>
+
+            {/* Export Buttons */}
+            <div className="grid grid-cols-2 gap-3">
               <button
-                onClick={() => { navigator.clipboard.writeText(shareUrl); }}
-                className="shrink-0 text-slate-400 hover:text-blue-600 transition-colors p-1"
-                title="복사"
+                onClick={handleExportPng}
+                disabled={isExporting}
+                className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50 text-sm shadow-lg"
               >
-                <Copy size={14} />
+                {isExporting ? (
+                  <><Loader2 size={16} className="animate-spin" /> 생성 중...</>
+                ) : isDone ? (
+                  <><Check size={16} /> 완료!</>
+                ) : (
+                  <><ImageIcon size={16} /> PNG 저장</>
+                )}
+              </button>
+              <button
+                onClick={handlePrint}
+                disabled={isExporting}
+                className="bg-white border border-slate-200 text-slate-700 px-6 py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-50 transition-all active:scale-95 text-sm shadow-sm disabled:opacity-50"
+              >
+                {isExporting ? (
+                  <><Loader2 size={16} className="animate-spin" /> 생성 중...</>
+                ) : (
+                  <><FileText size={16} /> PDF 출력</>
+                )}
               </button>
             </div>
-          )}
 
-          {/* Back Button */}
-          <button onClick={() => setStep('preview')} className="w-full text-center text-sm font-bold text-slate-400 hover:text-slate-600 transition-all flex items-center justify-center gap-1.5 py-1">
-            <ArrowLeft size={14} />
-            미리보기로 돌아가기
-          </button>
+            {/* Share Button */}
+            <button
+              onClick={handleShare}
+              disabled={isSharing}
+              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-6 py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50 text-sm shadow-lg"
+            >
+              {isSharing ? (
+                <><Loader2 size={16} className="animate-spin" /> 공유 링크 생성 중...</>
+              ) : shareUrl ? (
+                <><Check size={16} /> 링크 복사 완료!</>
+              ) : (
+                <><Link2 size={16} /> 공유 링크 생성</>
+              )}
+            </button>
+            {shareUrl && (
+              <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 flex items-center gap-2">
+                <input
+                  type="text"
+                  value={shareUrl}
+                  readOnly
+                  className="flex-1 text-[11px] font-mono text-slate-600 bg-transparent outline-none truncate"
+                />
+                <button
+                  onClick={() => { navigator.clipboard.writeText(shareUrl); }}
+                  className="shrink-0 text-slate-400 hover:text-blue-600 transition-colors p-1"
+                  title="복사"
+                >
+                  <Copy size={14} />
+                </button>
+              </div>
+            )}
+
+            {/* Back Button */}
+            <button onClick={() => setStep('preview')} className="w-full text-center text-sm font-bold text-slate-400 hover:text-slate-600 transition-all flex items-center justify-center gap-1.5 py-1">
+              <ArrowLeft size={14} />
+              미리보기로 돌아가기
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
 
 export default ExportModal;
+
