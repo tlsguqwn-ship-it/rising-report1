@@ -650,7 +650,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                   <span className="block text-center">국내 관련주</span>
                 ) : (
                   <div className="grid grid-cols-[90px_12px_60px] items-center gap-0">
-                    <span className="text-right">종가</span>
+                    <span className="text-center">종가</span>
                     <div />
                     <span className="text-center">등락률</span>
                   </div>
