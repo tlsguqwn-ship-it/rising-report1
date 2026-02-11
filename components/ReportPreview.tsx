@@ -645,7 +645,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
           <thead>
             <tr className={`h-[8mm] border-b ${cardBorder} ${labelText}`}>
               <th className="px-3 text-[11px] font-bold uppercase tracking-tight pl-4" style={{ width: '22%' }}>{isPreMarket ? '이슈 키워드' : '종목명'}</th>
-              <th className="px-2 text-[11px] font-bold uppercase tracking-tight" style={{ width: '22%' }}>
+              <th className="pl-0 pr-2 text-[11px] font-bold uppercase tracking-tight" style={{ width: '22%' }}>
                 {isPreMarket ? (
                   <span className="block text-center">국내 관련주</span>
                 ) : (
@@ -683,7 +683,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                   )}
                   <EditableText value={stock.name} onSave={(v) => updateArr('featuredStocks', idx, 'name', v)} isModal={isModalView} placeholder="EX. 삼성전자" className="truncate" />
                 </td>
-                <td className={`py-2 border-r ${isDark ? 'border-[#1a1a24]' : 'border-slate-50'} align-middle`} style={{ width: '22%' }}>
+                <td className={`py-2 pl-0 border-r ${isDark ? 'border-[#1a1a24]' : 'border-slate-50'} align-middle`} style={{ width: '22%' }}>
                   {isPreMarket ? (
                     <ChipInput value={stock.change} onSave={(v) => updateArr('featuredStocks', idx, 'change', v)} isModal={isModalView} placeholder="EX. 종목명 입력 후 Enter" vertical />
                   ) : (
