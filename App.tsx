@@ -99,6 +99,13 @@ const App: React.FC = () => {
     // 마지막 모드 저장
     try { localStorage.setItem('rising-report-lastMode', next); } catch { /* ignore */ }
 
+    // 전환 대상 타입의 히스토리 로드
+    try {
+      const historyKey = `rising-report-history-${next === '장전' ? 'pre' : 'close'}`;
+      const saved = localStorage.getItem(historyKey);
+      setTemplateHistory(saved ? JSON.parse(saved) : []);
+    } catch { setTemplateHistory([]); }
+
     // 전환 대상 타입의 저장된 데이터 확인
     const savedForNext = loadSavedTemplate(next);
     if (savedForNext) {
