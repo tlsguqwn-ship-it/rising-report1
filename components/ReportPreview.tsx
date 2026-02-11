@@ -702,7 +702,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                           }}
                           className={`${pageText} outline-none cursor-text`}
                         >{hasSlash ? formatPrice(rawPrice) : ''}</span>
-                        <span className={`${pageText} shrink-0`}>원</span>
+                        <span className={`${pageText} shrink-0 ml-[2px]`}>원</span>
                       </div>
                       <span className={`${pageText} shrink-0 px-1.5`}>/</span>
                       <div className="flex items-center">
@@ -716,8 +716,9 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                             updateArr('featuredStocks', idx, 'change', `${currentPrice}원 / ${val}%`);
                           }}
                           className={`${rateColor} outline-none cursor-text`}
+                          style={{ minWidth: '2ch' }}
                         >{hasSlash ? rawRate : ''}</span>
-                        <span className={`${rateColor} shrink-0`}>%</span>
+                        <span className={`${rateColor} shrink-0 ml-[2px]`}>%</span>
                       </div>
                     </div>
                   )}
