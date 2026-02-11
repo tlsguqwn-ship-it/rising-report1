@@ -441,8 +441,8 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                 item.trend === 'down' ? 'text-[#3182f6]' : pageText;
               return (
                 <div key={idx} className={`${cardBg} px-4 py-3.5 rounded-xl border ${cardBorder} shadow-sm flex items-center justify-between`}>
-                  <div className="flex items-center">
-                    <span className={`text-[11px] font-extrabold ${labelText} uppercase leading-none tracking-tight shrink-0`} style={{ width: '52px' }}>{item.label}</span>
+                  <div className="flex items-center gap-2.5">
+                    <span className={`text-[11px] font-extrabold ${labelText} uppercase leading-none tracking-tight shrink-0`}>{item.label}</span>
                     <EditableText
                       value={item.value}
                       onSave={(v) => updateArr('summaryItems', idx, 'value', v)}
