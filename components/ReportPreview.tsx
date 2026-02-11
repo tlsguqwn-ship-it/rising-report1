@@ -430,20 +430,26 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
           <div className="grid grid-cols-2 gap-2 mb-2">
             {topItems.map((item, idx) => {
               const arrow = item.trend === 'up' ? '▲' : item.trend === 'down' ? '▼' : '';
-              const pctText = item.subText || '';
+              const subRaw = item.subText || '';
+              // subText를 변동폭과 퍼센트로 분리 (예: "49.86 +0.94%" → ["49.86", "+0.94%"])
+              const subParts = subRaw.trim().split(/\s+/);
+              const changeAmt = subParts.length >= 2 ? subParts[0] : '';
+              const changePct = subParts.length >= 2 ? subParts.slice(1).join(' ') : subRaw;
               const trendColor = item.trend === 'up' ? 'text-[#f04452]' :
                 item.trend === 'down' ? 'text-[#3182f6]' : pageText;
               return (
-                <div key={idx} className={`${cardBg} px-4 py-3.5 rounded-xl border ${cardBorder} shadow-sm flex items-center gap-3`}>
-                  <span className={`text-[11px] font-extrabold ${labelText} uppercase leading-none tracking-tight shrink-0 w-[48px]`}>{item.label}</span>
+                <div key={idx} className={`${cardBg} px-4 py-3.5 rounded-xl border ${cardBorder} shadow-sm flex items-baseline gap-3`}>
+                  <span className={`text-[11px] font-extrabold ${labelText} uppercase leading-none tracking-tight shrink-0`} style={{ width: '52px' }}>{item.label}</span>
                   <EditableText
                     value={item.value}
                     onSave={(v) => updateArr('summaryItems', idx, 'value', v)}
                     isModal={isModalView}
-                    className={`text-[17px] font-[900] leading-none tracking-tight ${trendColor} flex-1`}
+                    className={`text-[17px] font-[900] leading-none tracking-tight ${trendColor}`}
                   />
-                  <span className={`text-[12px] font-bold leading-none shrink-0 whitespace-nowrap ${trendColor}`}>
-                    {arrow && <span className="mr-1">{arrow}</span>}{pctText}
+                  <span className={`text-[12px] font-bold leading-none shrink-0 whitespace-nowrap ${trendColor} ml-auto`}>
+                    {arrow && <span className="mr-1">{arrow}</span>}
+                    {changeAmt && <span>{changeAmt}</span>}
+                    {changePct && <span className="ml-2">{changePct}</span>}
                   </span>
                 </div>
               );
