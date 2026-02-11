@@ -431,25 +431,22 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
             {topItems.map((item, idx) => {
               const arrow = item.trend === 'up' ? '▲' : item.trend === 'down' ? '▼' : '';
               const subRaw = item.subText || '';
-              // subText를 변동폭과 퍼센트로 분리 (예: "49.86 +0.94%" → ["49.86", "+0.94%"])
               const subParts = subRaw.trim().split(/\s+/);
               const changeAmt = subParts.length >= 2 ? subParts[0] : '';
               const changePct = subParts.length >= 2 ? subParts.slice(1).join(' ') : subRaw;
               const trendColor = item.trend === 'up' ? 'text-[#f04452]' :
                 item.trend === 'down' ? 'text-[#3182f6]' : pageText;
               return (
-                <div key={idx} className={`${cardBg} px-4 py-3.5 rounded-xl border ${cardBorder} shadow-sm flex items-center gap-2`}>
-                  <span className={`text-[11px] font-extrabold ${labelText} uppercase leading-none tracking-tight shrink-0`} style={{ width: '52px' }}>{item.label}</span>
+                <div key={idx} className={`${cardBg} px-4 py-3.5 rounded-xl border ${cardBorder} shadow-sm flex items-center`}>
+                  <span className={`text-[11px] font-extrabold ${labelText} uppercase leading-none tracking-tight shrink-0 mr-3`} style={{ width: '48px' }}>{item.label}</span>
                   <EditableText
                     value={item.value}
                     onSave={(v) => updateArr('summaryItems', idx, 'value', v)}
                     isModal={isModalView}
-                    className={`text-[17px] font-[900] leading-none tracking-tight ${trendColor}`}
+                    className={`text-[17px] font-[900] leading-none tracking-tight ${trendColor} shrink-0`}
                   />
-                  <span className={`text-[12px] font-bold leading-none shrink-0 whitespace-nowrap ${trendColor}`}>
-                    {arrow && <span className="mr-0.5">{arrow}</span>}
-                    {changeAmt && <span>{changeAmt}</span>}
-                    {changePct && <span className="ml-1.5">{changePct}</span>}
+                  <span className={`text-[12px] font-bold leading-none shrink-0 whitespace-nowrap ${trendColor} ml-3`}>
+                    {arrow && <span className="mr-0.5">{arrow}</span>}{changeAmt}{changePct && <span className="ml-1">{changePct}</span>}
                   </span>
                 </div>
               );
@@ -671,12 +668,12 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                   )}
                   <EditableText value={stock.name} onSave={(v) => updateArr('featuredStocks', idx, 'name', v)} isModal={isModalView} placeholder="EX. 삼성전자" className="truncate" />
                 </td>
-                <td className={`px-2 py-2 border-r ${isDark ? 'border-[#1a1a24]' : 'border-slate-50'} align-middle`} style={{ width: '25%' }}>
+                <td className={`py-2 border-r ${isDark ? 'border-[#1a1a24]' : 'border-slate-50'} align-middle`} style={{ width: '25%' }}>
                   {isPreMarket ? (
                     <ChipInput value={stock.change} onSave={(v) => updateArr('featuredStocks', idx, 'change', v)} isModal={isModalView} placeholder="EX. 종목명 입력 후 Enter" vertical />
                   ) : (
-                    <div className="flex items-center text-[13px] font-[900] leading-snug whitespace-nowrap">
-                      <div className="flex items-center">
+                    <div className="text-[13px] font-[900] leading-snug whitespace-nowrap" style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center' }}>
+                      <div className="flex items-center justify-end">
                         <input
                           type="text"
                           defaultValue={hasSlash ? formatPrice(rawPrice) : ''}
@@ -695,7 +692,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                         />
                         <span className={`${pageText} text-[13px] font-[900] shrink-0`}>원</span>
                       </div>
-                      <span className={`${pageText} text-[13px] font-[900] shrink-0 mx-1`}>/</span>
+                      <span className={`${pageText} text-[13px] font-[900] px-[3px]`}>/</span>
                       <div className="flex items-center">
                         <input
                           type="text"
@@ -707,7 +704,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                             const currentPrice = formatPrice((stock.change.split('/')[0] || '').replace(/[원,\s]/g, ''));
                             updateArr('featuredStocks', idx, 'change', `${currentPrice}원 / ${val}%`);
                           }}
-                          className={`${rateColor} bg-transparent border-none outline-none font-[900] text-[13px] text-left placeholder-slate-300 w-[42px]`}
+                          className={`${rateColor} bg-transparent border-none outline-none font-[900] text-[13px] text-left placeholder-slate-300 w-[36px]`}
                         />
                         <span className={`${rateColor} text-[13px] font-[900] shrink-0`}>%</span>
                       </div>
