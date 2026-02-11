@@ -649,10 +649,10 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                 {isPreMarket ? (
                   <span className="block text-center">국내 관련주</span>
                 ) : (
-                  <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-0">
+                  <div className="grid grid-cols-[1fr_8px_55px] items-center gap-0">
                     <span className="text-center">종가</span>
-                    <span className="px-1.5 invisible">/</span>
-                    <span className="text-center">등락률</span>
+                    <div />
+                    <span className="text-left">등락률</span>
                   </div>
                 )}
               </th>
@@ -687,7 +687,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                   {isPreMarket ? (
                     <ChipInput value={stock.change} onSave={(v) => updateArr('featuredStocks', idx, 'change', v)} isModal={isModalView} placeholder="EX. 종목명 입력 후 Enter" vertical />
                   ) : (
-                    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-0 text-[13px] font-[900] leading-snug">
+                    <div className="grid grid-cols-[1fr_8px_55px] items-center gap-0 text-[13px] font-[900] leading-snug">
                       <div className="flex items-center justify-end">
                         <span
                           contentEditable={!isModalView}
@@ -705,7 +705,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                         >{hasSlash ? formatPrice(rawPrice) : ''}</span>
                         <span className={`${rateColor} shrink-0 ml-[2px]`}>원</span>
                       </div>
-                      <span className={`${rateColor} shrink-0 px-1.5 invisible`}>/</span>
+                      <div />
                       <div className="flex items-center">
                         <span
                           contentEditable={!isModalView}
@@ -717,7 +717,6 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                             updateArr('featuredStocks', idx, 'change', `${currentPrice}원 / ${val}%`);
                           }}
                           className={`${rateColor} outline-none cursor-text`}
-                          style={{ minWidth: '2ch' }}
                         >{hasSlash ? rawRate : ''}</span>
                         <span className={`${rateColor} shrink-0 ml-[2px]`}>%</span>
                       </div>
