@@ -441,7 +441,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                 item.trend === 'down' ? 'text-[#3182f6]' : pageText;
               return (
                 <div key={idx} className={`${cardBg} px-4 py-3.5 rounded-xl border ${cardBorder} shadow-sm flex items-center gap-3`}>
-                  <span className={`text-[11px] font-extrabold ${labelText} uppercase leading-none tracking-tight w-[52px] shrink-0`}>{item.label}</span>
+                  <span className={`text-[11px] font-extrabold ${labelText} uppercase leading-none tracking-tight w-[52px] shrink-0 -translate-y-[1px]`}>{item.label}</span>
                   <div className="flex-1 flex items-center justify-center">
                     <EditableText
                       value={item.value}
