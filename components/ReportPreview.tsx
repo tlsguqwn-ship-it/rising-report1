@@ -456,14 +456,14 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
         {data.subIndicators && data.subIndicators.length > 0 && (
           <div className="grid grid-cols-3 gap-1.5 mt-1.5">
             {data.subIndicators.map((item, idx) => (
-              <div key={`sub-${idx}`} className="bg-white/70 px-2 py-1.5 rounded-lg border border-slate-100/80 flex items-center gap-2">
-                <span className="text-[8px] font-extrabold text-slate-400 uppercase leading-none tracking-tight whitespace-nowrap">{item.label}</span>
-                <div className="flex items-center gap-1 ml-auto">
-                  <span className={`text-[10px] font-[800] leading-none tracking-tight whitespace-nowrap ${
+              <div key={`sub-${idx}`} className="bg-white/70 px-2 py-1.5 rounded-lg border border-slate-100/80 flex items-center gap-1 overflow-hidden min-w-0">
+                <span className="text-[7px] font-extrabold text-slate-400 uppercase leading-none tracking-tight whitespace-nowrap shrink-0">{item.label}</span>
+                <div className="flex items-center gap-0.5 ml-auto min-w-0">
+                  <span className={`text-[9px] font-[800] leading-none tracking-tight whitespace-nowrap ${
                     item.trend === 'up' ? 'text-[#f04452]' :
                     item.trend === 'down' ? 'text-[#3182f6]' : 'text-slate-700'
                   }`}>{item.value}</span>
-                  <span className={`text-[8px] font-bold leading-none whitespace-nowrap ${
+                  <span className={`text-[7.5px] font-bold leading-none whitespace-nowrap ${
                     item.trend === 'up' ? 'text-[#f04452]' :
                     item.trend === 'down' ? 'text-[#3182f6]' : 'text-slate-400'
                   }`}>
@@ -538,7 +538,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
         </div>
         <div className={`mt-4 pt-4 border-t ${isDark ? 'border-white/5' : 'border-black/5'} flex items-center gap-3 shrink-0 flex-wrap`}>
           <span className={`shrink-0 uppercase tracking-widest text-[12px] font-[900] ${isPreMarket ? 'bg-sky-200/70 text-sky-700' : (isDark ? 'bg-amber-400/20 text-amber-500' : 'bg-amber-100 text-amber-700')} px-3.5 py-1.5 rounded-lg`}>
-            오늘의 주목주
+            금일 관심주
           </span>
           <div className="flex-1">
             <ChipInput
