@@ -538,7 +538,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
         </div>
         <div className={`mt-4 pt-4 border-t ${isDark ? 'border-white/5' : 'border-black/5'} flex items-center gap-3 shrink-0 flex-wrap`}>
           <span className={`shrink-0 uppercase tracking-widest text-[12px] font-[900] ${isPreMarket ? 'bg-sky-200/70 text-sky-700' : (isDark ? 'bg-amber-400/20 text-amber-500' : 'bg-amber-100 text-amber-700')} px-3.5 py-1.5 rounded-lg`}>
-            Focus On
+            오늘의 주목주
           </span>
           <div className="flex-1">
             <ChipInput
