@@ -423,22 +423,22 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
               const arrow = item.trend === 'up' ? '▲' : item.trend === 'down' ? '▼' : '';
               const pctText = item.subText || '';
               return (
-                <div key={idx} className={`${cardBg} px-4 py-3.5 rounded-xl border ${cardBorder} shadow-sm flex items-center gap-3`}>
-                  <span className={`text-[10px] font-extrabold ${labelText} uppercase leading-none tracking-tight shrink-0`}>{item.label}</span>
+                <div key={idx} className={`${cardBg} px-4 py-3.5 rounded-xl border ${cardBorder} shadow-sm flex items-center`}>
+                  <span className={`text-[10px] font-extrabold ${labelText} uppercase leading-none tracking-tight shrink-0 w-[60px]`}>{item.label}</span>
                   <EditableText
                     value={item.value}
                     onSave={(v) => updateArr('summaryItems', idx, 'value', v)}
                     isModal={isModalView}
-                    className={`text-[16px] font-[900] leading-none tracking-tight ${
+                    className={`text-[16px] font-[900] leading-none tracking-tight flex-1 ${
                       item.trend === 'up' ? 'text-[#f04452]' :
                       item.trend === 'down' ? 'text-[#3182f6]' : pageText
                     }`}
                   />
-                  <span className={`text-[11px] font-bold leading-none flex items-center gap-0.5 ml-auto whitespace-nowrap ${
+                  <span className={`text-[12px] font-bold leading-none shrink-0 whitespace-nowrap text-right ${
                     item.trend === 'up' ? 'text-[#f04452]' :
                     item.trend === 'down' ? 'text-[#3182f6]' : labelText
                   }`}>
-                    {arrow}{pctText}
+                    {arrow && <span className="mr-0.5">{arrow}</span>}{pctText}
                   </span>
                 </div>
               );
