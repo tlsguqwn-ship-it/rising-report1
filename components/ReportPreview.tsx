@@ -647,7 +647,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
               <th className="px-3 text-[11px] font-bold uppercase tracking-tight pl-4" style={{ width: '22%' }}>{isPreMarket ? '이슈 키워드' : '종목명'}</th>
               <th className="pl-0 pr-2 text-[11px] font-bold uppercase tracking-tight" style={{ width: '22%' }}>
                 {isPreMarket ? (
-                  <span className="block text-center">국내 관련주</span>
+                  <span className="block">국내 관련주</span>
                 ) : (
                   <div className="grid grid-cols-[90px_12px_60px] items-center gap-0">
                     <span className="text-right pr-5">종가</span>
@@ -656,7 +656,7 @@ const ReportPreview: React.FC<Props> = ({ data, onChange, isModalView = false, o
                   </div>
                 )}
               </th>
-              <th className="px-3 text-[11px] font-bold uppercase tracking-tight text-center" style={{ width: '56%' }}>{isPreMarket ? '투자 포인트' : '등락 사유 및 분석'}</th>
+              <th className="px-3 text-[11px] font-bold uppercase tracking-tight" style={{ width: '56%' }}>{isPreMarket ? '투자 포인트' : '등락 사유 및 분석'}</th>
             </tr>
           </thead>
           <tbody className={`divide-y ${isDark ? 'divide-[#1a1a24]' : 'divide-slate-50'}`}>
