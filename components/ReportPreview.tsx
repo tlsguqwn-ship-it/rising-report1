@@ -987,7 +987,6 @@ const ReportPreview: React.FC<Props> = ({
   const renderUsMarketAnalysis = () => {
     return (
       <div className="flex flex-col gap-2 shrink-0">
-        {/* 미증시 섹터 트렌드 (위) */}
         {data.usSectors && data.usSectors.length > 0 && (
           <div className={`flex flex-col gap-2 rounded-xl border ${isDark ? "border-[#2a2a3a]" : "border-slate-200/70"} p-3 ${isDark ? "bg-[#12121a]/50" : "bg-slate-50/30"}`}>
             <div className="flex items-center shrink-0">
@@ -999,102 +998,155 @@ const ReportPreview: React.FC<Props> = ({
                 className={`text-[16px] font-black uppercase tracking-tighter ${pageText} flex items-center gap-2 before:content-[''] before:w-1.5 before:h-5 ${isDark ? "before:bg-amber-400" : "before:bg-blue-600"} before:rounded-full`}
               />
             </div>
-            {/* 2열 독립 높이 레이아웃 */}
+            {/* 2열 독립 높이 레이아웃 (드래그앤드롭) */}
             <div className="flex gap-2 items-start">
-              {[0, 1].map((col) => (
-                <div key={col} className="flex-1 flex flex-col gap-2">
-                  {data.usSectors!.filter((_, i) => i % 2 === col).map((sector) => {
-                    const realIdx = data.usSectors!.indexOf(sector);
-                    const cardBorder = isDark ? "border-slate-600/40 bg-slate-800/20" : "border-slate-200/80 bg-white/60";
-                    const dotColor =
-                      sector.sentiment === "강세" ? "bg-red-500"
-                        : sector.sentiment === "약세" ? "bg-blue-500"
-                          : "bg-slate-400";
-                    const chipColor = isDark
-                      ? "bg-slate-700/40 text-slate-200 border-slate-500/30"
-                      : "bg-slate-100 text-slate-700 border-slate-300/80";
-                    return (
-                      <div
-                        key={sector.id || realIdx}
-                        className={`rounded-xl border ${cardBorder} p-3 flex flex-col gap-3 relative group/sector`}
-                      >
-                        {/* 섹터 삭제 버튼 */}
-                        {!isModalView && data.usSectors!.length > 1 && (
-                          <button
-                            onClick={() => {
-                              const updated = (data.usSectors || []).filter((_, i) => i !== realIdx);
-                              onChange({ ...data, usSectors: updated });
-                            }}
-                            className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-400 text-white text-[10px] font-bold opacity-0 group-hover/sector:opacity-100 transition-opacity no-print flex items-center justify-center z-10"
-                          >
-                            ×
-                          </button>
-                        )}
-                        <div className="flex items-center gap-2">
-                          <span className={`w-2.5 h-2.5 rounded-full ${dotColor} shrink-0`} />
+              {[0, 1].map((col) => {
+                const colSectors = (data.usSectors || []).filter((s) => (s.column ?? 0) === col);
+                return (
+                  <div
+                    key={col}
+                    className="flex-1 flex flex-col gap-2 min-h-[40px]"
+                    onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      const dragId = e.dataTransfer.getData("text/plain");
+                      if (!dragId) return;
+                      const sectors = [...(data.usSectors || [])];
+                      const dragIdx = sectors.findIndex((s) => s.id === dragId);
+                      if (dragIdx === -1) return;
+                      // 열 변경
+                      sectors[dragIdx] = { ...sectors[dragIdx], column: col };
+                      // 드롭 위치 계산: 이 열 안에서 어디에 넣을지
+                      const colItems = sectors.filter((s) => s.id !== dragId && (s.column ?? 0) === col);
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const y = e.clientY - rect.top;
+                      let insertBeforeIdx = colItems.length;
+                      const cards = e.currentTarget.querySelectorAll("[data-sector-id]");
+                      cards.forEach((card, i) => {
+                        const cr = card.getBoundingClientRect();
+                        const mid = cr.top + cr.height / 2 - rect.top;
+                        if (y < mid && insertBeforeIdx > i) insertBeforeIdx = i;
+                      });
+                      // 드래그 항목 제거 후 재삽입
+                      const dragged = sectors.splice(dragIdx, 1)[0];
+                      // 새 열에서의 삽입 위치를 전체 배열 상 위치로 변환
+                      const finalColItems = sectors.filter((s) => (s.column ?? 0) === col);
+                      let globalInsertIdx: number;
+                      if (insertBeforeIdx >= finalColItems.length) {
+                        // 맨 끝에 추가
+                        globalInsertIdx = sectors.length;
+                      } else {
+                        globalInsertIdx = sectors.indexOf(finalColItems[insertBeforeIdx]);
+                      }
+                      sectors.splice(globalInsertIdx, 0, dragged);
+                      onChange({ ...data, usSectors: sectors });
+                    }}
+                  >
+                    {colSectors.map((sector) => {
+                      const realIdx = data.usSectors!.indexOf(sector);
+                      const cardBorder = isDark ? "border-slate-600/40 bg-slate-800/20" : "border-slate-200/80 bg-white/60";
+                      const dotColor =
+                        sector.sentiment === "강세" ? "bg-red-500"
+                          : sector.sentiment === "약세" ? "bg-blue-500"
+                            : "bg-slate-400";
+                      const chipColor = isDark
+                        ? "bg-slate-700/40 text-slate-200 border-slate-500/30"
+                        : "bg-slate-100 text-slate-700 border-slate-300/80";
+                      return (
+                        <div
+                          key={sector.id || realIdx}
+                          data-sector-id={sector.id}
+                          draggable={!isModalView}
+                          onDragStart={(e) => {
+                            e.dataTransfer.setData("text/plain", sector.id);
+                            e.dataTransfer.effectAllowed = "move";
+                            (e.currentTarget as HTMLElement).style.opacity = "0.5";
+                          }}
+                          onDragEnd={(e) => {
+                            (e.currentTarget as HTMLElement).style.opacity = "1";
+                          }}
+                          className={`rounded-xl border ${cardBorder} p-3 flex flex-col gap-3 relative group/sector ${!isModalView ? "cursor-grab active:cursor-grabbing" : ""}`}
+                        >
+                          {/* 섹터 삭제 버튼 */}
+                          {!isModalView && data.usSectors!.length > 1 && (
+                            <button
+                              onClick={() => {
+                                const updated = (data.usSectors || []).filter((_, i) => i !== realIdx);
+                                onChange({ ...data, usSectors: updated });
+                              }}
+                              className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-400 text-white text-[10px] font-bold opacity-0 group-hover/sector:opacity-100 transition-opacity no-print flex items-center justify-center z-10"
+                            >
+                              ×
+                            </button>
+                          )}
+                          <div className="flex items-center gap-2">
+                            <span className={`w-2.5 h-2.5 rounded-full ${dotColor} shrink-0`} />
+                            <EditableText
+                              value={sector.name}
+                              onSave={(v) => {
+                                const updated = [...(data.usSectors || [])];
+                                updated[realIdx] = { ...updated[realIdx], name: v };
+                                onChange({ ...data, usSectors: updated });
+                              }}
+                              isModal={isModalView}
+                              className={`text-[18px] font-[800] ${isDark ? "text-slate-200" : "text-slate-800"} leading-tight`}
+                              placeholder="섹터명"
+                            />
+                            <button
+                              onClick={() => {
+                                const cycle = ["강세", "중립", "약세"];
+                                const next = cycle[(cycle.indexOf(sector.sentiment) + 1) % 3];
+                                const updated = [...(data.usSectors || [])];
+                                updated[realIdx] = { ...updated[realIdx], sentiment: next };
+                                onChange({ ...data, usSectors: updated });
+                              }}
+                              className={`ml-auto text-[15px] font-bold rounded-md px-2.5 py-1 cursor-pointer transition-colors ${
+                                sector.sentiment === "강세"
+                                  ? "bg-red-100 text-red-700"
+                                  : sector.sentiment === "약세"
+                                    ? "bg-blue-100 text-blue-700"
+                                    : "bg-slate-100 text-slate-600"
+                              }`}
+                            >
+                              {sector.sentiment}
+                            </button>
+                          </div>
                           <EditableText
-                            value={sector.name}
+                            value={sector.issue}
                             onSave={(v) => {
                               const updated = [...(data.usSectors || [])];
-                              updated[realIdx] = { ...updated[realIdx], name: v };
+                              updated[realIdx] = { ...updated[realIdx], issue: v };
                               onChange({ ...data, usSectors: updated });
                             }}
                             isModal={isModalView}
-                            className={`text-[18px] font-[800] ${isDark ? "text-slate-200" : "text-slate-800"} leading-tight`}
-                            placeholder="섹터명"
+                            className={`text-[17px] ${isDark ? "text-slate-200" : "text-slate-700"} leading-relaxed`}
+                            placeholder="이슈 요약"
                           />
-                          <button
-                            onClick={() => {
-                              const cycle = ["강세", "중립", "약세"];
-                              const next = cycle[(cycle.indexOf(sector.sentiment) + 1) % 3];
+                          <ChipInput
+                            value={sector.stocks}
+                            onSave={(v) => {
                               const updated = [...(data.usSectors || [])];
-                              updated[realIdx] = { ...updated[realIdx], sentiment: next };
+                              updated[realIdx] = { ...updated[realIdx], stocks: v };
                               onChange({ ...data, usSectors: updated });
                             }}
-                            className={`ml-auto text-[15px] font-bold rounded-md px-2.5 py-1 cursor-pointer transition-colors ${
-                              sector.sentiment === "강세"
-                                ? "bg-red-100 text-red-700"
-                                : sector.sentiment === "약세"
-                                  ? "bg-blue-100 text-blue-700"
-                                  : "bg-slate-100 text-slate-600"
-                            }`}
-                          >
-                            {sector.sentiment}
-                          </button>
+                            isModal={isModalView}
+                            placeholder="종목 입력 후 Enter"
+                            chipClassName={chipColor}
+                            size="sm"
+                          />
                         </div>
-                        <EditableText
-                          value={sector.issue}
-                          onSave={(v) => {
-                            const updated = [...(data.usSectors || [])];
-                            updated[realIdx] = { ...updated[realIdx], issue: v };
-                            onChange({ ...data, usSectors: updated });
-                          }}
-                          isModal={isModalView}
-                          className={`text-[17px] ${isDark ? "text-slate-200" : "text-slate-700"} leading-relaxed`}
-                          placeholder="이슈 요약"
-                        />
-                        <ChipInput
-                          value={sector.stocks}
-                          onSave={(v) => {
-                            const updated = [...(data.usSectors || [])];
-                            updated[realIdx] = { ...updated[realIdx], stocks: v };
-                            onChange({ ...data, usSectors: updated });
-                          }}
-                          isModal={isModalView}
-                          placeholder="종목 입력 후 Enter"
-                          chipClassName={chipColor}
-                          size="sm"
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-              ))}
+                      );
+                    })}
+                  </div>
+                );
+              })}
             </div>
             {/* 섹터 추가 버튼 */}
             {!isModalView && data.usSectors.length < 10 && (
               <button
                 onClick={() => {
+                  const leftCount = (data.usSectors || []).filter((s) => (s.column ?? 0) === 0).length;
+                  const rightCount = (data.usSectors || []).filter((s) => (s.column ?? 0) === 1).length;
                   const newSector = {
                     id: crypto.randomUUID(),
                     name: "",
@@ -1102,6 +1154,7 @@ const ReportPreview: React.FC<Props> = ({
                     issue: "",
                     stocks: "",
                     perspective: "",
+                    column: leftCount <= rightCount ? 0 : 1,
                   };
                   onChange({ ...data, usSectors: [...(data.usSectors || []), newSector] });
                 }}

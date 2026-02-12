@@ -216,6 +216,7 @@ export const PRE_MARKET_REPORT_TEMPLATE: ReportData = {
       issue: "",
       stocks: "",
       perspective: "",
+      column: 0,
     },
     {
       id: genId(),
@@ -224,6 +225,7 @@ export const PRE_MARKET_REPORT_TEMPLATE: ReportData = {
       issue: "",
       stocks: "",
       perspective: "",
+      column: 1,
     },
     {
       id: genId(),
@@ -232,6 +234,7 @@ export const PRE_MARKET_REPORT_TEMPLATE: ReportData = {
       issue: "",
       stocks: "",
       perspective: "",
+      column: 0,
     },
     {
       id: genId(),
@@ -240,6 +243,7 @@ export const PRE_MARKET_REPORT_TEMPLATE: ReportData = {
       issue: "",
       stocks: "",
       perspective: "",
+      column: 1,
     },
   ],
   usSectorsTitle: "전일 미증시 섹터 트렌드",

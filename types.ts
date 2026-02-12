@@ -13,6 +13,7 @@ export interface Sector {
   issue: string;
   stocks: string;
   perspective: string;
+  column?: number;  // 0=좌, 1=우
 }
 
 export interface MarketSchedule {

@@ -53,6 +53,13 @@ const loadSavedTemplate = (type: '장전' | '마감'): ReportData | null => {
         data.usSectors = PRE_MARKET_REPORT_TEMPLATE.usSectors;
         data.usSectorsTitle = PRE_MARKET_REPORT_TEMPLATE.usSectorsTitle;
       }
+      // column 마이그레이션: 기존 섹터에 column이 없으면 교대 배정
+      if (data.usSectors && data.usSectors.some((s: any) => s.column === undefined)) {
+        data.usSectors = data.usSectors.map((s: any, i: number) => ({
+          ...s,
+          column: s.column ?? (i % 2),
+        }));
+      }
       return data;
     }
   } catch { /* ignore */ }
