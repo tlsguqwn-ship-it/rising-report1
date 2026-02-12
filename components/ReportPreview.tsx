@@ -998,7 +998,7 @@ const ReportPreview: React.FC<Props> = ({
                 onSave={(v) => onChange({ ...data, usSectorsTitle: v })}
                 isModal={isModalView}
                 tag="h2"
-                className={`text-[16px] font-black uppercase tracking-tighter ${pageText} flex items-center gap-2 before:content-[''] before:w-1.5 before:h-5 ${isDark ? "before:bg-amber-400" : "before:bg-blue-600"} before:rounded-full`}
+                className={`text-[18px] font-black uppercase tracking-tighter ${pageText} flex items-center gap-2 before:content-[''] before:w-1.5 before:h-5 ${isDark ? "before:bg-amber-400" : "before:bg-blue-600"} before:rounded-full`}
               />
             </div>
             {/* 2열 독립 높이 레이아웃 (드래그앤드롭) */}
@@ -1191,14 +1191,14 @@ const ReportPreview: React.FC<Props> = ({
             value={data.usMarketAnalysisTitle}
             {...ep("usMarketAnalysisTitle")}
             tag="h2"
-            className={`text-[16px] font-black uppercase tracking-tighter ${pageText} flex items-center gap-2 before:content-[''] before:w-1.5 before:h-5 ${isDark ? "before:bg-amber-400" : "before:bg-blue-600"} before:rounded-full`}
+            className={`text-[18px] font-black uppercase tracking-tighter ${pageText} flex items-center gap-2 before:content-[''] before:w-1.5 before:h-5 ${isDark ? "before:bg-amber-400" : "before:bg-blue-600"} before:rounded-full`}
           />
         </div>
         <div className={`${sectionBg} rounded-xl border ${isDark ? "border-[#2a2a3a]" : "border-slate-200/60"} p-4 shadow-sm`}>
           <EditableText
             value={data.usMarketAnalysis}
             {...ep("usMarketAnalysis")}
-            className={`text-[14px] font-medium ${pageText} leading-[1.8] whitespace-pre-wrap`}
+            className={`text-[16px] font-medium ${pageText} leading-[1.9] whitespace-pre-wrap`}
             placeholder={"EX.\n• 나스닥 +1.2% 상승, AI 반도체 섹터 강세\n• 엔비디아 실적 발표 앞두고 매수세 유입\n• 국채 금리 하락에 기술주 전반 상승"}
           />
         </div>
@@ -1216,14 +1216,14 @@ const ReportPreview: React.FC<Props> = ({
           value={data.domesticAnalysisTitle}
           {...ep("domesticAnalysisTitle")}
           tag="h2"
-          className={`text-[16px] font-black uppercase tracking-tighter ${pageText} flex items-center gap-2 before:content-[''] before:w-1.5 before:h-5 ${isDark ? "before:bg-amber-400" : "before:bg-red-500"} before:rounded-full`}
+            className={`text-[18px] font-black uppercase tracking-tighter ${pageText} flex items-center gap-2 before:content-[''] before:w-1.5 before:h-5 ${isDark ? "before:bg-amber-400" : "before:bg-red-500"} before:rounded-full`}
         />
       </div>
       <div className={`${sectionBg} rounded-xl border ${isDark ? "border-[#2a2a3a]" : "border-slate-200/60"} p-4 shadow-sm`}>
         <EditableText
           value={data.domesticAnalysis}
           {...ep("domesticAnalysis")}
-          className={`text-[14px] font-medium ${pageText} leading-[1.8] whitespace-pre-wrap`}
+          className={`text-[16px] font-medium ${pageText} leading-[1.9] whitespace-pre-wrap`}
           placeholder={"EX.\n1. 코스피 5,300pt 복귀, 외인 기관 동반 매수\n2. 반도체 장비주 강세 — HPSP, 한미반도체\n3. 바이오 섹터 소폭 약세 전환\n4. 2차전지 관련주 수급 개선 조짐"}
         />
       </div>
@@ -1307,7 +1307,7 @@ const ReportPreview: React.FC<Props> = ({
               <div className="flex items-center gap-3 mb-3">
                 <span className="text-[20px] leading-none">🎯</span>
                 <span
-                  className={`text-[15px] font-black ${isDark ? "text-amber-400" : isPreMarket ? "text-sky-300" : "text-amber-400"} uppercase tracking-widest`}
+                  className={`text-[17px] font-black ${isDark ? "text-amber-400" : isPreMarket ? "text-sky-300" : "text-amber-400"} uppercase tracking-widest`}
                 >
                   {isPreMarket ? "금일 시장전략" : "내일 시장전략"}
                 </span>
@@ -1315,7 +1315,7 @@ const ReportPreview: React.FC<Props> = ({
               <EditableText
                 value={data.todayStrategy}
                 {...ep("todayStrategy")}
-                className="text-[17px] font-bold text-white/90 leading-[2.0] text-justify"
+                className="text-[18px] font-bold text-white/90 leading-[2.0] text-justify"
                 placeholder="EX. 오늘의 시장전략을 적어주세요"
               />
               {/* 마무리 한마디 */}
@@ -1325,7 +1325,7 @@ const ReportPreview: React.FC<Props> = ({
                   <EditableText
                     value={data.dailyComment}
                     {...ep("dailyComment")}
-                    className="text-[14px] font-bold text-white/60 leading-[1.6] italic"
+                    className="text-[15px] font-bold text-white/60 leading-[1.6] italic"
                     placeholder="EX. 오늘의 한마디를 적어주세요"
                   />
                 </div>
@@ -1342,7 +1342,7 @@ const ReportPreview: React.FC<Props> = ({
                   }
                   onSave={(v) => onChange({ ...data, featuredStockLabel: v })}
                   isModal={isModalView}
-                  className={`shrink-0 uppercase tracking-widest text-[13px] font-[900] bg-white/10 text-amber-300 px-3 py-1.5 rounded-full`}
+                  className={`shrink-0 uppercase tracking-widest text-[15px] font-[900] bg-white/10 text-amber-300 px-3.5 py-1.5 rounded-full`}
                 />
                 <div className="flex-1">
                   <ChipInput
