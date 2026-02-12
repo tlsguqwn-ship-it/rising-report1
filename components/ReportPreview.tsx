@@ -982,55 +982,34 @@ const ReportPreview: React.FC<Props> = ({
   };
 
   // ===========================
-  // 전일 미증시 마감 분석 + 공략주 (1페이지)
+  // 전일 미증시 섹터 트렌드 + 마감 분석 (1페이지)
   // ===========================
   const renderUsMarketAnalysis = () => {
-    const chipColor = isPreMarket
-      ? "bg-sky-100 text-sky-800 border-sky-200/80"
-      : isDark
-        ? "bg-[#1c162a] text-amber-300 border-amber-400/30"
-        : "bg-amber-50 text-amber-800 border-amber-200/80";
     return (
       <div className="flex flex-col gap-2 shrink-0">
-        <div className="flex items-center shrink-0">
-          <EditableText
-            value={data.usMarketAnalysisTitle}
-            {...ep("usMarketAnalysisTitle")}
-            tag="h2"
-            className={`text-[14px] font-black uppercase tracking-tighter ${pageText} flex items-center gap-2 before:content-[''] before:w-1.5 before:h-5 ${isDark ? "before:bg-amber-400" : "before:bg-blue-600"} before:rounded-full`}
-          />
-        </div>
-        <div className={`${sectionBg} rounded-xl border ${isDark ? "border-[#2a2a3a]" : "border-slate-200/60"} p-4 shadow-sm`}>
-          <EditableText
-            value={data.usMarketAnalysis}
-            {...ep("usMarketAnalysis")}
-            className={`text-[12px] font-medium ${pageText} leading-[1.8] whitespace-pre-wrap`}
-            placeholder={"EX.\n• 나스닥 +1.2% 상승, AI 반도체 섹터 강세\n• 엔비디아 실적 발표 앞두고 매수세 유입\n• 국채 금리 하락에 기술주 전반 상승"}
-          />
-        </div>
-        {/* 미증시 섹터 트렌드 */}
+        {/* 미증시 섹터 트렌드 (위) */}
         {data.usSectors && data.usSectors.length > 0 && (
-          <div className="flex flex-col gap-2 mt-2">
+          <div className="flex flex-col gap-2">
             <div className="flex items-center shrink-0">
               <EditableText
                 value={data.usSectorsTitle || "전일 미증시 섹터 트렌드"}
                 onSave={(v) => onChange({ ...data, usSectorsTitle: v })}
                 isModal={isModalView}
-                tag="h3"
-                className={`text-[12px] font-black uppercase tracking-tighter ${isDark ? "text-slate-400" : "text-slate-500"} flex items-center gap-2`}
+                tag="h2"
+                className={`text-[14px] font-black uppercase tracking-tighter ${pageText} flex items-center gap-2 before:content-[''] before:w-1.5 before:h-5 ${isDark ? "before:bg-amber-400" : "before:bg-blue-600"} before:rounded-full`}
               />
             </div>
             <div className="grid grid-cols-2 gap-2">
               {data.usSectors.map((sector, idx) => {
                 const sentimentColor =
                   sector.sentiment === "강세"
-                    ? isDark ? "border-green-500/40 bg-green-900/10" : "border-green-400/50 bg-green-50/50"
+                    ? isDark ? "border-red-500/40 bg-red-900/10" : "border-red-400/50 bg-red-50/50"
                     : sector.sentiment === "약세"
-                      ? isDark ? "border-red-500/40 bg-red-900/10" : "border-red-400/50 bg-red-50/50"
+                      ? isDark ? "border-blue-500/40 bg-blue-900/10" : "border-blue-400/50 bg-blue-50/50"
                       : isDark ? "border-slate-600/40 bg-slate-800/20" : "border-slate-300/50 bg-slate-50/50";
                 const dotColor =
-                  sector.sentiment === "강세" ? "bg-green-500"
-                    : sector.sentiment === "약세" ? "bg-red-500"
+                  sector.sentiment === "강세" ? "bg-red-500"
+                    : sector.sentiment === "약세" ? "bg-blue-500"
                       : "bg-slate-400";
                 return (
                   <div
@@ -1059,9 +1038,9 @@ const ReportPreview: React.FC<Props> = ({
                         }}
                         className={`ml-auto text-[9px] font-bold rounded px-1 py-0.5 border-0 outline-none cursor-pointer ${
                           sector.sentiment === "강세"
-                            ? "bg-green-100 text-green-700"
+                            ? "bg-red-100 text-red-700"
                             : sector.sentiment === "약세"
-                              ? "bg-red-100 text-red-700"
+                              ? "bg-blue-100 text-blue-700"
                               : "bg-slate-100 text-slate-600"
                         }`}
                       >
@@ -1098,30 +1077,22 @@ const ReportPreview: React.FC<Props> = ({
             </div>
           </div>
         )}
-        {/* 공략주 칩 */}
-        <div
-          className={`mt-1 flex items-center gap-3 shrink-0 flex-wrap`}
-        >
+        {/* 미증시 마감 분석 (아래) */}
+        <div className="flex items-center shrink-0 mt-1">
           <EditableText
-            value={
-              isPreMarket
-                ? data.featuredStockLabel || "금일 공략주"
-                : data.featuredStockLabel || "내일 관심주"
-            }
-            onSave={(v) => onChange({ ...data, featuredStockLabel: v })}
-            isModal={isModalView}
-            className={`shrink-0 uppercase tracking-widest text-[12px] font-[900] ${isPreMarket ? "bg-sky-200/70 text-sky-700" : isDark ? "bg-amber-400/20 text-amber-500" : "bg-amber-100 text-amber-700"} px-3.5 py-1.5 rounded-full`}
+            value={data.usMarketAnalysisTitle}
+            {...ep("usMarketAnalysisTitle")}
+            tag="h2"
+            className={`text-[14px] font-black uppercase tracking-tighter ${pageText} flex items-center gap-2 before:content-[''] before:w-1.5 before:h-5 ${isDark ? "before:bg-amber-400" : "before:bg-blue-600"} before:rounded-full`}
           />
-          <div className="flex-1">
-            <ChipInput
-              value={data.expertInterestedStocks}
-              onSave={(v) => onChange({ ...data, expertInterestedStocks: v })}
-              isModal={isModalView}
-              placeholder="EX. 종목명 입력 후 Enter"
-              chipClassName={chipColor}
-              size="lg"
-            />
-          </div>
+        </div>
+        <div className={`${sectionBg} rounded-xl border ${isDark ? "border-[#2a2a3a]" : "border-slate-200/60"} p-4 shadow-sm`}>
+          <EditableText
+            value={data.usMarketAnalysis}
+            {...ep("usMarketAnalysis")}
+            className={`text-[12px] font-medium ${pageText} leading-[1.8] whitespace-pre-wrap`}
+            placeholder={"EX.\n• 나스닥 +1.2% 상승, AI 반도체 섹터 강세\n• 엔비디아 실적 발표 앞두고 매수세 유입\n• 국채 금리 하락에 기술주 전반 상승"}
+          />
         </div>
       </div>
     );
@@ -1248,6 +1219,31 @@ const ReportPreview: React.FC<Props> = ({
                     {...ep("dailyComment")}
                     className="text-[12px] font-bold text-white/60 leading-[1.6] italic"
                     placeholder="EX. 오늘의 한마디를 적어주세요"
+                  />
+                </div>
+              </div>
+              {/* 공략주 칩 */}
+              <div
+                className={`mt-3 pt-3 border-t border-white/10 flex items-center gap-3 shrink-0 flex-wrap`}
+              >
+                <EditableText
+                  value={
+                    isPreMarket
+                      ? data.featuredStockLabel || "금일 공략주"
+                      : data.featuredStockLabel || "내일 관심주"
+                  }
+                  onSave={(v) => onChange({ ...data, featuredStockLabel: v })}
+                  isModal={isModalView}
+                  className={`shrink-0 uppercase tracking-widest text-[11px] font-[900] bg-white/10 text-amber-300 px-3 py-1.5 rounded-full`}
+                />
+                <div className="flex-1">
+                  <ChipInput
+                    value={data.expertInterestedStocks}
+                    onSave={(v) => onChange({ ...data, expertInterestedStocks: v })}
+                    isModal={isModalView}
+                    placeholder="EX. 종목명 입력 후 Enter"
+                    chipClassName="bg-white/10 text-white/80 border-white/20"
+                    size="lg"
                   />
                 </div>
               </div>
