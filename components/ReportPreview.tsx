@@ -1085,7 +1085,7 @@ const ReportPreview: React.FC<Props> = ({
                           onDragEnd={(e) => {
                             (e.currentTarget as HTMLElement).style.opacity = "1";
                           }}
-                          className={`rounded-xl border ${cardBorder} p-3 flex flex-col gap-3 relative group/sector ${!isModalView ? "cursor-grab active:cursor-grabbing" : ""}`}
+                          className={`rounded-xl border ${cardBorder} p-2.5 flex flex-col gap-1.5 relative group/sector ${!isModalView ? "cursor-grab active:cursor-grabbing" : ""}`}
                         >
                           {/* 섹터 삭제 버튼 */}
                           {!isModalView && data.usSectors!.length > 1 && (
@@ -1109,7 +1109,7 @@ const ReportPreview: React.FC<Props> = ({
                                 onChange({ ...data, usSectors: updated });
                               }}
                               isModal={isModalView}
-                              className={`text-[18px] font-[800] ${isDark ? "text-slate-200" : "text-slate-800"} leading-tight`}
+                              className={`text-[15px] font-[800] ${isDark ? "text-slate-200" : "text-slate-800"} leading-tight`}
                               placeholder="섹터명"
                             />
                             <button
@@ -1120,7 +1120,7 @@ const ReportPreview: React.FC<Props> = ({
                                 updated[realIdx] = { ...updated[realIdx], sentiment: next };
                                 onChange({ ...data, usSectors: updated });
                               }}
-                              className={`ml-auto text-[15px] font-bold rounded-md px-2.5 py-1 cursor-pointer transition-colors ${
+                              className={`ml-auto text-[11px] font-bold rounded px-1.5 py-0.5 cursor-pointer transition-colors shrink-0 ${
                                 sector.sentiment === "강세"
                                   ? "bg-red-100 text-red-700"
                                   : sector.sentiment === "약세"
@@ -1139,7 +1139,7 @@ const ReportPreview: React.FC<Props> = ({
                               onChange({ ...data, usSectors: updated });
                             }}
                             isModal={isModalView}
-                            className={`text-[17px] ${isDark ? "text-slate-200" : "text-slate-700"} leading-relaxed`}
+                            className={`text-[13px] ${isDark ? "text-slate-300" : "text-slate-600"} leading-snug`}
                             placeholder="이슈 요약"
                           />
                           <ChipInput
