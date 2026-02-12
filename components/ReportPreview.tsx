@@ -989,7 +989,7 @@ const ReportPreview: React.FC<Props> = ({
       <div className="flex flex-col gap-2 shrink-0">
         {/* 미증시 섹터 트렌드 (위) */}
         {data.usSectors && data.usSectors.length > 0 && (
-          <div className="flex flex-col gap-2">
+          <div className={`flex flex-col gap-2 rounded-xl border ${isDark ? "border-[#2a2a3a]" : "border-slate-200/70"} p-3 ${isDark ? "bg-[#12121a]/50" : "bg-slate-50/30"}`}>
             <div className="flex items-center shrink-0">
               <EditableText
                 value={data.usSectorsTitle || "전일 미증시 섹터 트렌드"}
@@ -999,7 +999,7 @@ const ReportPreview: React.FC<Props> = ({
                 className={`text-[16px] font-black uppercase tracking-tighter ${pageText} flex items-center gap-2 before:content-[''] before:w-1.5 before:h-5 ${isDark ? "before:bg-amber-400" : "before:bg-blue-600"} before:rounded-full`}
               />
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div style={{ columns: 2, columnGap: "8px" }}>
               {data.usSectors.map((sector, idx) => {
                 const sentimentColor =
                   sector.sentiment === "강세"
@@ -1011,13 +1011,17 @@ const ReportPreview: React.FC<Props> = ({
                   sector.sentiment === "강세" ? "bg-red-500"
                     : sector.sentiment === "약세" ? "bg-blue-500"
                       : "bg-slate-400";
-                const chipColor = isDark
-                  ? "bg-sky-900/30 text-sky-300 border-sky-500/30"
-                  : "bg-blue-50 text-blue-700 border-blue-200/80";
+                const chipColor =
+                  sector.sentiment === "강세"
+                    ? isDark ? "bg-red-900/30 text-red-300 border-red-500/30" : "bg-red-50 text-red-700 border-red-200/80"
+                    : sector.sentiment === "약세"
+                      ? isDark ? "bg-blue-900/30 text-blue-300 border-blue-500/30" : "bg-blue-50 text-blue-700 border-blue-200/80"
+                      : isDark ? "bg-slate-800/30 text-slate-300 border-slate-500/30" : "bg-slate-100 text-slate-600 border-slate-300/80";
                 return (
                   <div
                     key={sector.id || idx}
-                    className={`rounded-lg border ${sentimentColor} p-2.5 flex flex-col gap-1 relative group/sector`}
+                    className={`rounded-xl border ${sentimentColor} p-3 flex flex-col gap-2.5 relative group/sector mb-2`}
+                    style={{ breakInside: "avoid" }}
                   >
                     {/* 섹터 삭제 버튼 */}
                     {!isModalView && data.usSectors!.length > 1 && (
@@ -1031,8 +1035,8 @@ const ReportPreview: React.FC<Props> = ({
                         ×
                       </button>
                     )}
-                    <div className="flex items-center gap-1.5">
-                      <span className={`w-2 h-2 rounded-full ${dotColor} shrink-0`} />
+                    <div className="flex items-center gap-2">
+                      <span className={`w-2.5 h-2.5 rounded-full ${dotColor} shrink-0`} />
                       <EditableText
                         value={sector.name}
                         onSave={(v) => {
@@ -1041,7 +1045,7 @@ const ReportPreview: React.FC<Props> = ({
                           onChange({ ...data, usSectors: updated });
                         }}
                         isModal={isModalView}
-                        className={`text-[13px] font-[800] ${isDark ? "text-slate-200" : "text-slate-800"} leading-tight`}
+                        className={`text-[15px] font-[800] ${isDark ? "text-slate-200" : "text-slate-800"} leading-tight`}
                         placeholder="섹터명"
                       />
                       <select
@@ -1051,7 +1055,7 @@ const ReportPreview: React.FC<Props> = ({
                           updated[idx] = { ...updated[idx], sentiment: e.target.value };
                           onChange({ ...data, usSectors: updated });
                         }}
-                        className={`ml-auto text-[11px] font-bold rounded px-1 py-0.5 border-0 outline-none cursor-pointer ${
+                        className={`ml-auto text-[11px] font-bold rounded px-1.5 py-0.5 border-0 outline-none cursor-pointer ${
                           sector.sentiment === "강세"
                             ? "bg-red-100 text-red-700"
                             : sector.sentiment === "약세"
@@ -1072,7 +1076,7 @@ const ReportPreview: React.FC<Props> = ({
                         onChange({ ...data, usSectors: updated });
                       }}
                       isModal={isModalView}
-                      className={`text-[12px] ${isDark ? "text-slate-400" : "text-slate-500"} leading-snug`}
+                      className={`text-[14px] ${isDark ? "text-slate-400" : "text-slate-500"} leading-relaxed`}
                       placeholder="이슈 요약"
                     />
                     <ChipInput
