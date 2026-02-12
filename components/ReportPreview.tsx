@@ -750,60 +750,8 @@ const ReportPreview: React.FC<Props> = ({
   };
 
   // ===========================
-  // 핵심 시장 전망
   // ===========================
-  const renderCoreView = () => (
-    <div
-      className={`${
-        isPreMarket
-          ? "bg-[#0f172a]"
-          : isDark
-            ? "bg-[#1a1a24] ring-amber-400/20"
-            : "bg-gradient-to-r from-[#1c162a] to-[#221a30]"
-      } text-white rounded-2xl p-5 flex items-center gap-6 relative shadow-xl ring-1 ${
-        isPreMarket
-          ? "ring-white/10"
-          : isDark
-            ? "ring-amber-400/30"
-            : "ring-amber-400/20"
-      } shrink-0`}
-    >
-      <div
-        className={`shrink-0 flex flex-col items-center justify-center border-r ${
-          isPreMarket ? "border-white/10" : "border-amber-400/20"
-        } pr-6 pl-1`}
-      >
-        <EditableText
-          value={data.coreViewTitle}
-          onSave={(v) => update("coreViewTitle", v)}
-          isModal={isModalView}
-          className={`text-[15px] font-black uppercase tracking-[0.2em] mb-2 text-center ${
-            isPreMarket ? "text-blue-400" : "text-amber-400"
-          }`}
-        />
-        <div className="flex gap-1.5">
-          <div
-            className={`w-2 h-2 ${isPreMarket ? "bg-blue-400" : "bg-amber-400"} rounded-full animate-pulse`}
-          />
-          <div
-            className={`w-2 h-2 ${isPreMarket ? "bg-blue-400/50" : "bg-amber-400/50"} rounded-full`}
-          />
-          <div
-            className={`w-2 h-2 ${isPreMarket ? "bg-blue-400/20" : "bg-amber-400/20"} rounded-full`}
-          />
-        </div>
-      </div>
-      <EditableText
-        value={data.currentMarketView}
-        {...ep("currentMarketView")}
-        className="text-[15px] font-bold leading-[1.7] text-slate-50 tracking-tight flex-1"
-        placeholder="EX. 시황을 적어주세요"
-      />
-    </div>
-  );
-
-  // ===========================
-  // 개장전 투자전략 (CEO 브리핑)
+  // 통합 브리핑 섹션 (핵심 시황 + 전문가 분석)
   // ===========================
   const renderInsight = () => {
     const insightChipColor = isPreMarket
@@ -821,9 +769,10 @@ const ReportPreview: React.FC<Props> = ({
               ? "bg-[#1a1a24] border-[#2a2a3a]"
               : "bg-gradient-to-br from-amber-50/80 to-white border-amber-200/50"
         }
-        px-5 py-3.5 rounded-2xl border flex flex-col relative shrink-0
+        px-5 py-4 rounded-2xl border flex flex-col relative shrink-0
       `}
       >
+        {/* 헤더: 아이콘 + 타이틀 */}
         <div className="flex items-center gap-3 mb-3 shrink-0">
           <div
             className={`w-10 h-10 ${isPreMarket ? "bg-sky-500" : isDark ? "bg-amber-500" : "bg-amber-400"} text-white rounded-xl flex items-center justify-center text-lg shadow-md ring-2 ${isDark ? "ring-[#0f0f14]" : "ring-white"}`}
@@ -845,6 +794,57 @@ const ReportPreview: React.FC<Props> = ({
             />
           </div>
         </div>
+
+        {/* 핵심 시황 (기존 renderCoreView 통합) */}
+        <div
+          className={`${
+            isPreMarket
+              ? "bg-[#0f172a]"
+              : isDark
+                ? "bg-[#1a1a24]"
+                : "bg-gradient-to-r from-[#1c162a] to-[#221a30]"
+          } text-white rounded-xl p-4 flex items-start gap-4 relative shadow-lg ring-1 ${
+            isPreMarket
+              ? "ring-white/10"
+              : isDark
+                ? "ring-amber-400/30"
+                : "ring-amber-400/20"
+          } mb-3`}
+        >
+          <div
+            className={`shrink-0 flex flex-col items-center justify-center border-r ${
+              isPreMarket ? "border-white/10" : "border-amber-400/20"
+            } pr-4 pl-1`}
+          >
+            <EditableText
+              value={data.coreViewTitle}
+              onSave={(v) => update("coreViewTitle", v)}
+              isModal={isModalView}
+              className={`text-[12px] font-black uppercase tracking-[0.15em] mb-1.5 text-center whitespace-nowrap ${
+                isPreMarket ? "text-blue-400" : "text-amber-400"
+              }`}
+            />
+            <div className="flex gap-1">
+              <div
+                className={`w-1.5 h-1.5 ${isPreMarket ? "bg-blue-400" : "bg-amber-400"} rounded-full animate-pulse`}
+              />
+              <div
+                className={`w-1.5 h-1.5 ${isPreMarket ? "bg-blue-400/50" : "bg-amber-400/50"} rounded-full`}
+              />
+              <div
+                className={`w-1.5 h-1.5 ${isPreMarket ? "bg-blue-400/20" : "bg-amber-400/20"} rounded-full`}
+              />
+            </div>
+          </div>
+          <EditableText
+            value={data.currentMarketView}
+            {...ep("currentMarketView")}
+            className="text-[13px] font-bold leading-[1.7] text-slate-50 tracking-tight flex-1"
+            placeholder="EX. 시황을 적어주세요"
+          />
+        </div>
+
+        {/* 전문가 분석 */}
         <div
           className={`border-t ${isDark ? "border-white/5" : "border-black/5"} pt-3`}
         >
@@ -963,7 +963,7 @@ const ReportPreview: React.FC<Props> = ({
             className={`text-[13px] font-black ${isDark ? "text-slate-300" : "text-slate-800"} uppercase tracking-tight`}
           />
         </div>
-        <div className="p-3 flex flex-col gap-3">
+        <div className="p-3 grid grid-cols-2 gap-3">
           {data.featuredStocks.map((group, gIdx) => (
             <div
               key={group.id || gIdx}
@@ -1200,7 +1200,6 @@ const ReportPreview: React.FC<Props> = ({
           <div className="px-[14mm] pt-[5mm] pb-[8mm] flex flex-col gap-2.5">
             {renderHeader()}
             {renderIndicators()}
-            {renderCoreView()}
             {renderInsight()}
             {renderFeaturedStocks()}
           </div>
