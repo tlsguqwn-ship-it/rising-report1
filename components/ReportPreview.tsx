@@ -862,7 +862,7 @@ const ReportPreview: React.FC<Props> = ({
                     updateArr("featuredStocks", gIdx, "keyword", v)
                   }
                   isModal={isModalView}
-                  className={`text-[15px] font-black ${isDark ? "text-amber-300" : "text-blue-700"} uppercase tracking-tight flex-1`}
+                  className={`text-[15px] font-[800] ${isDark ? "text-amber-300" : "text-blue-700"} uppercase tracking-tight flex-1`}
                   placeholder="EX. 반도체 장비"
                 />
               </div>
@@ -927,7 +927,7 @@ const ReportPreview: React.FC<Props> = ({
                                 updateStockField(gIdx, sIdx, "name", v)
                               }
                               isModal={isModalView}
-                              className={`text-[14px] font-bold ${pageText}`}
+                              className={`text-[14px] font-semibold ${pageText}`}
                               placeholder="EX. 삼성전자"
                             />
                           </td>
@@ -1158,7 +1158,7 @@ const ReportPreview: React.FC<Props> = ({
         <EditableText
           value={data.domesticAnalysis}
           {...ep("domesticAnalysis")}
-          className={`text-[16px] font-medium ${pageText} leading-[1.9] whitespace-pre-wrap`}
+          className={`text-[14px] font-semibold ${pageText} leading-[1.9] whitespace-pre-wrap`}
           placeholder={"EX.\n1. 코스피 5,300pt 복귀, 외인 기관 동반 매수\n2. 반도체 장비주 강세 — HPSP, 한미반도체\n3. 바이오 섹터 소폭 약세 전환\n4. 2차전지 관련주 수급 개선 조짐"}
         />
       </div>
