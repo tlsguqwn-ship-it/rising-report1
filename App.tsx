@@ -33,6 +33,21 @@ const loadSavedTemplate = (type: '장전' | '마감'): ReportData | null => {
           sentiment: sentimentMap[s.sentiment] || s.sentiment,
         }));
       }
+      // featuredStocks 마이그레이션: 구 구조(name/change/reason) → 새 구조(keyword/stocks[])
+      if (data.featuredStocks && data.featuredStocks.length > 0) {
+        const first = data.featuredStocks[0] as any;
+        // 구 구조 감지: keyword 필드가 없고 name 필드가 있으면 구 구조
+        if (first && !('keyword' in first) && 'name' in first) {
+          data.featuredStocks = (data.featuredStocks as any[]).map((old: any) => ({
+            id: old.id || crypto.randomUUID(),
+            keyword: old.name || '',
+            stocks: [{ name: old.name || '', price: '', change: old.change || '' }],
+          }));
+        }
+      }
+      // usMarketImage/domesticImage 제거 (구 필드)
+      delete (data as any).usMarketImage;
+      delete (data as any).domesticImage;
       return data;
     }
   } catch { /* ignore */ }

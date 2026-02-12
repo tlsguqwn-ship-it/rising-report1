@@ -357,7 +357,7 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
                         onRestoreHistory?.(entry.data);
                       }
                     }}>
-                      {entry.data.title} · {entry.data.featuredStocks?.map(s => s.name).filter(Boolean).join(', ') || '데이터 없음'}
+                      {entry.data.title} · {entry.data.featuredStocks?.map(s => s.keyword).filter(Boolean).join(', ') || '데이터 없음'}
                     </p>
                   </div>
                 );
@@ -455,20 +455,37 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
           icon={<Star size={14} />}
           isOpen={activeSection === 'stocks'}
           onToggle={() => toggleSection('stocks')}
-          summary={data.featuredStocks.map(s => s.name).join(', ')}
+           summary={data.featuredStocks.map(s => s.keyword).join(', ')}
           badge={`${data.featuredStocks.length}/${MAX_STOCKS}`}
         >
           <div className="space-y-3">
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd('featuredStocks')}>
               <SortableContext items={data.featuredStocks.map(s => s.id)} strategy={verticalListSortingStrategy}>
-                {data.featuredStocks.map((stock, idx) => (
-                  <SortableItem key={stock.id} id={stock.id} onRemove={() => removeItem('featuredStocks', idx)} canRemove={data.featuredStocks.length > MIN_ITEMS}>
+                {data.featuredStocks.map((group, idx) => (
+                  <SortableItem key={group.id} id={group.id} onRemove={() => removeItem('featuredStocks', idx)} canRemove={data.featuredStocks.length > MIN_ITEMS}>
                     <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 space-y-2">
-                      <div className="grid grid-cols-2 gap-2">
-                        <input type="text" value={stock.name} onChange={(e) => updateArrayItem('featuredStocks', idx, 'name', e.target.value)} className={inputStyle} placeholder="종목/키워드" />
-                        <input type="text" value={stock.change} onChange={(e) => updateArrayItem('featuredStocks', idx, 'change', e.target.value)} className={inputStyle} placeholder="변동/관련주" />
+                      <input type="text" value={group.keyword} onChange={(e) => updateArrayItem('featuredStocks', idx, 'keyword', e.target.value)} className={inputStyle} placeholder="테마 키워드 (EX. AI 반도체)" />
+                      <div className="space-y-1 pl-2 border-l-2 border-blue-200">
+                        {group.stocks.map((stock, sIdx) => (
+                          <div key={sIdx} className="grid grid-cols-3 gap-1">
+                            <input type="text" value={stock.name} onChange={(e) => {
+                              const newStocks = [...group.stocks];
+                              newStocks[sIdx] = { ...newStocks[sIdx], name: e.target.value };
+                              updateArrayItem('featuredStocks', idx, 'stocks', newStocks);
+                            }} className={inputStyle} placeholder="종목명" />
+                            <input type="text" value={stock.price} onChange={(e) => {
+                              const newStocks = [...group.stocks];
+                              newStocks[sIdx] = { ...newStocks[sIdx], price: e.target.value };
+                              updateArrayItem('featuredStocks', idx, 'stocks', newStocks);
+                            }} className={inputStyle} placeholder="가격" />
+                            <input type="text" value={stock.change} onChange={(e) => {
+                              const newStocks = [...group.stocks];
+                              newStocks[sIdx] = { ...newStocks[sIdx], change: e.target.value };
+                              updateArrayItem('featuredStocks', idx, 'stocks', newStocks);
+                            }} className={inputStyle} placeholder="등락률" />
+                          </div>
+                        ))}
                       </div>
-                      <input type="text" value={stock.reason} onChange={(e) => updateArrayItem('featuredStocks', idx, 'reason', e.target.value)} className={inputStyle} placeholder="분석 사유" />
                     </div>
                   </SortableItem>
                 ))}
@@ -476,7 +493,7 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
             </DndContext>
             {data.featuredStocks.length < MAX_STOCKS && (
               <button onClick={() => addItem('featuredStocks')} className="w-full py-3 border-2 border-dashed border-blue-200 rounded-xl text-[13px] font-bold text-blue-400 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50/50 transition-all flex items-center justify-center gap-2">
-                <Plus size={16} /> 종목 추가
+                <Plus size={16} /> 테마 추가
               </button>
             )}
           </div>

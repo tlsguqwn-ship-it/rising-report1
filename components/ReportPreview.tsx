@@ -908,240 +908,215 @@ const ReportPreview: React.FC<Props> = ({
   };
 
   // ===========================
-  // TODAY'S HOT THEME 테이블
+  // TODAY'S HOT THEME – 키워드-종목 묶음 방식
   // ===========================
-  const renderFeaturedStocks = () => (
-    <div
-      className={`shrink-0 overflow-hidden rounded-2xl border ${isDark ? "border-[#2a2a3a]" : "border-slate-200/60"} shadow-sm ${cardBg}`}
-    >
+  const renderFeaturedStocks = () => {
+    // 종목 추가 헬퍼
+    const addStockToGroup = (groupIdx: number) => {
+      const newStocks = data.featuredStocks.map((g, i) =>
+        i === groupIdx
+          ? { ...g, stocks: [...g.stocks, { name: "", price: "", change: "" }] }
+          : g,
+      );
+      onChange({ ...data, featuredStocks: newStocks });
+    };
+    // 종목 삭제 헬퍼
+    const removeStockFromGroup = (groupIdx: number, stockIdx: number) => {
+      const newStocks = data.featuredStocks.map((g, i) =>
+        i === groupIdx
+          ? { ...g, stocks: g.stocks.filter((_, si) => si !== stockIdx) }
+          : g,
+      );
+      onChange({ ...data, featuredStocks: newStocks });
+    };
+    // 그룹 내 종목 필드 업데이트 헬퍼
+    const updateStockField = (
+      groupIdx: number,
+      stockIdx: number,
+      field: "name" | "price" | "change",
+      value: string,
+    ) => {
+      const newStocks = data.featuredStocks.map((g, gi) =>
+        gi === groupIdx
+          ? {
+              ...g,
+              stocks: g.stocks.map((s, si) =>
+                si === stockIdx ? { ...s, [field]: value } : s,
+              ),
+            }
+          : g,
+      );
+      onChange({ ...data, featuredStocks: newStocks });
+    };
+
+    return (
       <div
-        className={`${isDark ? "bg-[#16161e]" : "bg-slate-50/50"} px-5 py-3 border-b ${cardBorder}`}
+        className={`shrink-0 overflow-hidden rounded-2xl border ${isDark ? "border-[#2a2a3a]" : "border-slate-200/60"} shadow-sm ${cardBg}`}
       >
-        <EditableText
-          value={data.featuredStocksTitle}
-          {...ep("featuredStocksTitle")}
-          tag="h2"
-          className={`text-[13px] font-black ${isDark ? "text-slate-300" : "text-slate-800"} uppercase tracking-tight`}
-        />
-      </div>
-      <div className="p-2">
-        <table className="w-full text-left border-collapse table-fixed">
-          <thead>
-            <tr className={`h-[8mm] border-b ${cardBorder} ${labelText}`}>
-              <th
-                className="px-3 text-[11px] font-bold uppercase tracking-tight pl-4"
-                style={{ width: "22%" }}
-              >
-                {isPreMarket ? "이슈 키워드" : "종목명"}
-              </th>
-              <th
-                className="pl-0 pr-2 text-[11px] font-bold uppercase tracking-tight"
-                style={{ width: "22%" }}
-              >
-                {isPreMarket ? (
-                  <span className="block">국내 관련주</span>
-                ) : (
-                  <div className="grid grid-cols-[90px_12px_60px] items-center gap-0">
-                    <span className="text-right pr-5">종가</span>
-                    <div />
-                    <span className="text-center">등락률</span>
-                  </div>
-                )}
-              </th>
-              <th
-                className={`${isPreMarket ? "pl-2" : "pl-8"} pr-3 text-[11px] font-bold uppercase tracking-tight`}
-                style={{ width: "56%" }}
-              >
-                {isPreMarket ? "투자 포인트" : "등락 사유 및 분석"}
-              </th>
-            </tr>
-          </thead>
-          <tbody
-            className={`divide-y ${isDark ? "divide-[#1a1a24]" : "divide-slate-50"}`}
-          >
-            {data.featuredStocks.map((stock, idx) => {
-              // change 필드 파싱: "523,100원 / -1.5%" → price="523100", rate="-1.5"
-              const parts = stock.change.split("/").map((s) => s.trim());
-              const rawPrice = (parts[0] || "").replace(/[원,\s]/g, "");
-              const rawRate = (parts[1] || parts[0] || "").replace(
-                /[%\s]/g,
-                "",
-              );
-              const hasSlash = stock.change.includes("/");
-              // 가격 포맷 (천단위 콤마)
-              const formatPrice = (v: string) => {
-                const num = v.replace(/[^0-9]/g, "");
-                if (!num) return "";
-                return Number(num).toLocaleString();
-              };
-              // 등락률 색상
-              const rateColor =
-                rawRate.includes("-") || rawRate.includes("▼")
-                  ? "text-[#3182f6]"
-                  : rawRate.includes("+") ||
-                      rawRate.includes("▲") ||
-                      parseFloat(rawRate) > 0
-                    ? "text-[#f04452]"
-                    : pageText;
-              return (
-                <tr
-                  key={stock.id || idx}
-                  data-arr="featuredStocks"
-                  className={`${isDark ? "hover:bg-[#22222e]" : "hover:bg-slate-50"} transition-colors group/row relative`}
-                >
-                  <td
-                    className={`pl-4 pr-0 py-2 text-[15px] font-black ${pageText} border-r ${isDark ? "border-[#1a1a24]" : "border-slate-50"} align-middle relative`}
-                    style={{
-                      width: "22%",
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                    }}
-                  >
-                    {!isModalView && data.featuredStocks.length > MIN_ITEMS && (
-                      <button
-                        onClick={() => removeItem("featuredStocks", idx)}
-                        className="absolute -left-1 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold opacity-0 group-hover/row:opacity-100 transition-opacity no-print flex items-center justify-center shadow-sm hover:bg-red-600 z-10"
-                      >
-                        ×
-                      </button>
-                    )}
-                    <EditableText
-                      value={stock.name}
-                      onSave={(v) =>
-                        updateArr("featuredStocks", idx, "name", v)
-                      }
-                      isModal={isModalView}
-                      placeholder="EX. 삼성전자"
-                      className="truncate"
-                    />
-                  </td>
-                  <td
-                    className={`py-2 pl-0 border-r ${isDark ? "border-[#1a1a24]" : "border-slate-50"} align-middle`}
-                    style={{ width: "22%" }}
-                  >
-                    {isPreMarket ? (
-                      <ChipInput
-                        value={stock.change}
-                        onSave={(v) =>
-                          updateArr("featuredStocks", idx, "change", v)
-                        }
-                        isModal={isModalView}
-                        placeholder="EX. 종목명 입력 후 Enter"
-                        vertical
-                      />
-                    ) : (
-                      <div className="grid grid-cols-[90px_12px_60px] items-center gap-0 text-[13px] font-[900] leading-snug">
-                        <div className="flex items-center justify-end">
-                          <span
-                            contentEditable={!isModalView}
-                            suppressContentEditableWarning
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                e.preventDefault();
-                                e.currentTarget.blur();
-                              }
-                            }}
-                            onBlur={(e) => {
-                              const raw = (
-                                e.currentTarget.textContent || ""
-                              ).replace(/[^0-9]/g, "");
-                              const formatted = raw
-                                ? Number(raw).toLocaleString()
-                                : "";
-                              e.currentTarget.textContent = formatted;
-                              const currentRate = (
-                                stock.change.split("/")[1] || ""
-                              )
-                                .replace(/[%\s]/g, "")
-                                .trim();
-                              updateArr(
-                                "featuredStocks",
-                                idx,
-                                "change",
-                                `${formatted}원 / ${currentRate}%`,
-                              );
-                            }}
-                            className={`${rateColor} outline-none cursor-text text-right`}
-                          >
-                            {hasSlash ? formatPrice(rawPrice) : ""}
-                          </span>
-                          <span className={`${rateColor} shrink-0 ml-[2px]`}>
-                            원
-                          </span>
-                        </div>
-                        <div />
-                        <div className="flex items-center">
-                          <span
-                            contentEditable={!isModalView}
-                            suppressContentEditableWarning
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                e.preventDefault();
-                                e.currentTarget.blur();
-                              }
-                            }}
-                            onBlur={(e) => {
-                              const val = (
-                                e.currentTarget.textContent || ""
-                              ).trim();
-                              const currentPrice = formatPrice(
-                                (stock.change.split("/")[0] || "").replace(
-                                  /[원,\s]/g,
-                                  "",
-                                ),
-                              );
-                              updateArr(
-                                "featuredStocks",
-                                idx,
-                                "change",
-                                `${currentPrice}원 / ${val}%`,
-                              );
-                            }}
-                            className={`${rateColor} outline-none cursor-text flex-1 text-right`}
-                          >
-                            {hasSlash ? rawRate : ""}
-                          </span>
-                          <span className={`${rateColor} shrink-0 ml-[2px]`}>
-                            %
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                  </td>
-                  <td
-                    className={`${isPreMarket ? "pl-2" : "pl-8"} pr-3 py-2 text-[15px] font-bold ${subText} leading-[1.5] align-middle`}
-                    style={{ width: "56%" }}
-                  >
-                    <EditableText
-                      value={stock.reason}
-                      onSave={(v) =>
-                        updateArr("featuredStocks", idx, "reason", v)
-                      }
-                      isModal={isModalView}
-                      placeholder="EX. 미국 AI 칩 수요 폭증 및 실적 호조"
-                    />
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-      {!isModalView && data.featuredStocks.length < MAX_STOCKS && (
-        <button
-          onClick={() => addItem("featuredStocks")}
-          className="w-full py-1.5 flex items-center justify-center gap-1 text-[11px] font-bold text-slate-400 hover:text-blue-500 hover:bg-blue-50/50 rounded-b-2xl transition-colors no-print"
+        <div
+          className={`${isDark ? "bg-[#16161e]" : "bg-slate-50/50"} px-5 py-3 border-b ${cardBorder}`}
         >
-          <span className="text-base leading-none">+</span> 테마 추가
-        </button>
-      )}
-    </div>
-  );
+          <EditableText
+            value={data.featuredStocksTitle}
+            {...ep("featuredStocksTitle")}
+            tag="h2"
+            className={`text-[13px] font-black ${isDark ? "text-slate-300" : "text-slate-800"} uppercase tracking-tight`}
+          />
+        </div>
+        <div className="p-3 flex flex-col gap-3">
+          {data.featuredStocks.map((group, gIdx) => (
+            <div
+              key={group.id || gIdx}
+              data-arr="featuredStocks"
+              className={`rounded-xl border ${isDark ? "border-[#2a2a3a] bg-[#16161e]/50" : "border-slate-100 bg-slate-50/40"} overflow-hidden group/theme relative`}
+            >
+              {/* 그룹 삭제 */}
+              {!isModalView && data.featuredStocks.length > MIN_ITEMS && (
+                <button
+                  onClick={() => removeItem("featuredStocks", gIdx)}
+                  className="absolute -right-1 -top-1 w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold opacity-0 group-hover/theme:opacity-100 transition-opacity no-print flex items-center justify-center shadow-sm hover:bg-red-600 z-10"
+                >
+                  ×
+                </button>
+              )}
+
+              {/* 카테고리 키워드 헤더 */}
+              <div
+                className={`px-4 py-2 border-b ${isDark ? "border-[#2a2a3a] bg-[#1a1a24]" : "border-slate-100 bg-slate-100/60"} flex items-center gap-2`}
+              >
+                <div
+                  className={`w-1.5 h-4 rounded-full ${isDark ? "bg-amber-400" : "bg-blue-500"} shrink-0`}
+                />
+                <EditableText
+                  value={group.keyword}
+                  onSave={(v) =>
+                    updateArr("featuredStocks", gIdx, "keyword", v)
+                  }
+                  isModal={isModalView}
+                  className={`text-[13px] font-black ${isDark ? "text-amber-300" : "text-blue-700"} uppercase tracking-tight flex-1`}
+                  placeholder="EX. 반도체 장비"
+                />
+              </div>
+
+              {/* 종목 리스트 */}
+              <div className="px-3 py-2">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr
+                      className={`${isDark ? "text-slate-500" : "text-slate-400"} text-[9px] font-bold uppercase tracking-wider`}
+                    >
+                      <th className="py-1 pl-1" style={{ width: "42%" }}>
+                        종목명
+                      </th>
+                      <th
+                        className="py-1 text-right pr-3"
+                        style={{ width: "30%" }}
+                      >
+                        {isPreMarket ? "전일 종가" : "종가"}
+                      </th>
+                      <th
+                        className="py-1 text-right pr-1"
+                        style={{ width: "28%" }}
+                      >
+                        등락률
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody
+                    className={`divide-y ${isDark ? "divide-[#1a1a24]/50" : "divide-slate-50"}`}
+                  >
+                    {group.stocks.map((stock, sIdx) => {
+                      const rateVal = stock.change.replace(/[%\s]/g, "");
+                      const rateColor =
+                        rateVal.includes("-") || rateVal.includes("▼")
+                          ? "text-[#3182f6]"
+                          : rateVal.includes("+") ||
+                              rateVal.includes("▲") ||
+                              parseFloat(rateVal) > 0
+                            ? "text-[#f04452]"
+                            : pageText;
+
+                      return (
+                        <tr
+                          key={sIdx}
+                          className={`${isDark ? "hover:bg-[#22222e]" : "hover:bg-white"} transition-colors group/stock relative`}
+                        >
+                          <td className="py-1.5 pl-1 align-middle">
+                            {!isModalView && group.stocks.length > 1 && (
+                              <button
+                                onClick={() =>
+                                  removeStockFromGroup(gIdx, sIdx)
+                                }
+                                className="absolute -left-1 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-red-400 text-white text-[8px] font-bold opacity-0 group-hover/stock:opacity-100 transition-opacity no-print flex items-center justify-center z-10"
+                              >
+                                ×
+                              </button>
+                            )}
+                            <EditableText
+                              value={stock.name}
+                              onSave={(v) =>
+                                updateStockField(gIdx, sIdx, "name", v)
+                              }
+                              isModal={isModalView}
+                              className={`text-[12px] font-bold ${pageText}`}
+                              placeholder="EX. 삼성전자"
+                            />
+                          </td>
+                          <td className="py-1.5 text-right pr-3 align-middle">
+                            <EditableText
+                              value={stock.price}
+                              onSave={(v) =>
+                                updateStockField(gIdx, sIdx, "price", v)
+                              }
+                              isModal={isModalView}
+                              className={`text-[12px] font-bold ${rateColor} text-right`}
+                              placeholder="0"
+                            />
+                          </td>
+                          <td className="py-1.5 text-right pr-1 align-middle">
+                            <EditableText
+                              value={stock.change}
+                              onSave={(v) =>
+                                updateStockField(gIdx, sIdx, "change", v)
+                              }
+                              isModal={isModalView}
+                              className={`text-[12px] font-[900] ${rateColor} text-right`}
+                              placeholder="0%"
+                            />
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+                {/* 종목 추가 버튼 */}
+                {!isModalView && (
+                  <button
+                    onClick={() => addStockToGroup(gIdx)}
+                    className={`w-full py-1 mt-1 flex items-center justify-center gap-1 text-[9px] font-bold ${isDark ? "text-slate-600 hover:text-amber-400" : "text-slate-300 hover:text-blue-500"} rounded-lg border border-dashed ${isDark ? "border-[#2a2a3a]" : "border-slate-200"} transition-colors no-print`}
+                  >
+                    <span className="text-sm leading-none">+</span> 종목
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+        {!isModalView && data.featuredStocks.length < MAX_STOCKS && (
+          <button
+            onClick={() => addItem("featuredStocks")}
+            className="w-full py-1.5 flex items-center justify-center gap-1 text-[11px] font-bold text-slate-400 hover:text-blue-500 hover:bg-blue-50/50 rounded-b-2xl transition-colors no-print"
+          >
+            <span className="text-base leading-none">+</span> 테마 그룹 추가
+          </button>
+        )}
+      </div>
+    );
+  };
 
   // ===========================
   // 전문가 분석 섹션 (2페이지)
-  // 3개 텍스트 블록 + 이미지 첨부 와이어프레임
+  // 3개 텍스트 블록
   // ===========================
   const renderExpertAnalysisSections = () => (
     <div className="flex flex-col gap-5 shrink-0">
@@ -1155,25 +1130,6 @@ const ReportPreview: React.FC<Props> = ({
             className={`text-[14px] font-black uppercase tracking-tighter ${pageText} flex items-center gap-2 before:content-[''] before:w-1.5 before:h-5 ${isDark ? "before:bg-amber-400" : "before:bg-blue-600"} before:rounded-full`}
           />
         </div>
-        {/* 이미지 첨부 와이어프레임 */}
-        <div className={`${cardBg} rounded-xl border-2 border-dashed ${isDark ? "border-[#3a3a4a]" : "border-slate-300"} p-4 flex flex-col items-center justify-center gap-2 min-h-[120px] transition-colors ${isDark ? "hover:border-amber-400/40" : "hover:border-blue-400"}`}>
-          {data.usMarketImage ? (
-            <img src={data.usMarketImage} alt="미증시 차트" className="w-full rounded-lg" />
-          ) : (
-            <>
-              <div className={`w-10 h-10 rounded-xl ${isDark ? "bg-[#2a2a3a]" : "bg-slate-100"} flex items-center justify-center`}>
-                <span className="text-[20px]">📊</span>
-              </div>
-              <span className={`text-[11px] font-bold ${isDark ? "text-slate-500" : "text-slate-400"}`}>
-                미증시 차트 이미지 첨부 영역
-              </span>
-              <span className={`text-[9px] ${isDark ? "text-slate-600" : "text-slate-300"} font-medium`}>
-                (이미지 업로드 기능 준비 중)
-              </span>
-            </>
-          )}
-        </div>
-        {/* 분석 텍스트 입력 */}
         <div className={`${sectionBg} rounded-xl border ${isDark ? "border-[#2a2a3a]" : "border-slate-200/60"} p-4 shadow-sm`}>
           <EditableText
             value={data.usMarketAnalysis}
@@ -1194,25 +1150,6 @@ const ReportPreview: React.FC<Props> = ({
             className={`text-[14px] font-black uppercase tracking-tighter ${pageText} flex items-center gap-2 before:content-[''] before:w-1.5 before:h-5 ${isDark ? "before:bg-amber-400" : "before:bg-red-500"} before:rounded-full`}
           />
         </div>
-        {/* 이미지 첨부 와이어프레임 */}
-        <div className={`${cardBg} rounded-xl border-2 border-dashed ${isDark ? "border-[#3a3a4a]" : "border-slate-300"} p-4 flex flex-col items-center justify-center gap-2 min-h-[120px] transition-colors ${isDark ? "hover:border-amber-400/40" : "hover:border-blue-400"}`}>
-          {data.domesticImage ? (
-            <img src={data.domesticImage} alt="국내증시 캡처" className="w-full rounded-lg" />
-          ) : (
-            <>
-              <div className={`w-10 h-10 rounded-xl ${isDark ? "bg-[#2a2a3a]" : "bg-slate-100"} flex items-center justify-center`}>
-                <span className="text-[20px]">📈</span>
-              </div>
-              <span className={`text-[11px] font-bold ${isDark ? "text-slate-500" : "text-slate-400"}`}>
-                국내증시 캡처 이미지 첨부 영역
-              </span>
-              <span className={`text-[9px] ${isDark ? "text-slate-600" : "text-slate-300"} font-medium`}>
-                (이미지 업로드 기능 준비 중)
-              </span>
-            </>
-          )}
-        </div>
-        {/* 분석 텍스트 입력 */}
         <div className={`${sectionBg} rounded-xl border ${isDark ? "border-[#2a2a3a]" : "border-slate-200/60"} p-4 shadow-sm`}>
           <EditableText
             value={data.domesticAnalysis}

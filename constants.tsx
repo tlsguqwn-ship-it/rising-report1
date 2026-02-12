@@ -1,5 +1,5 @@
 
-import { ReportData, Sector, FeaturedStock, MarketSchedule } from './types';
+import { ReportData, Sector, ThemeGroup, MarketSchedule } from './types';
 
 // ===========================
 // 팩토리 함수: 빈 항목 생성
@@ -16,11 +16,10 @@ export const createEmptySector = (): Sector => ({
   perspective: '',
 });
 
-export const createEmptyStock = (): FeaturedStock => ({
+export const createEmptyStock = (): ThemeGroup => ({
   id: genId(),
-  name: '',
-  change: '',
-  reason: '',
+  keyword: '',
+  stocks: [{ name: '', price: '', change: '' }],
 });
 
 export const createEmptySchedule = (): MarketSchedule => ({
@@ -70,9 +69,19 @@ export const CLOSE_REPORT_TEMPLATE: ReportData = {
     { id: genId(), time: "", event: "" }
   ],
   featuredStocks: [
-    { id: genId(), name: "삼성전자", change: "50,000원 / -2.5%", reason: "외인 대규모 매도세 집중 출회" },
-    { id: genId(), name: "", change: "", reason: "" },
-    { id: genId(), name: "", change: "", reason: "" }
+    {
+      id: genId(),
+      keyword: '반도체 장비',
+      stocks: [
+        { name: '삼성전자', price: '50,000', change: '-2.5%' },
+        { name: 'SK하이닉스', price: '180,000', change: '+1.2%' },
+      ],
+    },
+    {
+      id: genId(),
+      keyword: '',
+      stocks: [{ name: '', price: '', change: '' }],
+    },
   ],
   sectors: [
     {
@@ -144,9 +153,19 @@ export const PRE_MARKET_REPORT_TEMPLATE: ReportData = {
     { id: genId(), time: "", event: "" }
   ],
   featuredStocks: [
-    { id: genId(), name: "엔비디아 AI 실적", change: "한미반도체, HPSP", reason: "미국 AI 칩 수요 폭증 및 장비주 낙수효과" },
-    { id: genId(), name: "", change: "", reason: "" },
-    { id: genId(), name: "", change: "", reason: "" }
+    {
+      id: genId(),
+      keyword: 'AI & HBM 장비',
+      stocks: [
+        { name: '한미반도체', price: '120,000', change: '+5.2%' },
+        { name: 'HPSP', price: '42,000', change: '+3.8%' },
+      ],
+    },
+    {
+      id: genId(),
+      keyword: '',
+      stocks: [{ name: '', price: '', change: '' }],
+    },
   ],
   sectors: [
     {

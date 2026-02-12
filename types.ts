@@ -21,12 +21,20 @@ export interface MarketSchedule {
   event: string;
 }
 
-export interface FeaturedStock {
-  id: string;
+export interface ThemeStock {
   name: string;
+  price: string;
   change: string;
-  reason: string;
 }
+
+export interface ThemeGroup {
+  id: string;
+  keyword: string;
+  stocks: ThemeStock[];
+}
+
+// 하위 호환용
+export type FeaturedStock = ThemeGroup;
 
 export interface ReportData {
   title: string;
@@ -42,7 +50,7 @@ export interface ReportData {
   expertInterestedStocks: string;
   featuredStockLabel?: string;
   marketSchedule: MarketSchedule[];
-  featuredStocks: FeaturedStock[];
+  featuredStocks: ThemeGroup[];
   featuredStocksTitle: string;
   sectorsTitle: string;
   scheduleTitle: string;
@@ -56,9 +64,7 @@ export interface ReportData {
   domesticAnalysisTitle: string;
   todayStrategy: string;           // 금일 시장전략
   todayStrategyTitle: string;
-  // 이미지 첨부 (추후 구현, 와이어프레임용)
-  usMarketImage?: string;          // 미증시 차트 이미지 URL
-  domesticImage?: string;          // 국내증시 이미지 URL
+
 }
 
 export interface EditorState {
