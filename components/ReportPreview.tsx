@@ -749,89 +749,6 @@ const ReportPreview: React.FC<Props> = ({
     );
   };
 
-  // ===========================
-  // 브리핑 섹션 (전문가 분석)
-  // ===========================
-  const renderInsight = () => {
-    const insightChipColor = isPreMarket
-      ? "bg-sky-100 text-sky-800 border-sky-200/80"
-      : isDark
-        ? "bg-[#1c162a] text-amber-300 border-amber-400/30"
-        : "bg-amber-50 text-amber-800 border-amber-200/80";
-    return (
-      <div
-        className={`
-        ${
-          isPreMarket
-            ? "bg-gradient-to-br from-sky-50/80 to-white border-sky-200/50"
-            : isDark
-              ? "bg-[#1a1a24] border-[#2a2a3a]"
-              : "bg-gradient-to-br from-amber-50/80 to-white border-amber-200/50"
-        }
-        px-5 py-4 rounded-2xl border flex flex-col relative shrink-0
-      `}
-      >
-        {/* 헤더: 아이콘 + 타이틀 */}
-        <div className="flex items-center gap-3 mb-3 shrink-0">
-          <div
-            className={`w-10 h-10 ${isPreMarket ? "bg-sky-500" : isDark ? "bg-amber-500" : "bg-amber-400"} text-white rounded-xl flex items-center justify-center text-lg shadow-md ring-2 ${isDark ? "ring-[#0f0f14]" : "ring-white"}`}
-          >
-            {isPreMarket ? "⚡" : "🎙️"}
-          </div>
-          <div className="flex flex-col gap-1">
-            <EditableText
-              value={data.expertAnalysisSubtitle}
-              {...ep("expertAnalysisSubtitle")}
-              tag="span"
-              className={`text-[13px] font-black uppercase tracking-[0.15em] ${isPreMarket ? "text-sky-600" : isDark ? "text-amber-500" : "text-amber-600"} leading-none`}
-            />
-            <EditableText
-              value={data.expertAnalysisTitle}
-              {...ep("expertAnalysisTitle")}
-              tag="h2"
-              className={`text-[20px] font-[900] ${isDark ? "text-slate-100" : "text-slate-900"} tracking-tight leading-tight`}
-            />
-          </div>
-        </div>
-
-        {/* 전문가 분석 */}
-        <div
-          className={`border-t ${isDark ? "border-white/5" : "border-black/5"} pt-3`}
-        >
-          <EditableText
-            value={data.expertAnalysis}
-            {...ep("expertAnalysis")}
-            className={`text-[17px] font-bold ${isDark ? "text-slate-300" : "text-slate-800"} leading-[2.0] text-justify`}
-            placeholder="EX. 전문가 분석을 적어주세요"
-          />
-        </div>
-        <div
-          className={`mt-2.5 pt-2.5 border-t ${isDark ? "border-white/5" : "border-black/5"} flex items-center gap-3 shrink-0 flex-wrap`}
-        >
-          <EditableText
-            value={
-              isPreMarket
-                ? data.featuredStockLabel || "금일 공략주"
-                : data.featuredStockLabel || "내일 관심주"
-            }
-            onSave={(v) => onChange({ ...data, featuredStockLabel: v })}
-            isModal={isModalView}
-            className={`shrink-0 uppercase tracking-widest text-[12px] font-[900] ${isPreMarket ? "bg-sky-200/70 text-sky-700" : isDark ? "bg-amber-400/20 text-amber-500" : "bg-amber-100 text-amber-700"} px-3.5 py-1.5 rounded-full`}
-          />
-          <div className="flex-1">
-            <ChipInput
-              value={data.expertInterestedStocks}
-              onSave={(v) => onChange({ ...data, expertInterestedStocks: v })}
-              isModal={isModalView}
-              placeholder="EX. 종목명 입력 후 Enter"
-              chipClassName={insightChipColor}
-              size="lg"
-            />
-          </div>
-        </div>
-      </div>
-    );
-  };
 
   // ===========================
   // 관련주 칩 렌더링 헬퍼
@@ -1065,28 +982,60 @@ const ReportPreview: React.FC<Props> = ({
   };
 
   // ===========================
-  // 전일 미증시 마감 분석 (1페이지)
+  // 전일 미증시 마감 분석 + 공략주 (1페이지)
   // ===========================
-  const renderUsMarketAnalysis = () => (
-    <div className="flex flex-col gap-2 shrink-0">
-      <div className="flex items-center shrink-0">
-        <EditableText
-          value={data.usMarketAnalysisTitle}
-          {...ep("usMarketAnalysisTitle")}
-          tag="h2"
-          className={`text-[14px] font-black uppercase tracking-tighter ${pageText} flex items-center gap-2 before:content-[''] before:w-1.5 before:h-5 ${isDark ? "before:bg-amber-400" : "before:bg-blue-600"} before:rounded-full`}
-        />
+  const renderUsMarketAnalysis = () => {
+    const chipColor = isPreMarket
+      ? "bg-sky-100 text-sky-800 border-sky-200/80"
+      : isDark
+        ? "bg-[#1c162a] text-amber-300 border-amber-400/30"
+        : "bg-amber-50 text-amber-800 border-amber-200/80";
+    return (
+      <div className="flex flex-col gap-2 shrink-0">
+        <div className="flex items-center shrink-0">
+          <EditableText
+            value={data.usMarketAnalysisTitle}
+            {...ep("usMarketAnalysisTitle")}
+            tag="h2"
+            className={`text-[14px] font-black uppercase tracking-tighter ${pageText} flex items-center gap-2 before:content-[''] before:w-1.5 before:h-5 ${isDark ? "before:bg-amber-400" : "before:bg-blue-600"} before:rounded-full`}
+          />
+        </div>
+        <div className={`${sectionBg} rounded-xl border ${isDark ? "border-[#2a2a3a]" : "border-slate-200/60"} p-4 shadow-sm`}>
+          <EditableText
+            value={data.usMarketAnalysis}
+            {...ep("usMarketAnalysis")}
+            className={`text-[12px] font-medium ${pageText} leading-[1.8] whitespace-pre-wrap`}
+            placeholder={"EX.\n• 나스닥 +1.2% 상승, AI 반도체 섹터 강세\n• 엔비디아 실적 발표 앞두고 매수세 유입\n• 국채 금리 하락에 기술주 전반 상승"}
+          />
+        </div>
+        {/* 공략주 칩 */}
+        <div
+          className={`mt-1 flex items-center gap-3 shrink-0 flex-wrap`}
+        >
+          <EditableText
+            value={
+              isPreMarket
+                ? data.featuredStockLabel || "금일 공략주"
+                : data.featuredStockLabel || "내일 관심주"
+            }
+            onSave={(v) => onChange({ ...data, featuredStockLabel: v })}
+            isModal={isModalView}
+            className={`shrink-0 uppercase tracking-widest text-[12px] font-[900] ${isPreMarket ? "bg-sky-200/70 text-sky-700" : isDark ? "bg-amber-400/20 text-amber-500" : "bg-amber-100 text-amber-700"} px-3.5 py-1.5 rounded-full`}
+          />
+          <div className="flex-1">
+            <ChipInput
+              value={data.expertInterestedStocks}
+              onSave={(v) => onChange({ ...data, expertInterestedStocks: v })}
+              isModal={isModalView}
+              placeholder="EX. 종목명 입력 후 Enter"
+              chipClassName={chipColor}
+              size="lg"
+            />
+          </div>
+        </div>
       </div>
-      <div className={`${sectionBg} rounded-xl border ${isDark ? "border-[#2a2a3a]" : "border-slate-200/60"} p-4 shadow-sm`}>
-        <EditableText
-          value={data.usMarketAnalysis}
-          {...ep("usMarketAnalysis")}
-          className={`text-[12px] font-medium ${pageText} leading-[1.8] whitespace-pre-wrap`}
-          placeholder={"EX.\n• 나스닥 +1.2% 상승, AI 반도체 섹터 강세\n• 엔비디아 실적 발표 앞두고 매수세 유입\n• 국채 금리 하락에 기술주 전반 상승"}
-        />
-      </div>
-    </div>
-  );
+    );
+  };
 
   // ===========================
   // 전일 국내증시 특징 (2페이지)
@@ -1130,7 +1079,6 @@ const ReportPreview: React.FC<Props> = ({
           <div className="px-[14mm] pt-[5mm] pb-[8mm] flex flex-col gap-2.5">
             {renderHeader()}
             {renderIndicators()}
-            {renderInsight()}
             {renderUsMarketAnalysis()}
           </div>
           {/* 페이지 번호 */}
