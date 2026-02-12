@@ -28,34 +28,42 @@ const EditableText: React.FC<{
   onSave: (val: string) => void;
   tag?: keyof React.JSX.IntrinsicElements;
   className?: string;
+  style?: React.CSSProperties;
   isModal?: boolean;
   editPath?: string;
   onSelect?: (path: string) => void;
   placeholder?: string;
+  multiline?: boolean;
 }> = ({
   value,
   onSave,
   tag: Tag = "div",
   className = "",
+  style,
   isModal = false,
   editPath,
   onSelect,
   placeholder,
+  multiline = false,
 }) => {
   const ref = useRef<HTMLElement>(null);
   const savedValue = useRef(value);
-  const isEmpty = !value || value.trim() === "";
+  const stripHtml = (s: string) => s?.replace(/<[^>]*>/g, '').trim() || '';
+  const isEmpty = !value || stripHtml(value) === "";
   const [localEmpty, setLocalEmpty] = useState(isEmpty);
+  const [isFocused, setIsFocused] = useState(false);
 
   useEffect(() => {
-    setLocalEmpty(!value || value.trim() === "");
+    setLocalEmpty(!value || stripHtml(value) === "");
   }, [value]);
 
   const handleFocus = useCallback(() => {
     if (editPath && onSelect) onSelect(editPath);
-    savedValue.current = value;
-    // 기존 텍스트가 있으면 전체 선택 → 바로 타이핑으로 교체 가능
-    if (!isEmpty && ref.current) {
+    // 현재 innerHTML을 기준값으로 저장
+    savedValue.current = ref.current?.innerHTML || value;
+    setIsFocused(true);
+    // multiline이면 전체선택 안 함 (줄바꾸면 가능하게)
+    if (!multiline && !isEmpty && ref.current) {
       setTimeout(() => {
         const sel = window.getSelection();
         if (sel && ref.current) {
@@ -66,14 +74,19 @@ const EditableText: React.FC<{
         }
       }, 0);
     }
-    // 빈 상태(placeholder)일 때는 아무 것도 안 함 — 커서만 자연스럽게 표시
-  }, [editPath, onSelect, value, isEmpty]);
+  }, [editPath, onSelect, value, isEmpty, multiline]);
 
   const handleBlur = useCallback(() => {
-    const newVal = ref.current?.innerText || "";
-    setLocalEmpty(!newVal.trim());
-    if (newVal !== savedValue.current) {
-      onSave(newVal);
+    const el = ref.current;
+    if (!el) return;
+    // innerHTML로 저장하여 <b>, <strong> 등 서식 태그 보존
+    const html = el.innerHTML || "";
+    // 순수 텍스트가 비어있는지 확인
+    const text = el.innerText?.trim() || "";
+    setLocalEmpty(!text);
+    setIsFocused(false);
+    if (html !== savedValue.current) {
+      onSave(html);
     }
   }, [onSave]);
 
@@ -82,7 +95,13 @@ const EditableText: React.FC<{
       e.preventDefault();
       (e.target as HTMLElement).blur();
     }
-  }, []);
+    // multiline: Enter = 줄바꾸 (기본 동작), Esc = 저장/닫기
+    // 일반: Enter = 완성(blur), Shift+Enter = 줄바꾸
+    if (!multiline && e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      (e.target as HTMLElement).blur();
+    }
+  }, [multiline]);
 
   const handleInput = useCallback(() => {
     const text = ref.current?.innerText?.trim() || "";
@@ -93,17 +112,36 @@ const EditableText: React.FC<{
 
   // 모달(미리보기) 모드
   if (isModal) {
-    return (
-      <TagEl className={className}>
-        {isEmpty && placeholder ? placeholder : value}
-      </TagEl>
-    );
+    if (isEmpty && placeholder) {
+      return <TagEl className={className} style={style}>{placeholder}</TagEl>;
+    }
+    return <TagEl className={className} style={style} dangerouslySetInnerHTML={{ __html: value || "" }} />;
   }
 
-  const showPlaceholder = localEmpty && placeholder;
+  const showPlaceholder = localEmpty && placeholder && !(multiline && isFocused);
+
+  // dangerouslySetInnerHTML 대신 useEffect로 값 동기화 (첫 타자 씹힘 방지)
+  const lastExternalValue = useRef(value);
+  useEffect(() => {
+    if (ref.current && value !== lastExternalValue.current) {
+      // 포커스 중이면 외부 변경을 반영하지 않음 (편집 중 덮어쓰기 방지)
+      if (document.activeElement !== ref.current) {
+        ref.current.innerHTML = value || "";
+      }
+      lastExternalValue.current = value;
+    }
+  }, [value]);
+
+  // 최초 마운트 시 초기값 세팅
+  useEffect(() => {
+    if (ref.current && !ref.current.innerHTML) {
+      ref.current.innerHTML = value || "";
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
-    <div style={{ position: "relative" }} className={className}>
+    <div style={{ position: "relative", ...style }} className={className}>
       <TagEl
         ref={ref}
         contentEditable
@@ -112,30 +150,112 @@ const EditableText: React.FC<{
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
         onInput={handleInput}
-        className="outline-none transition-all duration-150 whitespace-pre-wrap hover:ring-1 hover:ring-blue-200/60 focus:ring-2 focus:ring-blue-400/40 cursor-text"
-        style={{ minHeight: "1.2em", minWidth: "2em" }}
-      >
-        {value}
-      </TagEl>
+        className={`outline-none transition-all duration-150 whitespace-pre-wrap hover:ring-1 hover:ring-blue-200/60 focus:ring-2 focus:ring-blue-400/40 cursor-text ${multiline && isFocused ? "pb-8" : ""}`}
+        style={{ minHeight: "1.2em", minWidth: "2em", ...style }}
+      />
       {showPlaceholder && (
         <span
           style={{
             position: "absolute",
-            top: "50%",
+            top: multiline ? 0 : "50%",
             left: 0,
             right: 0,
-            transform: "translateY(-50%)",
+            transform: multiline ? "none" : "translateY(-50%)",
             pointerEvents: "none",
             color: "#cbd5e1",
-            whiteSpace: "nowrap",
+            whiteSpace: multiline ? "pre-wrap" : "nowrap",
             overflow: "hidden",
-            textOverflow: "ellipsis",
+            textOverflow: multiline ? undefined : "ellipsis",
             userSelect: "none",
           }}
         >
           {placeholder}
         </span>
       )}
+      {multiline && isFocused && (
+        <button
+          onMouseDown={(e) => {
+            e.preventDefault();
+            ref.current?.blur();
+          }}
+          className="absolute bottom-1 right-1 px-2.5 py-0.5 bg-blue-500 hover:bg-blue-600 text-white text-[10px] font-bold rounded shadow-md transition-colors z-50 no-print"
+        >
+          ✓ 확인
+        </button>
+      )}
+    </div>
+  );
+};
+
+// ===========================
+// 인라인 컬러피커 (hover 시 🎨 버튼)
+// ===========================
+const ColorPicker: React.FC<{
+  value?: string;
+  defaultColor: string;
+  onSave: (color: string) => void;
+  label?: string;
+  position?: "top-right" | "top-left" | "bottom-right" | "bottom-left";
+}> = ({ value, defaultColor, onSave, label, position = "top-right" }) => {
+  const inputRef = React.useRef<HTMLInputElement>(null);
+  const currentColor = value || defaultColor;
+
+  const posClass = {
+    "top-right": "-top-1 -right-1",
+    "top-left": "-top-1 -left-1",
+    "bottom-right": "-bottom-1 -right-1",
+    "bottom-left": "-bottom-1 -left-1",
+  }[position];
+
+  return (
+    <div className={`absolute ${posClass} z-50 no-print opacity-0 group-hover/colorable:opacity-100 transition-opacity`}>
+      <button
+        onClick={() => inputRef.current?.click()}
+        className="w-6 h-6 rounded-full bg-white shadow-md border border-slate-200 flex items-center justify-center text-[12px] hover:scale-110 transition-transform cursor-pointer"
+        title={label || "색상 변경"}
+      >
+        🎨
+      </button>
+      <input
+        ref={inputRef}
+        type="color"
+        value={currentColor}
+        onChange={(e) => onSave(e.target.value)}
+        className="absolute w-0 h-0 opacity-0 pointer-events-none"
+      />
+    </div>
+  );
+};
+
+// ===========================
+// 자동 폰트 축소 래퍼 (종목명 등 긴 텍스트 한 줄 맞춤)
+// ===========================
+const AutoFitText: React.FC<{
+  text: string;
+  baseFontSize: number;
+  minFontSize?: number;
+  className?: string;
+  style?: React.CSSProperties;
+}> = ({ text, baseFontSize, minFontSize = 9, className, style }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const textRef = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    const textEl = textRef.current;
+    if (!container || !textEl || !text) return;
+    let size = baseFontSize;
+    textEl.style.fontSize = `${size}px`;
+    // 부모 td 너비 기준으로 축소
+    while (textEl.scrollWidth > container.clientWidth && size > minFontSize) {
+      size -= 0.5;
+      textEl.style.fontSize = `${size}px`;
+    }
+  }, [text, baseFontSize, minFontSize]);
+
+  return (
+    <div ref={containerRef} className={className} style={{ ...style, overflow: 'hidden', whiteSpace: 'nowrap', maxWidth: '100%' }}>
+      <span ref={textRef} style={{ fontSize: `${baseFontSize}px`, fontWeight: 'inherit', color: 'inherit' }}>{text}</span>
     </div>
   );
 };
@@ -149,16 +269,20 @@ const ChipInput: React.FC<{
   isModal?: boolean;
   placeholder?: string;
   chipClassName?: string;
+  chipStyle?: React.CSSProperties;
   size?: "sm" | "lg";
   vertical?: boolean;
+  noWrap?: boolean;
 }> = ({
   value,
   onSave,
   isModal = false,
   placeholder = "",
   chipClassName,
+  chipStyle,
   size = "sm",
   vertical = false,
+  noWrap = false,
 }) => {
   const [inputVal, setInputVal] = useState("");
   const chipRefs = useRef<(HTMLSpanElement | null)[]>([]);
@@ -170,7 +294,7 @@ const ChipInput: React.FC<{
     : [];
 
   const defaultChipClass = "bg-slate-100 text-slate-700 border-slate-200/80";
-  const chipStyle = chipClassName || defaultChipClass;
+  const chipClass = chipClassName || defaultChipClass;
 
   const isLg = size === "lg";
 
@@ -262,7 +386,8 @@ const ChipInput: React.FC<{
         {chips.map((chip, i) => (
           <span
             key={i}
-            className={`inline-flex items-center ${isLg ? "px-3.5 py-1.5 rounded-full text-[13px]" : "px-2 py-0.5 rounded-md text-[10px]"} font-bold border whitespace-nowrap ${chipStyle}`}
+            className={`inline-flex items-center ${isLg ? "px-3.5 py-1.5 rounded-full text-[13px]" : "px-2.5 py-1 rounded-md text-[14px]"} font-bold border whitespace-nowrap ${chipClass}`}
+            style={chipStyle}
           >
             {chip}
           </span>
@@ -284,8 +409,8 @@ const ChipInput: React.FC<{
           onKeyDown={handleInputKeyDown}
           onBlur={handleInputBlur}
           placeholder={placeholder}
-          className={`outline-none bg-transparent ${isLg ? "text-[13px]" : "text-[10px]"} font-bold min-w-[60px] flex-1 py-0.5 text-slate-700 placeholder:text-slate-300 caret-slate-500`}
-          style={{ caretColor: "#64748b" }}
+          className={`outline-none bg-transparent ${isLg ? "text-[16px]" : "text-[16px]"} font-bold min-w-[60px] flex-1 py-0.5 text-inherit placeholder:text-inherit/30 caret-current`}
+          style={{ caretColor: "currentColor" }}
         />
       </div>
     );
@@ -295,7 +420,8 @@ const ChipInput: React.FC<{
   const renderChip = (chip: string, i: number) => (
     <span
       key={i}
-      className={`group/chip relative inline-flex items-center cursor-text ${isLg ? "px-3.5 py-1.5 rounded-full text-[13px]" : "px-2 py-0.5 rounded-md text-[11px] leading-[18px]"} font-bold border whitespace-nowrap ${chipStyle} hover:shadow-sm transition-shadow focus-within:ring-2 focus-within:ring-blue-300 focus-within:shadow-sm`}
+      className={`group/chip relative inline-flex items-center cursor-text ${isLg ? "px-3.5 py-1.5 rounded-full text-[16px]" : "px-2 py-0.5 rounded-md text-[16px] leading-[18px]"} font-bold border whitespace-nowrap ${chipClass} hover:shadow-sm transition-shadow focus-within:ring-2 focus-within:ring-blue-300 focus-within:shadow-sm`}
+      style={chipStyle}
     >
       <span
         ref={(el) => {
@@ -326,7 +452,7 @@ const ChipInput: React.FC<{
           e.stopPropagation();
           removeChip(i);
         }}
-        className={`absolute ${isLg ? "-top-1.5 -right-1.5 w-4 h-4 text-[9px]" : "-top-1 -right-1 w-3.5 h-3.5 text-[8px]"} rounded-full bg-slate-400 hover:bg-red-500 text-white flex items-center justify-center leading-none no-print opacity-0 group-hover/chip:opacity-100 transition-opacity shadow-sm`}
+        className={`absolute ${isLg ? "-top-1.5 -right-2.5 w-4 h-4 text-[9px]" : "-top-1 -right-2.5 w-3.5 h-3.5 text-[8px]"} rounded-full bg-slate-400 hover:bg-red-500 text-white flex items-center justify-center leading-none no-print opacity-0 group-hover/chip:opacity-100 transition-opacity shadow-sm z-50`}
       >
         ×
       </button>
@@ -336,7 +462,7 @@ const ChipInput: React.FC<{
   const addBtn = (
     <button
       onClick={addChipDirect}
-      className={`${isLg ? "w-7 h-7 text-[14px]" : "w-[18px] h-[18px] text-[11px]"} shrink-0 rounded-full bg-slate-100 hover:bg-blue-100 text-slate-400 hover:text-blue-500 font-bold flex items-center justify-center transition-colors no-print border border-slate-200/80`}
+      className={`${isLg ? "w-7 h-7 text-[15px]" : "w-[18px] h-[18px] text-[15px]"} shrink-0 rounded-full bg-slate-100 hover:bg-blue-100 text-slate-400 hover:text-blue-500 font-bold flex items-center justify-center transition-colors no-print border border-slate-200/80`}
     >
       +
     </button>
@@ -356,10 +482,19 @@ const ChipInput: React.FC<{
 
   return (
     <div
-      className={`flex flex-wrap ${isLg ? "gap-3" : "gap-1.5"} items-center ${isLg ? "min-h-[32px]" : "min-h-[22px]"}`}
+      className={`flex ${noWrap ? '' : 'flex-wrap'} ${isLg ? "gap-3" : "gap-1.5"} items-center ${isLg ? "min-h-[32px]" : "min-h-[22px]"}`}
     >
-      {chips.map((chip, i) => renderChip(chip, i))}
-      {addBtn}
+      {chips.length > 0 ? (
+        <>
+          {chips.slice(0, -1).map((chip, i) => renderChip(chip, i))}
+          <span className={`inline-flex items-center whitespace-nowrap ${isLg ? "gap-3" : "gap-1.5"}`}>
+            {renderChip(chips[chips.length - 1], chips.length - 1)}
+            {addBtn}
+          </span>
+        </>
+      ) : (
+        addBtn
+      )}
     </div>
   );
 };
@@ -381,7 +516,7 @@ const SentimentBadge = ({
   return (
     <span
       onClick={onClick}
-      className={`px-2.5 py-0.5 rounded text-[9px] font-black tracking-tighter uppercase ${onClick ? "cursor-pointer hover:opacity-80 active:scale-95 transition-all" : ""} ${
+      className={`px-2.5 py-0.5 rounded text-[15px] font-black tracking-tighter uppercase ${onClick ? "cursor-pointer hover:opacity-80 active:scale-95 transition-all" : ""} ${
         isPos
           ? "bg-[#f04452] text-white"
           : isNeg
@@ -519,10 +654,11 @@ const ReportPreview: React.FC<Props> = ({
   const renderHeader = () => (
     <div className={`shrink-0 pb-3 border-b-2 ${dividerColor}`}>
       <div className="flex items-center justify-between">
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-1">
           <div className="flex items-center gap-4">
             <span
-              className={`px-3 py-1 text-[11px] font-black text-white rounded-lg ${typeBadge} uppercase tracking-tight shadow-sm`}
+              className={`px-3.5 py-1.5 text-[13px] font-black text-white rounded-lg ${typeBadge} uppercase tracking-tight shadow-sm`}
+              style={data.headerBadgeColor ? { backgroundColor: data.headerBadgeColor } : undefined}
             >
               {isPreMarket ? "MORNING REPORT" : "CLOSING REPORT"}
             </span>
@@ -531,17 +667,17 @@ const ReportPreview: React.FC<Props> = ({
             value={data.title}
             {...ep("title")}
             tag="h1"
-            className={`text-[28px] font-[900] tracking-tighter leading-tight ${pageText}`}
+            className={`text-[35px] font-[900] tracking-tighter leading-tight ${pageText}`}
           />
           <EditableText
             value={data.date}
             {...ep("date")}
-            className={`text-[13px] font-semibold ${labelText} tracking-tight`}
+            className={`text-[15px] font-semibold ${labelText} tracking-tight`}
             placeholder="2026년 2월 11일 (화) 15:40 발행"
           />
         </div>
         <span
-          className={`text-[36px] font-[900] uppercase leading-none shrink-0 ml-6 self-center text-transparent bg-clip-text`}
+          className={`text-[42px] font-[900] uppercase leading-none shrink-0 ml-6 self-center text-transparent bg-clip-text`}
           style={{
             fontStretch: "condensed",
             letterSpacing: "0.06em",
@@ -572,6 +708,7 @@ const ReportPreview: React.FC<Props> = ({
       return (
         <div
           className={`shrink-0 ${sectionBg} p-2.5 rounded-2xl border ${cardBorder}`}
+          style={data.indicatorBoxColor ? { backgroundColor: data.indicatorBoxColor } : undefined}
         >
           {/* 상단: 코스피/코스닥 대형 박스 */}
           <div className="grid grid-cols-2 gap-2 mb-2">
@@ -595,7 +732,8 @@ const ReportPreview: React.FC<Props> = ({
                   className={`${cardBg} px-4 py-3.5 rounded-xl border ${cardBorder} shadow-sm flex items-center gap-3`}
                 >
                   <span
-                    className={`text-[13px] font-extrabold ${labelText} uppercase leading-none tracking-tight w-[56px] shrink-0 -translate-y-[1px]`}
+                    className={`${labelText} uppercase leading-none tracking-tight w-[56px] shrink-0 -translate-y-[1px]`}
+                    style={{ fontSize: `${data.indicatorLabelSize ?? 13}px`, fontWeight: data.indicatorLabelWeight ?? '800', color: data.indicatorLabelColor || undefined }}
                   >
                     {item.label}
                   </span>
@@ -604,11 +742,13 @@ const ReportPreview: React.FC<Props> = ({
                       value={item.value}
                       onSave={(v) => updateArr("summaryItems", idx, "value", v)}
                       isModal={isModalView}
-                      className={`text-[22px] font-[900] leading-none tracking-tight text-center ${trendColor}`}
+                      className={`leading-none tracking-tight text-center ${pageText}`}
+                      style={{ fontSize: `${data.indicatorValueSize ?? 22}px`, fontWeight: data.indicatorValueWeight ?? '900', color: data.indicatorValueColor || undefined }}
                     />
                   </div>
                   <span
-                    className={`text-[14px] font-bold leading-none shrink-0 whitespace-nowrap ${trendColor}`}
+                    className={`leading-none shrink-0 whitespace-nowrap ${trendColor}`}
+                    style={{ fontSize: `${data.indicatorChangeSize ?? 14}px`, fontWeight: data.indicatorChangeWeight ?? '700' }}
                   >
                     {arrow && <span className="mr-0.5">{arrow}</span>}
                     {changeAmt}
@@ -628,18 +768,14 @@ const ReportPreview: React.FC<Props> = ({
                   className={`${cardBg} px-2 py-2.5 rounded-xl border ${cardBorder} shadow-sm flex flex-col items-center justify-center text-center gap-1`}
                 >
                   <span
-                    className={`text-[10px] font-extrabold ${labelText} uppercase leading-none tracking-tight`}
+                    className={`${labelText} uppercase leading-none tracking-tight`}
+                    style={{ fontSize: `${data.indicatorLabelSize ?? 10}px`, fontWeight: data.indicatorLabelWeight ?? '800', color: data.indicatorLabelColor || undefined }}
                   >
                     {item.label}
                   </span>
                   <span
-                    className={`text-[15px] font-[900] leading-none tracking-tight ${
-                      item.trend === "up"
-                        ? "text-[#f04452]"
-                        : item.trend === "down"
-                          ? "text-[#3182f6]"
-                          : pageText
-                    }`}
+                    className={`leading-none tracking-tight ${pageText}`}
+                    style={{ fontSize: `${data.indicatorValueSize ?? 15}px`, fontWeight: data.indicatorValueWeight ?? '900', color: data.indicatorValueColor || undefined }}
                   >
                     {item.value}
                   </span>
@@ -647,13 +783,14 @@ const ReportPreview: React.FC<Props> = ({
                     item.subText !== "" &&
                     item.subText !== "-" && (
                       <span
-                        className={`text-[10px] font-bold leading-none ${
+                        className={`leading-none ${
                           item.trend === "up"
                             ? "text-[#f04452]"
                             : item.trend === "down"
                               ? "text-[#3182f6]"
                               : labelText
                         }`}
+                        style={{ fontSize: `${data.indicatorChangeSize ?? 10}px`, fontWeight: data.indicatorChangeWeight ?? '700' }}
                       >
                         {item.subText}
                       </span>
@@ -668,41 +805,45 @@ const ReportPreview: React.FC<Props> = ({
 
     // 장전 리포트: 기존 5열 그리드 + 보조 지표 행
     return (
-      <div className="shrink-0 bg-slate-50/80 p-2.5 rounded-2xl border border-slate-100">
+      <div className="shrink-0 bg-slate-50/80 p-2.5 rounded-2xl border border-slate-100" style={data.indicatorBoxColor ? { backgroundColor: data.indicatorBoxColor } : undefined}>
         <div className={`grid grid-cols-${itemCount} gap-2`}>
           {data.summaryItems.map((item, idx) => (
             <div
               key={idx}
               className="bg-white px-2 py-4 rounded-xl border border-slate-100 shadow-sm flex flex-col items-center justify-center text-center"
             >
-              <span className="text-[11px] font-extrabold text-slate-400 uppercase block mb-2 leading-none tracking-tight">
-                {item.label}
-              </span>
+              <EditableText
+                value={item.label}
+                onSave={(v) => updateArr("summaryItems", idx, "label", v)}
+                isModal={isModalView}
+                className="text-slate-400 uppercase block mb-2 leading-none tracking-tight"
+                style={{ fontSize: `${data.indicatorLabelSize ?? 16}px`, fontWeight: data.indicatorLabelWeight ?? '800', color: data.indicatorLabelColor || undefined }}
+              />
               <EditableText
                 value={item.value}
                 onSave={(v) => updateArr("summaryItems", idx, "value", v)}
                 isModal={isModalView}
-                className={`text-[18px] font-[900] leading-none tracking-tight ${
-                  item.trend === "up"
-                    ? "text-[#f04452]"
-                    : item.trend === "down"
-                      ? "text-[#3182f6]"
-                      : "text-slate-900"
-                }`}
+                className="leading-none tracking-tight text-slate-900"
+                style={{ fontSize: `${data.indicatorValueSize ?? 18}px`, fontWeight: data.indicatorValueWeight ?? '900', color: data.indicatorValueColor || undefined }}
               />
-              <span
-                className={`text-[11px] font-bold leading-none mt-2 flex items-center gap-0.5 ${
+              <div className={`flex items-center justify-center gap-0.5 mt-2 ${
                   item.trend === "up"
                     ? "text-[#f04452]"
                     : item.trend === "down"
                       ? "text-[#3182f6]"
                       : "text-slate-400"
-                }`}
-              >
-                {item.trend === "up" && "▲ "}
-                {item.trend === "down" && "▼ "}
-                {item.subText}
-              </span>
+                }`} style={{ fontSize: `${data.indicatorChangeSize ?? 16}px`, fontWeight: data.indicatorChangeWeight ?? '700' }}>
+                {item.trend === "up" && <span className="mr-0.5">▲</span>}
+                {item.trend === "down" && <span className="mr-0.5">▼</span>}
+                <EditableText
+                  value={item.subText || ""}
+                  onSave={(v) => updateArr("summaryItems", idx, "subText", v)}
+                  isModal={isModalView}
+                  className="leading-none"
+                  style={{ fontSize: 'inherit', fontWeight: 'inherit', color: 'inherit' }}
+                  placeholder="등락"
+                />
+              </div>
             </div>
           ))}
         </div>
@@ -712,36 +853,36 @@ const ReportPreview: React.FC<Props> = ({
             {data.subIndicators.map((item, idx) => (
               <div
                 key={`sub-${idx}`}
-                className="flex-1 bg-white px-3 py-3 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between gap-2 min-w-0 whitespace-nowrap overflow-hidden"
+                className="flex-1 bg-white px-3 py-3 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between gap-3 min-w-0 overflow-visible"
               >
-                <span className="text-[12px] font-extrabold text-slate-400 uppercase leading-none tracking-tight shrink-0">
-                  {item.label}
-                </span>
-                <div className="flex items-center gap-1">
-                  <span
+                <EditableText
+                  value={item.label}
+                  onSave={(v) => updateArr("subIndicators", idx, "label", v)}
+                  isModal={isModalView}
+                  className="text-[15px] font-extrabold text-slate-400 uppercase leading-none tracking-tight shrink-0"
+                />
+                <div className="flex items-baseline gap-1.5 shrink-0">
+                  <EditableText
+                    value={item.value}
+                    onSave={(v) => updateArr("subIndicators", idx, "value", v)}
+                    isModal={isModalView}
                     className={`text-[16px] font-[800] leading-none tracking-tight ${
-                      item.trend === "up"
-                        ? "text-[#f04452]"
-                        : item.trend === "down"
-                          ? "text-[#3182f6]"
-                          : "text-slate-700"
+                      "text-slate-700"
                     }`}
-                  >
-                    {item.value}
-                  </span>
-                  <span
-                    className={`text-[12px] font-bold leading-none ${
+                  />
+                  <EditableText
+                    value={item.subText || ""}
+                    onSave={(v) => updateArr("subIndicators", idx, "subText", v)}
+                    isModal={isModalView}
+                    className={`text-[14px] font-bold leading-none ${
                       item.trend === "up"
                         ? "text-[#f04452]"
                         : item.trend === "down"
                           ? "text-[#3182f6]"
                           : "text-slate-400"
                     }`}
-                  >
-                    {item.trend === "up" && "▲"}
-                    {item.trend === "down" && "▼"}
-                    {item.subText}
-                  </span>
+                    placeholder="등락"
+                  />
                 </div>
               </div>
             ))}
@@ -764,14 +905,19 @@ const ReportPreview: React.FC<Props> = ({
       return <span className="text-slate-300 text-[11px]">―</span>;
     return (
       <div className="flex flex-nowrap gap-1">
-        {chips.map((chip, i) => (
-          <span
-            key={i}
-            className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200/80 whitespace-nowrap"
-          >
-            {chip}
-          </span>
-        ))}
+        {chips.map((chip, i) => {
+          // 긴 텍스트 자동 축소: 6자 이상이면 축소
+          const fontSize = chip.length >= 8 ? 12 : chip.length >= 6 ? 14 : 16;
+          return (
+            <span
+              key={i}
+              className={`inline-flex items-center px-2 py-0.5 rounded-md font-bold bg-slate-100 text-slate-700 border border-slate-200/80 whitespace-nowrap`}
+              style={{ fontSize: `${fontSize}px` }}
+            >
+              {chip}
+            </span>
+          );
+        })}
       </div>
     );
   };
@@ -780,204 +926,159 @@ const ReportPreview: React.FC<Props> = ({
   // TODAY'S HOT THEME – 키워드-종목 묶음 방식
   // ===========================
   const renderFeaturedStocks = () => {
-    // 종목 추가 헬퍼
-    const addStockToGroup = (groupIdx: number) => {
-      const newStocks = data.featuredStocks.map((g, i) =>
-        i === groupIdx
-          ? { ...g, stocks: [...g.stocks, { name: "", price: "", change: "" }] }
-          : g,
-      );
-      onChange({ ...data, featuredStocks: newStocks });
-    };
-    // 종목 삭제 헬퍼
-    const removeStockFromGroup = (groupIdx: number, stockIdx: number) => {
-      const newStocks = data.featuredStocks.map((g, i) =>
-        i === groupIdx
-          ? { ...g, stocks: g.stocks.filter((_, si) => si !== stockIdx) }
-          : g,
-      );
-      onChange({ ...data, featuredStocks: newStocks });
-    };
-    // 그룹 내 종목 필드 업데이트 헬퍼
-    const updateStockField = (
-      groupIdx: number,
-      stockIdx: number,
-      field: "name" | "price" | "change",
-      value: string,
-    ) => {
-      const newStocks = data.featuredStocks.map((g, gi) =>
-        gi === groupIdx
-          ? {
-              ...g,
-              stocks: g.stocks.map((s, si) =>
-                si === stockIdx ? { ...s, [field]: value } : s,
-              ),
-            }
-          : g,
-      );
-      onChange({ ...data, featuredStocks: newStocks });
-    };
-
+    // 2페이지 "오늘의 핵심 테마" — 내부는 usSectors 기반 섹터 카드
     return (
       <div
-        className={`shrink-0 overflow-hidden rounded-2xl border ${isDark ? "border-[#2a2a3a]" : "border-slate-200/60"} shadow-sm ${cardBg}`}
+        className={`shrink-0 rounded-2xl border ${isDark ? "border-[#2a2a3a]" : "border-slate-200/60"} shadow-sm ${cardBg} relative group/addwrap overflow-visible`}
       >
         <div
-          className={`${isDark ? "bg-[#16161e]" : "bg-slate-50/50"} px-5 py-3 border-b ${cardBorder}`}
+          className={`${isDark ? "bg-[#16161e]" : "bg-slate-200/70"} px-5 py-2.5 border-b ${cardBorder} rounded-t-2xl`}
+          style={data.themeHeaderColor ? { backgroundColor: data.themeHeaderColor } : undefined}
         >
           <EditableText
             value={data.featuredStocksTitle}
             {...ep("featuredStocksTitle")}
             tag="h2"
-            className={`text-[13px] font-black ${isDark ? "text-slate-300" : "text-slate-800"} uppercase tracking-tight`}
+            className={`text-[18px] font-black ${isDark ? "text-slate-300" : "text-slate-800"} uppercase tracking-tight`}
           />
         </div>
-        <div className="p-3 grid grid-cols-2 gap-3">
-          {data.featuredStocks.map((group, gIdx) => (
-            <div
-              key={group.id || gIdx}
-              data-arr="featuredStocks"
-              className={`rounded-xl border ${isDark ? "border-[#2a2a3a] bg-[#16161e]/50" : "border-slate-100 bg-slate-50/40"} overflow-hidden group/theme relative`}
-            >
-              {/* 그룹 삭제 */}
-              {!isModalView && data.featuredStocks.length > MIN_ITEMS && (
-                <button
-                  onClick={() => removeItem("featuredStocks", gIdx)}
-                  className="absolute -right-1 -top-1 w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold opacity-0 group-hover/theme:opacity-100 transition-opacity no-print flex items-center justify-center shadow-sm hover:bg-red-600 z-10"
-                >
-                  ×
-                </button>
-              )}
-
-              {/* 카테고리 키워드 헤더 */}
-              <div
-                className={`px-4 py-2 border-b ${isDark ? "border-[#2a2a3a] bg-[#1a1a24]" : "border-slate-100 bg-slate-100/60"} flex items-center gap-2`}
-              >
-                <div
-                  className={`w-1.5 h-4 rounded-full ${isDark ? "bg-amber-400" : "bg-blue-500"} shrink-0`}
-                />
-                <EditableText
-                  value={group.keyword}
-                  onSave={(v) =>
-                    updateArr("featuredStocks", gIdx, "keyword", v)
-                  }
-                  isModal={isModalView}
-                  className={`text-[15px] font-[800] ${isDark ? "text-amber-300" : "text-blue-700"} uppercase tracking-tight flex-1`}
-                  placeholder="EX. 반도체 장비"
-                />
-              </div>
-
-              {/* 종목 리스트 */}
-              <div className="px-3 py-2">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr
-                      className={`${isDark ? "text-slate-500" : "text-slate-400"} text-[11px] font-bold uppercase tracking-wider`}
-                    >
-                      <th className="py-1 pl-1" style={{ width: "42%" }}>
-                        종목명
-                      </th>
-                      <th
-                        className="py-1 text-right pr-3"
-                        style={{ width: "30%" }}
-                      >
-                        {isPreMarket ? "전일 종가" : "종가"}
-                      </th>
-                      <th
-                        className="py-1 text-right pr-1"
-                        style={{ width: "28%" }}
-                      >
-                        등락률
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody
-                    className={`divide-y ${isDark ? "divide-[#1a1a24]/50" : "divide-slate-50"}`}
-                  >
-                    {group.stocks.map((stock, sIdx) => {
-                      const rateVal = stock.change.replace(/[%\s]/g, "");
-                      const rateColor =
-                        rateVal.includes("-") || rateVal.includes("▼")
-                          ? "text-[#3182f6]"
-                          : rateVal.includes("+") ||
-                              rateVal.includes("▲") ||
-                              parseFloat(rateVal) > 0
-                            ? "text-[#f04452]"
-                            : pageText;
-
+        <div className="px-2 pt-1.5 pb-2">
+          {data.usSectors && data.usSectors.length > 0 ? (
+            <div className="grid grid-cols-2 gap-1.5 items-stretch">
+              {(data.usSectors || []).map((sector, sIdx) => {
+                      const realIdx = sIdx;
+                      const cardBorder2 = isDark ? "border-slate-600/40 bg-slate-800/20" : "border-slate-200 bg-white shadow-sm";
+                      const dotColor =
+                        sector.sentiment === "긍정" ? "bg-red-500"
+                          : sector.sentiment === "부정" ? "bg-blue-500"
+                            : "bg-slate-400";
+                      const chipColor2 = isDark
+                        ? "bg-slate-700/40 text-slate-200 border-slate-500/30"
+                        : "bg-slate-100 text-slate-700 border-slate-300/80";
                       return (
-                        <tr
-                          key={sIdx}
-                          className={`${isDark ? "hover:bg-[#22222e]" : "hover:bg-white"} transition-colors group/stock relative`}
+                        <div
+                          key={sector.id || realIdx}
+                          className={`rounded-lg border ${cardBorder2} flex flex-col relative group/sector overflow-visible`}
                         >
-                          <td className="py-1.5 pl-1 align-middle">
-                            {!isModalView && group.stocks.length > 1 && (
-                              <button
-                                onClick={() =>
-                                  removeStockFromGroup(gIdx, sIdx)
-                                }
-                                className="absolute -left-1 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-red-400 text-white text-[8px] font-bold opacity-0 group-hover/stock:opacity-100 transition-opacity no-print flex items-center justify-center z-10"
-                              >
-                                ×
-                              </button>
-                            )}
+                          {!isModalView && data.usSectors!.length > 1 && (
+                            <button
+                              onClick={() => {
+                                const updated = (data.usSectors || []).filter((_, i) => i !== realIdx);
+                                onChange({ ...data, usSectors: updated });
+                              }}
+                              className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-400 text-white text-[10px] font-bold opacity-0 group-hover/sector:opacity-100 transition-opacity no-print flex items-center justify-center z-50"
+                            >
+                              ×
+                            </button>
+                          )}
+                          <div className={`flex items-center gap-2 px-2.5 py-2 border-b ${isDark ? "border-[#2a2a3a] bg-[#1a1a24]" : "border-slate-100 bg-slate-100/60"} rounded-t-lg shrink-0`} style={data.themeCardHeaderColor ? { backgroundColor: data.themeCardHeaderColor } : undefined}>
+                            <span className={`w-2.5 h-2.5 rounded-full ${dotColor} shrink-0`} />
                             <EditableText
-                              value={stock.name}
-                              onSave={(v) =>
-                                updateStockField(gIdx, sIdx, "name", v)
-                              }
+                              value={sector.name}
+                              onSave={(v) => {
+                                const updated = [...(data.usSectors || [])];
+                                updated[realIdx] = { ...updated[realIdx], name: v };
+                                onChange({ ...data, usSectors: updated });
+                              }}
                               isModal={isModalView}
-                              className={`text-[14px] font-semibold ${pageText}`}
-                              placeholder="EX. 삼성전자"
+                              className={`${isDark ? "text-slate-200" : "text-slate-800"} leading-tight`}
+                              style={{ fontSize: `${data.themeNameSize ?? 17}px`, fontWeight: data.themeNameWeight ?? '800' }}
+                              placeholder="섹터명"
                             />
-                          </td>
-                          <td className="py-1.5 text-right pr-3 align-middle">
-                            <EditableText
-                              value={stock.price}
-                              onSave={(v) =>
-                                updateStockField(gIdx, sIdx, "price", v)
-                              }
-                              isModal={isModalView}
-                              className={`text-[14px] font-bold ${rateColor} text-right`}
-                              placeholder="0"
-                            />
-                          </td>
-                          <td className="py-1.5 text-right pr-1 align-middle">
-                            <EditableText
-                              value={stock.change}
-                              onSave={(v) =>
-                                updateStockField(gIdx, sIdx, "change", v)
-                              }
-                              isModal={isModalView}
-                              className={`text-[14px] font-[900] ${rateColor} text-right`}
-                              placeholder="0%"
-                            />
-                          </td>
-                        </tr>
+                            <button
+                              onClick={() => {
+                                const cycle = ["긍정", "부정", "중립"];
+                                const next = cycle[(cycle.indexOf(sector.sentiment) + 1) % cycle.length];
+                                const updated = [...(data.usSectors || [])];
+                                updated[realIdx] = { ...updated[realIdx], sentiment: next };
+                                onChange({ ...data, usSectors: updated });
+                              }}
+                              className={`ml-auto text-[15px] font-bold rounded px-1.5 py-0.5 cursor-pointer transition-colors shrink-0 ${
+                                sector.sentiment === "긍정"
+                                  ? "bg-red-100 text-red-700"
+                                  : sector.sentiment === "부정"
+                                    ? "bg-blue-100 text-blue-700"
+                                    : "bg-slate-100 text-slate-600"
+                              }`}
+                            >
+                              {sector.sentiment}
+                            </button>
+                          </div>
+                          <div className="px-2.5 pt-1.5 pb-1.5 flex flex-col gap-2.5 flex-grow">
+                          <EditableText
+                            value={sector.issue}
+                            onSave={(v) => {
+                              const updated = [...(data.usSectors || [])];
+                              updated[realIdx] = { ...updated[realIdx], issue: v };
+                              onChange({ ...data, usSectors: updated });
+                            }}
+                            isModal={isModalView}
+                            multiline
+                            className={`${isDark ? "text-slate-200" : "text-slate-700"} leading-snug`}
+                            style={{ fontSize: `${data.themeIssueSize ?? 16}px`, fontWeight: data.themeIssueWeight ?? '800' }}
+                            placeholder="이슈 요약"
+                          />
+                          <div className="mt-auto">
+                          <ChipInput
+                            value={sector.stocks}
+                            onSave={(v) => {
+                              const updated = [...(data.usSectors || [])];
+                              updated[realIdx] = { ...updated[realIdx], stocks: v };
+                              onChange({ ...data, usSectors: updated });
+                            }}
+                            isModal={isModalView}
+                            placeholder="EX. 관련 종목 입력 후 Enter"
+                            chipClassName={data.themeChipColor ? "text-white border-white/30" : chipColor2}
+                            size="sm"
+                            chipStyle={data.themeChipColor ? { backgroundColor: data.themeChipColor } : undefined}
+                          />
+                          </div>
+                          </div>
+                        </div>
                       );
                     })}
-                  </tbody>
-                </table>
-                {/* 종목 추가 버튼 */}
-                {!isModalView && (
-                  <button
-                    onClick={() => addStockToGroup(gIdx)}
-                    className={`w-full py-1 mt-1 flex items-center justify-center gap-1 text-[9px] font-bold ${isDark ? "text-slate-600 hover:text-amber-400" : "text-slate-300 hover:text-blue-500"} rounded-lg border border-dashed ${isDark ? "border-[#2a2a3a]" : "border-slate-200"} transition-colors no-print`}
-                  >
-                    <span className="text-sm leading-none">+</span> 종목
-                  </button>
-                )}
-              </div>
+              {/* 홀수일 때 빈칸에 회색 + 버튼 */}
+              {!isModalView && (data.usSectors || []).length % 2 === 1 && (data.usSectors || []).length < 10 && (
+                <button
+                  onClick={() => {
+                    const newSector = {
+                      id: crypto.randomUUID(),
+                      name: "",
+                      sentiment: "중립",
+                      issue: "",
+                      stocks: "",
+                      perspective: "",
+                    };
+                    onChange({ ...data, usSectors: [...(data.usSectors || []), newSector] });
+                  }}
+                  className={`rounded-lg border-2 border-dashed ${isDark ? "border-[#2a2a3a] hover:border-[#3a3a4a] hover:bg-[#1a1a2a]" : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"} flex items-center justify-center transition-all no-print min-h-[60px]`}
+                >
+                  <span className={`text-[20px] font-bold ${isDark ? "text-slate-500" : "text-slate-300"}`}>+</span>
+                </button>
+              )}
             </div>
-          ))}
+          ) : null}
         </div>
-        {!isModalView && data.featuredStocks.length < MAX_STOCKS && (
-          <button
-            onClick={() => addItem("featuredStocks")}
-            className="w-full py-1.5 flex items-center justify-center gap-1 text-[11px] font-bold text-slate-400 hover:text-blue-500 hover:bg-blue-50/50 rounded-b-2xl transition-colors no-print"
-          >
-            <span className="text-base leading-none">+</span> 테마 그룹 추가
-          </button>
+        {/* 섹션 하단 중앙 + 버튼: 짝수(2,4,6,8)일 때만 — absolute로 공간 차지 안함 */}
+        {!isModalView && (data.usSectors || []).length > 0 && (data.usSectors || []).length % 2 === 0 && (data.usSectors || []).length < 10 && (
+          <div className="flex justify-center no-print" style={{ position: 'absolute', bottom: '-12px', left: 0, right: 0, zIndex: 10 }}>
+            <button
+              onClick={() => {
+                const newSector = {
+                  id: crypto.randomUUID(),
+                  name: "",
+                  sentiment: "중립",
+                  issue: "",
+                  stocks: "",
+                  perspective: "",
+                };
+                onChange({ ...data, usSectors: [...(data.usSectors || []), newSector] });
+              }}
+              className={`w-6 h-6 rounded-full flex items-center justify-center text-[14px] font-bold ${isDark ? "bg-[#23233a] text-slate-400 hover:bg-purple-500/40 hover:text-purple-300 border border-[#2a2a3a]" : "bg-white text-slate-400 hover:bg-purple-100 hover:text-purple-500 border border-slate-200 shadow-sm"} transition-colors`}
+            >
+              +
+            </button>
+          </div>
         )}
       </div>
     );
@@ -989,153 +1090,245 @@ const ReportPreview: React.FC<Props> = ({
   const renderUsMarketAnalysis = () => {
     return (
       <div className="flex flex-col gap-2 shrink-0">
-        {data.usSectors && data.usSectors.length > 0 && (
-          <div className={`flex flex-col gap-2 rounded-xl border ${isDark ? "border-[#2a2a3a]" : "border-slate-200/70"} p-3 ${isDark ? "bg-[#12121a]/50" : "bg-slate-50/30"}`}>
-            <div className="flex items-center shrink-0">
-              <EditableText
-                value={data.usSectorsTitle || "전일 미증시 섹터 트렌드"}
-                onSave={(v) => onChange({ ...data, usSectorsTitle: v })}
-                isModal={isModalView}
-                tag="h2"
-                className={`text-[18px] font-black uppercase tracking-tighter ${pageText} flex items-center gap-2 before:content-[''] before:w-1.5 before:h-5 ${isDark ? "before:bg-amber-400" : "before:bg-blue-600"} before:rounded-full`}
-              />
-            </div>
-            {/* 2열 균등 배분 레이아웃 */}
-            <div className="flex gap-2 items-start">
-              {[0, 1].map((col) => {
-                // 인덱스 기반 균등 배분: 짝수→좌, 홀수→우
-                const colSectors = (data.usSectors || []).filter((_, i) => i % 2 === col);
-                return (
-                  <div
-                    key={col}
-                    className="flex-1 flex flex-col gap-2 min-h-[40px]"
-                  >
-                    {colSectors.map((sector) => {
-                      const realIdx = data.usSectors!.indexOf(sector);
-                      const cardBorder = isDark ? "border-slate-600/40 bg-slate-800/20" : "border-slate-200/80 bg-white/60";
-                      const dotColor =
-                        sector.sentiment === "강세" ? "bg-red-500"
-                          : sector.sentiment === "약세" ? "bg-blue-500"
-                            : "bg-slate-400";
-                      const chipColor = isDark
-                        ? "bg-slate-700/40 text-slate-200 border-slate-500/30"
-                        : "bg-slate-100 text-slate-700 border-slate-300/80";
-                      return (
-                        <div
-                          key={sector.id || realIdx}
-                          className={`rounded-xl border ${cardBorder} p-2.5 flex flex-col gap-1.5 relative group/sector`}
-                        >
-                          {/* 섹터 삭제 버튼 */}
-                          {!isModalView && data.usSectors!.length > 1 && (
-                            <button
-                              onClick={() => {
-                                const updated = (data.usSectors || []).filter((_, i) => i !== realIdx);
-                                onChange({ ...data, usSectors: updated });
-                              }}
-                              className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-400 text-white text-[10px] font-bold opacity-0 group-hover/sector:opacity-100 transition-opacity no-print flex items-center justify-center z-10"
-                            >
-                              ×
-                            </button>
-                          )}
-                          <div className="flex items-center gap-2">
-                            <span className={`w-2.5 h-2.5 rounded-full ${dotColor} shrink-0`} />
-                            <EditableText
-                              value={sector.name}
-                              onSave={(v) => {
-                                const updated = [...(data.usSectors || [])];
-                                updated[realIdx] = { ...updated[realIdx], name: v };
-                                onChange({ ...data, usSectors: updated });
-                              }}
-                              isModal={isModalView}
-                              className={`text-[15px] font-[800] ${isDark ? "text-slate-200" : "text-slate-800"} leading-tight`}
-                              placeholder="섹터명"
-                            />
-                            <button
-                              onClick={() => {
-                                const cycle = ["강세", "중립", "약세"];
-                                const next = cycle[(cycle.indexOf(sector.sentiment) + 1) % 3];
-                                const updated = [...(data.usSectors || [])];
-                                updated[realIdx] = { ...updated[realIdx], sentiment: next };
-                                onChange({ ...data, usSectors: updated });
-                              }}
-                              className={`ml-auto text-[11px] font-bold rounded px-1.5 py-0.5 cursor-pointer transition-colors shrink-0 ${
-                                sector.sentiment === "강세"
-                                  ? "bg-red-100 text-red-700"
-                                  : sector.sentiment === "약세"
-                                    ? "bg-blue-100 text-blue-700"
-                                    : "bg-slate-100 text-slate-600"
-                              }`}
-                            >
-                              {sector.sentiment}
-                            </button>
-                          </div>
-                          <EditableText
-                            value={sector.issue}
-                            onSave={(v) => {
-                              const updated = [...(data.usSectors || [])];
-                              updated[realIdx] = { ...updated[realIdx], issue: v };
-                              onChange({ ...data, usSectors: updated });
-                            }}
-                            isModal={isModalView}
-                            className={`text-[14px] font-semibold ${isDark ? "text-slate-200" : "text-slate-700"} leading-snug`}
-                            placeholder="이슈 요약"
-                          />
-                          <ChipInput
-                            value={sector.stocks}
-                            onSave={(v) => {
-                              const updated = [...(data.usSectors || [])];
-                              updated[realIdx] = { ...updated[realIdx], stocks: v };
-                              onChange({ ...data, usSectors: updated });
-                            }}
-                            isModal={isModalView}
-                            placeholder="종목 입력 후 Enter"
-                            chipClassName={chipColor}
-                            size="sm"
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })}
-            </div>
-            {/* 섹터 추가 버튼 */}
-            {!isModalView && data.usSectors.length < 10 && (
-              <button
-                onClick={() => {
-                  const newSector = {
-                    id: crypto.randomUUID(),
-                    name: "",
-                    sentiment: "중립",
-                    issue: "",
-                    stocks: "",
-                    perspective: "",
-                  };
-                  onChange({ ...data, usSectors: [...(data.usSectors || []), newSector] });
-                }}
-                className={`w-full py-1.5 flex items-center justify-center gap-1 text-[12px] font-bold ${isDark ? "text-slate-600 hover:text-amber-400" : "text-slate-400 hover:text-blue-500"} rounded-lg border border-dashed ${isDark ? "border-[#2a2a3a]" : "border-slate-200"} transition-colors no-print`}
+        {/* 1페이지 섹터 트렌드 — 내부는 featuredStocks 기반 테이블 */}
+        <div className={`flex flex-col rounded-xl border ${isDark ? "border-[#2a2a3a]" : "border-slate-200/70"} ${isDark ? "bg-[#12121a]/50" : "bg-slate-50/30"} relative group/addwrap2 overflow-visible`}>
+          <div className={`px-4 py-2.5 border-b ${isDark ? "border-[#2a2a3a] bg-[#16161e]" : "border-slate-200/50 bg-slate-200/70"} rounded-t-xl`} style={data.sectorTrendHeaderColor ? { backgroundColor: data.sectorTrendHeaderColor } : undefined}>
+            <EditableText
+              value={data.usSectorsTitle || "전일 미증시 섹터 트렌드"}
+              onSave={(v) => onChange({ ...data, usSectorsTitle: v })}
+              isModal={isModalView}
+              tag="h2"
+              className={`text-[18px] font-black uppercase tracking-tighter ${pageText}`}
+            />
+          </div>
+          <div className="px-2 pt-1.5 pb-2 grid grid-cols-2 gap-1.5">
+            {data.featuredStocks.map((group, gIdx) => (
+              <div
+                key={group.id || gIdx}
+                data-arr="featuredStocks"
+                className={`rounded-lg border ${isDark ? "border-[#2a2a3a] bg-[#16161e]/50" : "border-slate-200 bg-white shadow-sm"} overflow-visible group/theme relative`}
               >
-                <span className="text-base leading-none">+</span> 섹터 추가 ({data.usSectors.length}/10)
+                {/* 그룹 삭제 */}
+                {!isModalView && data.featuredStocks.length > MIN_ITEMS && (
+                  <button
+                    onClick={() => removeItem("featuredStocks", gIdx)}
+                    className="absolute -right-1 -top-1 w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold opacity-0 group-hover/theme:opacity-100 transition-opacity no-print flex items-center justify-center shadow-sm hover:bg-red-600 z-50"
+                  >
+                    ×
+                  </button>
+                )}
+                {/* 카테고리 키워드 헤더 */}
+                <div
+                  className={`px-4 py-2 border-b ${isDark ? "border-[#2a2a3a] bg-[#1a1a24]" : "border-slate-100 bg-slate-100/60"} flex items-center gap-2`}
+                  style={data.sectorTrendSubHeaderColor ? { backgroundColor: data.sectorTrendSubHeaderColor } : undefined}
+                >
+                  <EditableText
+                    value={group.keyword}
+                    onSave={(v) => updateArr("featuredStocks", gIdx, "keyword", v)}
+                    isModal={isModalView}
+                    className={`${isDark ? "text-amber-300" : "text-slate-900"} uppercase tracking-tight flex-1`}
+                    style={{ fontSize: `${data.sectorTrendNameSize ?? 17}px`, fontWeight: data.sectorTrendNameWeight ?? '800' }}
+                    placeholder="EX. 반도체 장비"
+                  />
+                  {!isModalView && (
+                    <button
+                      onClick={() => {
+                        const sentiments = ["강세", "보합", "약세"];
+                        const current = (group as any).sentiment || "강세";
+                        const next = sentiments[(sentiments.indexOf(current) + 1) % sentiments.length];
+                        const newGroups = data.featuredStocks.map((g, i) =>
+                          i === gIdx ? { ...g, sentiment: next } : g
+                        );
+                        onChange({ ...data, featuredStocks: newGroups });
+                      }}
+                      className={`ml-auto text-[15px] font-bold rounded px-1.5 py-0.5 cursor-pointer transition-colors shrink-0 ${
+                        (group as any).sentiment === "약세"
+                          ? "bg-blue-100 text-blue-700"
+                          : (group as any).sentiment === "보합"
+                            ? "bg-slate-100 text-slate-600"
+                            : "bg-red-100 text-red-700"
+                      }`}
+                    >
+                      {(group as any).sentiment || "강세"}
+                    </button>
+                  )}
+                  {isModalView && (
+                    <span
+                      className={`ml-auto text-[15px] font-bold rounded px-1.5 py-0.5 shrink-0 ${
+                        (group as any).sentiment === "약세"
+                          ? "bg-blue-100 text-blue-700"
+                          : (group as any).sentiment === "보합"
+                            ? "bg-slate-100 text-slate-600"
+                            : "bg-red-100 text-red-700"
+                      }`}
+                    >
+                      {(group as any).sentiment || "강세"}
+                    </span>
+                  )}
+                </div>
+                {/* 종목 리스트 */}
+                <div className="px-3 py-1">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className={`${isDark ? "text-slate-500" : "text-slate-400"} font-bold uppercase tracking-wider`} style={{ fontSize: data.sectorTrendTableTextSize ? `${data.sectorTrendTableTextSize}px` : '15px', ...(data.sectorTrendTableTextColor ? { color: data.sectorTrendTableTextColor } : {}) }}>
+                        <th className="py-0.5 pl-1" style={{ width: "42%" }}>종목명</th>
+                        <th className="py-0.5 text-right pr-3" style={{ width: "30%" }}>{isPreMarket ? "전일 종가" : "종가"}</th>
+                        <th className="py-0.5 text-right pr-1" style={{ width: "28%" }}>등락률</th>
+                      </tr>
+                    </thead>
+                    <tbody className={`divide-y ${isDark ? "divide-[#1a1a24]/50" : "divide-slate-50"}`}>
+                      {group.stocks.map((stock, sIdx) => {
+                        const rateVal = stock.change.replace(/[%\s]/g, "");
+                        const rateColor =
+                          rateVal.includes("-") || rateVal.includes("▼")
+                            ? "text-[#3182f6]"
+                            : rateVal.includes("+") || rateVal.includes("▲") || parseFloat(rateVal) > 0
+                              ? "text-[#f04452]"
+                              : pageText;
+                        return (
+                          <tr key={sIdx} className={`${isDark ? "hover:bg-[#22222e]" : "hover:bg-white"} transition-colors group/stock relative`}>
+                            <td className="py-0.5 pl-1 align-middle">
+                              {isModalView ? (
+                                <AutoFitText
+                                  text={stock.name}
+                                  baseFontSize={data.sectorTrendTableTextSize || 16}
+                                  className={`font-bold ${pageText}`}
+                                  style={data.sectorTrendTableTextColor ? { color: data.sectorTrendTableTextColor } : undefined}
+                                />
+                              ) : (
+                                <EditableText
+                                  value={stock.name}
+                                  onSave={(v) => {
+                                    const newStocks = data.featuredStocks.map((g, gi) =>
+                                      gi === gIdx ? { ...g, stocks: g.stocks.map((s, si) => si === sIdx ? { ...s, name: v } : s) } : g
+                                    );
+                                    onChange({ ...data, featuredStocks: newStocks });
+                                  }}
+                                  isModal={false}
+                                  className={`font-bold ${pageText}`}
+                                  placeholder="EX. 삼성전자"
+                                  style={{ fontSize: data.sectorTrendTableTextSize ? `${data.sectorTrendTableTextSize}px` : '16px', ...(data.sectorTrendTableTextColor ? { color: data.sectorTrendTableTextColor } : {}) }}
+                                />
+                              )}
+                            </td>
+                            <td className="py-0.5 text-right pr-3 align-middle">
+                              <EditableText
+                                value={stock.price}
+                                onSave={(v) => {
+                                  let formatted = v.trim();
+                                  if (formatted && !formatted.includes('$')) {
+                                    formatted = '$' + formatted;
+                                  }
+                                  const newStocks = data.featuredStocks.map((g, gi) =>
+                                    gi === gIdx ? { ...g, stocks: g.stocks.map((s, si) => si === sIdx ? { ...s, price: formatted } : s) } : g
+                                  );
+                                  onChange({ ...data, featuredStocks: newStocks });
+                                }}
+                                isModal={isModalView}
+                                className={`font-bold ${pageText} text-right`}
+                                placeholder="0"
+                                style={{ fontSize: data.sectorTrendTableTextSize ? `${data.sectorTrendTableTextSize}px` : '16px', ...(data.sectorTrendTableTextColor ? { color: data.sectorTrendTableTextColor } : {}) }}
+                              />
+                            </td>
+                            <td className="py-0.5 text-right pr-1 align-middle">
+                              <EditableText
+                                value={stock.change}
+                                onSave={(v) => {
+                                  // 자동 '%' 추가: 값이 있고 '%'가 없으면 추가
+                                  let formatted = v.trim();
+                                  if (formatted && !formatted.includes('%')) {
+                                    formatted = formatted + '%';
+                                  }
+                                  const newStocks = data.featuredStocks.map((g, gi) =>
+                                    gi === gIdx ? { ...g, stocks: g.stocks.map((s, si) => si === sIdx ? { ...s, change: formatted } : s) } : g
+                                  );
+                                  onChange({ ...data, featuredStocks: newStocks });
+                                }}
+                                isModal={isModalView}
+                                className={`font-[900] ${rateColor} text-right`}
+                                style={{ fontSize: data.sectorTrendTableTextSize ? `${data.sectorTrendTableTextSize}px` : '16px' }}
+                                placeholder="0%"
+                              />
+                            </td>
+                            {/* 종목 삭제 X 버튼 - 등락률 오른쪽 */}
+                            {!isModalView && group.stocks.length > 1 && (
+                              <td className="w-0 p-0 align-middle">
+                                <button
+                                  onClick={() => {
+                                    const newStocks = data.featuredStocks.map((g, i) =>
+                                      i === gIdx ? { ...g, stocks: g.stocks.filter((_, si) => si !== sIdx) } : g
+                                    );
+                                    onChange({ ...data, featuredStocks: newStocks });
+                                  }}
+                                  className="absolute -right-4 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-red-400 text-white text-[8px] font-bold opacity-0 group-hover/stock:opacity-100 transition-opacity no-print flex items-center justify-center z-10"
+                                >
+                                  ×
+                                </button>
+                              </td>
+                            )}
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                {/* 종목 추가 버튼 - 카드 하단 중앙 */}
+                {!isModalView && (
+                  <button
+                    onClick={() => {
+                      const newStocks = data.featuredStocks.map((g, i) =>
+                        i === gIdx ? { ...g, stocks: [...g.stocks, { name: "", price: "", change: "" }] } : g
+                      );
+                      onChange({ ...data, featuredStocks: newStocks });
+                    }}
+                    className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 w-5 h-5 rounded-full bg-blue-400 hover:bg-blue-500 text-white text-[12px] font-bold opacity-0 group-hover/theme:opacity-100 transition-opacity no-print flex items-center justify-center z-10 shadow-sm"
+                  >
+                    +
+                  </button>
+                )}
+              </div>
+            ))}
+            {/* 홀수일 때 빈칸에 회색 + 버튼 */}
+            {!isModalView && data.featuredStocks.length % 2 === 1 && data.featuredStocks.length < MAX_STOCKS && (
+              <button
+                onClick={() => addItem("featuredStocks")}
+                className={`rounded-lg border-2 border-dashed ${isDark ? "border-[#2a2a3a] hover:border-[#3a3a4a] hover:bg-[#1a1a2a]" : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"} flex items-center justify-center transition-all no-print min-h-[60px]`}
+              >
+                <span className={`text-[20px] font-bold ${isDark ? "text-slate-500" : "text-slate-300"}`}>+</span>
               </button>
             )}
           </div>
-        )}
-        {/* 미증시 마감 분석 (아래) */}
-        <div className="flex items-center shrink-0 mt-1">
-          <EditableText
-            value={data.usMarketAnalysisTitle}
-            {...ep("usMarketAnalysisTitle")}
-            tag="h2"
-            className={`text-[18px] font-black uppercase tracking-tighter ${pageText} flex items-center gap-2 before:content-[''] before:w-1.5 before:h-5 ${isDark ? "before:bg-amber-400" : "before:bg-blue-600"} before:rounded-full`}
-          />
+          {/* 섹션 하단 중앙 + 버튼: 짝수(2,4,6,8)일 때 — 박스 하단선에 걸침 */}
+          {!isModalView && data.featuredStocks.length > 0 && data.featuredStocks.length % 2 === 0 && data.featuredStocks.length < MAX_STOCKS && (
+            <div className="flex justify-center no-print" style={{ position: 'absolute', bottom: '-12px', left: 0, right: 0, zIndex: 10 }}>
+              <button
+                onClick={() => addItem("featuredStocks")}
+                className={`w-6 h-6 rounded-full flex items-center justify-center text-[14px] font-bold ${isDark ? "bg-[#23233a] text-slate-400 hover:bg-purple-500/40 hover:text-purple-300 border border-[#2a2a3a]" : "bg-white text-slate-400 hover:bg-purple-100 hover:text-purple-500 border border-slate-200 shadow-sm"} transition-colors`}
+              >
+                +
+              </button>
+            </div>
+          )}
         </div>
-        <div className={`${sectionBg} rounded-xl border ${isDark ? "border-[#2a2a3a]" : "border-slate-200/60"} p-4 shadow-sm`}>
-          <EditableText
-            value={data.usMarketAnalysis}
-            {...ep("usMarketAnalysis")}
-            className={`text-[16px] font-medium ${pageText} leading-[1.9] whitespace-pre-wrap`}
-            placeholder={"EX.\n• 나스닥 +1.2% 상승, AI 반도체 섹터 강세\n• 엔비디아 실적 발표 앞두고 매수세 유입\n• 국채 금리 하락에 기술주 전반 상승"}
-          />
+        {/* 미증시 마감 분석 (아래) — 타이틀+본문 한 박스 */}
+        <div className={`rounded-xl border ${isDark ? "border-[#2a2a3a]" : "border-slate-200/70"} ${isDark ? "bg-[#12121a]/50" : "bg-slate-50/30"} overflow-hidden mt-1`} style={data.usAnalysisBoxColor ? { backgroundColor: data.usAnalysisBoxColor } : undefined}>
+          <div className={`px-4 py-2.5 border-b ${isDark ? "border-[#2a2a3a] bg-[#16161e]" : "border-slate-200/50 bg-slate-200/70"} rounded-t-xl`} style={data.usAnalysisHeaderColor ? { backgroundColor: data.usAnalysisHeaderColor } : undefined}>
+            <EditableText
+              value={data.usMarketAnalysisTitle}
+              {...ep("usMarketAnalysisTitle")}
+              tag="h2"
+              className={`text-[18px] font-black uppercase tracking-tighter ${pageText}`}
+            />
+          </div>
+          <div className="p-4 cursor-text" style={{ minHeight: data.usMarketAnalysis?.trim() ? undefined : "120px" }} onClick={(e) => { const el = (e.currentTarget as HTMLElement).querySelector('[contenteditable]') as HTMLElement; if (el && e.target === e.currentTarget) el.focus(); }}>
+            <EditableText
+              value={data.usMarketAnalysis}
+              {...ep("usMarketAnalysis")}
+              multiline
+              className={`text-[16px] font-bold ${pageText} leading-[1.9] whitespace-pre-wrap`}
+              placeholder={"ex. 나스닥 +1.2% 상승, AI 반도체 섹터 강세\n엔비디아 실적 발표 앞두고 매수세 유입\n국채 금리 하락에 기술주 전반 상승"}
+            />
+          </div>
         </div>
       </div>
     );
@@ -1151,14 +1344,14 @@ const ReportPreview: React.FC<Props> = ({
           value={data.domesticAnalysisTitle}
           {...ep("domesticAnalysisTitle")}
           tag="h2"
-            className={`text-[18px] font-black uppercase tracking-tighter ${pageText} flex items-center gap-2 before:content-[''] before:w-1.5 before:h-5 ${isDark ? "before:bg-amber-400" : "before:bg-red-500"} before:rounded-full`}
-        />
+            className={`text-[18px] font-black uppercase tracking-tighter ${pageText}`}
+          />
       </div>
       <div className={`${sectionBg} rounded-xl border ${isDark ? "border-[#2a2a3a]" : "border-slate-200/60"} p-4 shadow-sm`}>
         <EditableText
           value={data.domesticAnalysis}
           {...ep("domesticAnalysis")}
-          className={`text-[14px] font-semibold ${pageText} leading-[1.9] whitespace-pre-wrap`}
+          className={`text-[16px] font-semibold ${pageText} leading-[1.9] whitespace-pre-wrap`}
           placeholder={"EX.\n1. 코스피 5,300pt 복귀, 외인 기관 동반 매수\n2. 반도체 장비주 강세 — HPSP, 한미반도체\n3. 바이오 섹터 소폭 약세 전환\n4. 2차전지 관련주 수급 개선 조짐"}
         />
       </div>
@@ -1178,9 +1371,10 @@ const ReportPreview: React.FC<Props> = ({
         >
           {/* 상단 강조 바 */}
           <div
-            className={`absolute top-0 left-0 w-full h-[4px] ${isDark ? "bg-amber-400" : themeColor} rounded-t-lg`}
+            className={`absolute top-0 left-0 w-full h-[4px] ${data.headerLineColor ? '' : isDark ? "bg-amber-400" : themeColor} rounded-t-lg`}
+            style={data.headerLineColor ? { backgroundColor: data.headerLineColor } : undefined}
           />
-          <div className="px-[14mm] pt-[5mm] pb-[8mm] flex flex-col gap-2.5">
+          <div className="px-[14mm] pt-[5mm] pb-[8mm] flex flex-col gap-1.5">
             {renderHeader()}
             {renderIndicators()}
             {renderUsMarketAnalysis()}
@@ -1201,35 +1395,36 @@ const ReportPreview: React.FC<Props> = ({
         >
           {/* 상단 강조 바 */}
           <div
-            className={`absolute top-0 left-0 w-full h-[4px] ${isDark ? "bg-amber-400" : themeColor} rounded-t-lg`}
+            className={`absolute top-0 left-0 w-full h-[4px] ${data.headerLineColor ? '' : isDark ? "bg-amber-400" : themeColor} rounded-t-lg`}
+            style={data.headerLineColor ? { backgroundColor: data.headerLineColor } : undefined}
           />
-          <div className="px-[14mm] pt-[8mm] pb-[8mm] flex flex-col gap-2.5">
+          <div className="px-[14mm] pt-[8mm] pb-[8mm] flex flex-col gap-1.5">
             {/* 2페이지 연속 헤더 */}
             <div
               className={`shrink-0 pb-3 border-b-2 ${isDark ? "border-white/5" : "border-slate-900/10"} flex items-center justify-between`}
             >
               <div className="flex items-center gap-3">
                 <span
-                  className={`px-2.5 py-0.5 text-[10px] font-black text-white rounded-md ${typeBadge} uppercase tracking-tight shadow-sm`}
+                  className={`px-3 py-1 text-[12px] font-black text-white rounded-lg ${typeBadge} uppercase tracking-tight shadow-sm`}
+                  style={data.headerBadgeColor ? { backgroundColor: data.headerBadgeColor } : undefined}
                 >
                   {data.reportType}
                 </span>
                 <span
-                  className={`text-[18px] font-[900] tracking-tighter ${pageText}`}
+                  className={`text-[24px] font-[900] tracking-tighter ${pageText}`}
                 >
                   {data.title}
                 </span>
               </div>
               <span
-                className={`text-[24px] font-[900] tracking-[-0.05em] ${pageText} uppercase shrink-0`}
+                className={`text-[30px] font-[900] tracking-[-0.05em] ${pageText} uppercase shrink-0`}
                 style={{ fontStretch: "condensed" }}
               >
                 RISING
               </span>
             </div>
-            {renderDomesticAnalysis()}
             {renderFeaturedStocks()}
-            {/* 오늘의 시장전략 */}
+            {/* 오늘의 시장전략 — 하늘색+남색 */}
             <div
               className={`shrink-0 mt-1 rounded-2xl border ${
                 isDark
@@ -1238,36 +1433,31 @@ const ReportPreview: React.FC<Props> = ({
                     ? "border-slate-800/20 bg-gradient-to-r from-slate-800 to-slate-700"
                     : "border-[#2a2035]/30 bg-gradient-to-r from-[#1c162a] to-[#221a30]"
               } p-5 shadow-md`}
+              style={data.strategyBoxColor ? { background: data.strategyBoxColor, borderColor: data.strategyBoxColor } : undefined}
             >
               <div className="flex items-center gap-3 mb-3">
                 <span className="text-[20px] leading-none">🎯</span>
                 <span
-                  className={`text-[17px] font-black ${isDark ? "text-amber-400" : isPreMarket ? "text-sky-300" : "text-amber-400"} uppercase tracking-widest`}
+                  className={`text-[18px] font-black ${
+                    isDark ? "text-amber-400" 
+                    : isPreMarket ? "text-sky-300" 
+                    : "text-amber-400"
+                  } uppercase tracking-widest`}
                 >
-                  {isPreMarket ? "금일 시장전략" : "내일 시장전략"}
+                  {isPreMarket ? "RISING STOCK 오늘의 핵심 주식 전략" : "RISING STOCK 핵심 내일 시장 전략"}
                 </span>
               </div>
+              {/* 타이틀과 내용 사이 구분선 */}
+              <div className="border-t border-white/15 mb-3" />
               <EditableText
                 value={data.todayStrategy}
                 {...ep("todayStrategy")}
+                multiline
                 className="text-[18px] font-bold text-white/90 leading-[2.0] text-justify"
                 placeholder="EX. 오늘의 시장전략을 적어주세요"
               />
-              {/* 마무리 한마디 */}
-              <div className={`mt-4 pt-3 border-t border-white/10`}>
-                <div className="flex items-start gap-2">
-                  <span className="text-[14px] leading-none mt-[2px]">💬</span>
-                  <EditableText
-                    value={data.dailyComment}
-                    {...ep("dailyComment")}
-                    className="text-[15px] font-bold text-white/60 leading-[1.6] italic"
-                    placeholder="EX. 오늘의 한마디를 적어주세요"
-                  />
-                </div>
-              </div>
-              {/* 공략주 칩 */}
               <div
-                className={`mt-3 pt-3 border-t border-white/10 flex items-center gap-3 shrink-0 flex-wrap`}
+                className={`mt-3 pt-3 border-t border-white/10 flex items-center gap-3`}
               >
                 <EditableText
                   value={
@@ -1277,21 +1467,29 @@ const ReportPreview: React.FC<Props> = ({
                   }
                   onSave={(v) => onChange({ ...data, featuredStockLabel: v })}
                   isModal={isModalView}
-                  className={`shrink-0 uppercase tracking-widest text-[15px] font-[900] bg-white/10 text-amber-300 px-3.5 py-1.5 rounded-full`}
+                  className={`shrink-0 uppercase tracking-widest text-[15px] font-[900] bg-white/20 border border-white/20 ${
+                    isDark ? "text-amber-300" 
+                    : isPreMarket ? "text-sky-200" 
+                    : "text-amber-300"
+                  } px-3.5 py-1.5 rounded-full`}
                 />
-                <div className="flex-1">
+                <div className="flex-1 text-white">
                   <ChipInput
                     value={data.expertInterestedStocks}
                     onSave={(v) => onChange({ ...data, expertInterestedStocks: v })}
                     isModal={isModalView}
-                    placeholder="EX. 종목명 입력 후 Enter"
-                    chipClassName="bg-white/10 text-white/80 border-white/20"
+                    placeholder="종목명 입력 후 Enter"
+                    chipClassName={data.stockChipColor ? `text-white border-white/40` : "bg-white/25 text-white border-white/40"}
                     size="lg"
+                    chipStyle={data.stockChipColor ? { backgroundColor: data.stockChipColor } : undefined}
+                    noWrap
                   />
                 </div>
               </div>
             </div>
           </div>
+          {/* 전략 하단 구분선 */}
+          <div className={`mx-4 mt-3 border-t ${isDark ? "border-white/10" : "border-slate-200"}`} />
           {/* 하단 면책 */}
           <div
             className={`absolute bottom-0 left-0 right-0 px-[14mm] pb-[10mm] pt-2 border-t ${isDark ? "border-white/5" : "border-gray-100"} text-center opacity-40`}

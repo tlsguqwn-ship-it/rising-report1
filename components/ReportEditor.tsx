@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { ReportData, Sector, FeaturedStock, MarketSchedule } from '../types';
-import { PRE_MARKET_REPORT_TEMPLATE, CLOSE_REPORT_TEMPLATE, createEmptySector, createEmptyStock, createEmptySchedule, MAX_SECTORS, MAX_STOCKS, MAX_SCHEDULE, MIN_ITEMS } from '../constants';
+import { PRE_MARKET_REPORT_TEMPLATE, CLOSE_REPORT_TEMPLATE, EMPTY_PRE_MARKET_TEMPLATE, EMPTY_CLOSE_TEMPLATE, createEmptySector, createEmptyStock, createEmptySchedule, MAX_SECTORS, MAX_STOCKS, MAX_SCHEDULE, MIN_ITEMS } from '../constants';
 import { fetchMarketIndicators } from '../services/gemini';
 import {
   ChevronDown, Plus, Trash2, GripVertical, Loader2, RotateCcw,
-  Settings, BarChart3, Eye, Star, PenTool, Layers, Calendar, Info, MessageSquare, Save, RefreshCw, Clock, History
+  Settings, BarChart3, Eye, Star, PenTool, Layers, Calendar, Info, MessageSquare, Save, RefreshCw, Clock, History, Palette
 } from 'lucide-react';
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent
@@ -81,8 +81,9 @@ const AccordionSection: React.FC<{
   summary?: string;
   summaryNode?: React.ReactNode;
   badge?: React.ReactNode;
+  onReset?: () => void;
   children: React.ReactNode;
-}> = ({ label, icon, isOpen, onToggle, summary, summaryNode, badge, children }) => (
+}> = ({ label, icon, isOpen, onToggle, summary, summaryNode, badge, onReset, children }) => (
   <div className={`overflow-hidden transition-all duration-200 border ${isOpen ? 'bg-white border-slate-200 shadow-md ring-1 ring-slate-900/5' : 'bg-white border-slate-100 hover:border-slate-200 shadow-sm'} rounded-2xl`}>
     <button
       onClick={onToggle}
@@ -100,7 +101,18 @@ const AccordionSection: React.FC<{
 
         </div>
       </div>
-      <ChevronDown size={16} className={`text-slate-300 transition-transform duration-300 shrink-0 ${isOpen ? 'rotate-180 text-slate-600' : ''}`} />
+      <div className="flex items-center gap-1.5 shrink-0">
+        {onReset && (
+          <span
+            onClick={(e) => { e.stopPropagation(); if (confirm('이 섹션을 기본값으로 초기화하시겠습니까?')) onReset(); }}
+            className="p-1 rounded-md text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all cursor-pointer"
+            title="이 섹션 초기화"
+          >
+            <RotateCcw size={13} />
+          </span>
+        )}
+        <ChevronDown size={16} className={`text-slate-300 transition-transform duration-300 ${isOpen ? 'rotate-180 text-slate-600' : ''}`} />
+      </div>
     </button>
     <div className={`transition-all duration-300 ease-in-out ${isOpen ? 'max-h-[3000px] opacity-100 border-t border-slate-50' : 'max-h-0 opacity-0 invisible pointer-events-none'}`}>
       <div className="p-5">{children}</div>
@@ -136,10 +148,88 @@ const FieldTip: React.FC<{ text: string }> = ({ text }) => {
 // ===========================
 // Main Editor Component
 // ===========================
+const COLOR_KEYS = [
+  'indicatorBoxColor', 'sectorTrendHeaderColor', 'sectorTrendSubHeaderColor',
+  'sectorTrendTableTextColor', 'sectorTrendTableTextSize', 'usAnalysisHeaderColor',
+  'usAnalysisBoxColor', 'themeHeaderColor', 'themeCardHeaderColor', 'themeChipColor',
+  'strategyBoxColor', 'stockChipColor', 'headerBadgeColor',
+  'indicatorLabelSize', 'indicatorLabelColor', 'indicatorLabelWeight',
+  'indicatorValueSize', 'indicatorValueColor', 'indicatorValueWeight',
+  'indicatorChangeSize', 'indicatorChangeWeight',
+  'sectorTrendNameSize', 'sectorTrendNameWeight',
+  'sectorTrendIssueSize', 'sectorTrendIssueWeight',
+  'themeNameSize', 'themeNameWeight',
+  'themeIssueSize', 'themeIssueWeight',
+] as const;
+
+const PRESETS_STORAGE_KEY = 'rising_color_presets';
+
+interface ColorPreset {
+  id: string;
+  name: string;
+  savedAt: string;
+  colors: Record<string, any>;
+}
+
 const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectionChange, onSave, onFullReset, templateHistory = [], onRestoreHistory, onDeleteHistory }) => {
   const [isFetching, setIsFetching] = useState(false);
   const [lastFetched, setLastFetched] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
+  const [copyToast, setCopyToast] = useState<{text: string; x: number; y: number} | null>(null);
+
+  // 색상 프리셋 (localStorage 영구 저장)
+  const [colorPresets, setColorPresets] = useState<ColorPreset[]>(() => {
+    try {
+      const saved = localStorage.getItem(PRESETS_STORAGE_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+
+  const saveColorPresets = (presets: ColorPreset[]) => {
+    setColorPresets(presets);
+    localStorage.setItem(PRESETS_STORAGE_KEY, JSON.stringify(presets));
+  };
+
+  const handleSaveColorPreset = () => {
+    if (colorPresets.length >= 5) {
+      alert('최대 5개까지 저장할 수 있습니다.\n기존 프리셋을 삭제한 후 다시 저장해주세요.');
+      return;
+    }
+    const colors: Record<string, any> = {};
+    COLOR_KEYS.forEach(key => {
+      if ((data as any)[key] !== undefined) colors[key] = (data as any)[key];
+    });
+    const now = new Date();
+    const name = `프리셋 ${colorPresets.length + 1}`;
+    const savedAt = `${now.getMonth() + 1}/${now.getDate()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const newPreset: ColorPreset = { id: crypto.randomUUID(), name, savedAt, colors };
+    saveColorPresets([...colorPresets, newPreset]);
+  };
+
+  const handleLoadColorPreset = (preset: ColorPreset) => {
+    const resetColors: Record<string, any> = {};
+    COLOR_KEYS.forEach(key => { resetColors[key] = undefined; });
+    onChange({ ...data, ...resetColors, ...preset.colors });
+  };
+
+  const handleDeleteColorPreset = (id: string) => {
+    saveColorPresets(colorPresets.filter(p => p.id !== id));
+  };
+
+  const handleCopyColor = (color: string, label: string, e: React.MouseEvent) => {
+    navigator.clipboard.writeText(color);
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    setCopyToast({ text: `${label} (${color})`, x: rect.left + rect.width / 2, y: rect.top - 8 });
+    setTimeout(() => setCopyToast(null), 1200);
+  };
+
+  // 스타일 그룹별 초기화: 해당 색상 키들만 undefined로 리셋
+  const resetStyleGroup = (keys: string[]) => {
+    if (!confirm('이 항목의 색상을 기본값으로 초기화하시겠습니까?')) return;
+    const patch: Record<string, any> = {};
+    keys.forEach(k => { patch[k] = undefined; });
+    onChange({ ...data, ...patch });
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -191,6 +281,39 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
   };
 
   // ===========================
+  // 섹션별 개별 초기화
+  // ===========================
+  const getEmptyTemplate = () => data.reportType === '장전' ? EMPTY_PRE_MARKET_TEMPLATE : EMPTY_CLOSE_TEMPLATE;
+
+  const resetSection = (sectionId: string) => {
+    const tmpl = getEmptyTemplate();
+    const resetFields: Record<string, (keyof ReportData)[]> = {
+      setup: ['title', 'date'],
+      indicators: ['summaryItems', 'summaryTitle', 'subIndicators'],
+      coreview: ['currentMarketView', 'coreViewTitle'],
+      stocks: ['featuredStocks', 'featuredStocksTitle'],
+      insight: ['expertAnalysis', 'expertAnalysisTitle', 'expertInterestedStocks', 'expertAnalysisSubtitle'],
+      sectors: ['sectors', 'sectorsTitle'],
+      schedule: ['marketSchedule', 'scheduleTitle'],
+      comment: ['dailyComment'],
+    };
+    const fields = resetFields[sectionId];
+    if (!fields) return;
+    const patch: Partial<ReportData> = {};
+    fields.forEach(key => {
+      const val = (tmpl as any)[key];
+      (patch as any)[key] = Array.isArray(val) ? JSON.parse(JSON.stringify(val)) : val;
+    });
+    onChange({ ...data, ...patch });
+  };
+
+  // 프리셋 이름 변경
+  const handleRenamePreset = (id: string, newName: string) => {
+    const updated = colorPresets.map(p => p.id === id ? { ...p, name: newName } : p);
+    saveColorPresets(updated);
+  };
+
+  // ===========================
   // 실시간 지표 업데이트 (Perplexity API)
   // ===========================
   const handleFetchMarketData = async () => {
@@ -205,8 +328,7 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
         onChange(updates);
         const now = new Date();
         setLastFetched(now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }));
-        // 지표 업데이트 후 자동 저장
-        if (onSave) setTimeout(() => onSave(), 100);
+        // 자동 저장 제거 — 저장은 사용자가 직접 버튼을 누를 때만
       } else {
         alert('⚠️ 지표 데이터를 가져오지 못했습니다. 다시 시도해주세요.');
       }
@@ -236,7 +358,7 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
   const labelStyle = "text-[11px] font-extrabold text-slate-400 uppercase tracking-widest flex items-center mb-1.5";
 
   return (
-    <div className="pb-8 space-y-3.5">
+    <div className="pb-8 space-y-3.5 relative">
       {/* 실시간 지표 업데이트 */}
       <div className="bg-slate-900 rounded-2xl p-5 text-white shadow-xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/10 blur-[50px] rounded-full" />
@@ -362,10 +484,448 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
                   </div>
                 );
               })}
-            </div>
+        </div>
           )}
         </div>
 
+
+      {/* 색상 · 스타일 · 텍스트 설정 패널 */}
+      <div className="overflow-hidden transition-all duration-200 border bg-white border-slate-200 shadow-md ring-1 ring-slate-900/5 rounded-2xl">
+        <button onClick={() => onSectionChange(activeSection === 'stylePanel' ? null : 'stylePanel')} className="w-full px-5 py-3.5 flex items-center gap-3 border-b border-slate-50 cursor-pointer hover:bg-slate-50/50 transition-colors">
+          <span className="w-8 h-8 flex items-center justify-center rounded-lg text-sm shrink-0 bg-slate-900 text-white shadow-sm">
+            <Palette size={14} />
+          </span>
+          <h3 className="text-[13px] font-extrabold text-slate-900 tracking-tight flex-1 text-left">색상 · 스타일 · 텍스트 설정</h3>
+          <ChevronDown size={16} className={`text-slate-400 transition-transform ${activeSection === 'stylePanel' || activeSection === null ? '' : '-rotate-90'}`} />
+        </button>
+        {activeSection === 'stylePanel' && <div className="p-5">
+        <div className="space-y-4">
+          {/* 적용중 색상 */}
+          {(() => {
+            const colorKeys: { key: string; label: string }[] = [
+              { key: 'indicatorBoxColor', label: '지표 박스' },
+              { key: 'sectorTrendHeaderColor', label: '섹터 헤더' },
+              { key: 'sectorTrendSubHeaderColor', label: '섹터 서브헤더' },
+              { key: 'sectorTrendTableTextColor', label: '섹터 텍스트' },
+              { key: 'usAnalysisHeaderColor', label: '분석 헤더' },
+              { key: 'usAnalysisBoxColor', label: '분석 박스' },
+              { key: 'themeHeaderColor', label: '테마 헤더' },
+              { key: 'themeCardHeaderColor', label: '테마 카드헤더' },
+              { key: 'themeChipColor', label: '테마 칩' },
+              { key: 'strategyBoxColor', label: '전략 박스' },
+              { key: 'stockChipColor', label: '종목 칩' },
+              { key: 'headerBadgeColor', label: '헤더 배지' },
+            ];
+            const appliedColors = colorKeys.filter(c => (data as any)[c.key]).map(c => ({ ...c, color: (data as any)[c.key] as string }));
+            if (appliedColors.length === 0) return null;
+            return (
+              <div>
+                <h4 className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />적용중 색상
+                </h4>
+                <div className="flex flex-wrap gap-1.5">
+                  {appliedColors.map((ac) => (
+                    <button
+                      key={ac.key}
+                      title={`${ac.label}: ${ac.color}`}
+                      onClick={(e) => handleCopyColor(ac.color, ac.label, e)}
+                      className="w-7 h-7 rounded-lg border-2 border-emerald-400 hover:scale-110 hover:shadow-md transition-all cursor-pointer relative group/ac ring-1 ring-emerald-200"
+                      style={{ backgroundColor: ac.color }}
+                    >
+                      <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border border-white" />
+                      <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[8px] font-bold text-emerald-600 opacity-0 group-hover/ac:opacity-100 whitespace-nowrap transition-opacity pointer-events-none">{ac.label}</span>
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[9px] text-emerald-500 mt-2 font-semibold">현재 적용중인 색상입니다. 클릭 시 복사됩니다.</p>
+              </div>
+            );
+          })()}
+
+          {/* 퀵 색상 팔레트 */}
+          <div>
+            <h4 className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-2">추천 팔레트</h4>
+            <div className="flex flex-wrap gap-1.5">
+              {[
+                { color: '#f8fafc', label: '화이트' },
+                { color: '#e2e8f0', label: '라이트 그레이' },
+                { color: '#94a3b8', label: '슬레이트' },
+                { color: '#64748b', label: '쿨 그레이' },
+                { color: '#334155', label: '다크 슬레이트' },
+                { color: '#1e293b', label: '네이비' },
+                { color: '#0f172a', label: '딥 블랙' },
+                { color: '#7c3aed', label: '퍼플' },
+                { color: '#6d28d9', label: '딥 퍼플' },
+                { color: '#2563eb', label: '블루' },
+                { color: '#1d4ed8', label: '로얄 블루' },
+                { color: '#0891b2', label: '시안' },
+                { color: '#059669', label: '에메랄드' },
+                { color: '#16a34a', label: '그린' },
+                { color: '#65a30d', label: '라임' },
+                { color: '#eab308', label: '옐로우' },
+                { color: '#d97706', label: '앰버' },
+                { color: '#ea580c', label: '오렌지' },
+                { color: '#dc2626', label: '레드' },
+                { color: '#be123c', label: '로즈' },
+                { color: '#db2777', label: '핑크' },
+                { color: '#c026d3', label: '퓨시아' },
+                { color: '#f1f5f9', label: '슬레이트 50' },
+                { color: '#fafafa', label: '뉴트럴 50' },
+                { color: '#fef3c7', label: '앰버 100' },
+                { color: '#dbeafe', label: '블루 100' },
+                { color: '#ede9fe', label: '바이올렛 100' },
+                { color: '#fce7f3', label: '핑크 100' },
+                { color: '#d1fae5', label: '에메랄드 100' },
+                { color: '#fee2e2', label: '레드 100' },
+              ].map((preset) => (
+                <button
+                  key={preset.color}
+                  title={`${preset.label} (${preset.color})`}
+                  onClick={(e) => handleCopyColor(preset.color, preset.label, e)}
+                  className="w-7 h-7 rounded-lg border border-slate-200 hover:scale-110 hover:shadow-md transition-all cursor-pointer relative group/qp active:scale-90"
+                  style={{ backgroundColor: preset.color }}
+                >
+                  <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[8px] font-bold text-slate-400 opacity-0 group-hover/qp:opacity-100 whitespace-nowrap transition-opacity pointer-events-none z-10 bg-white/80 px-1 rounded">{preset.label}</span>
+                </button>
+              ))}
+            </div>
+            <p className="text-[9px] text-slate-400 mt-2">클릭하면 색상코드가 복사됩니다. 아래 코드 입력칸에 붙여넣으세요.</p>
+          </div>
+
+          {/* 상단 강조 라인 */}
+          <div>
+            <h4 className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-slate-700" />상단 강조 라인
+              <button onClick={() => resetStyleGroup(['headerLineColor'])} className="ml-auto text-[9px] text-slate-300 hover:text-red-500 transition-colors" title="초기화"><RotateCcw size={10} /></button>
+            </h4>
+            <div className="grid grid-cols-1 gap-2">
+              {(() => {
+                const val = data.headerLineColor || (data.reportType === '장전' ? '#0f172a' : '#191f28');
+                return (
+                  <label className="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg border border-slate-100">
+                    <span className="text-[11px] font-bold text-slate-600">라인 색상</span>
+                    <div className="flex items-center gap-1.5">
+                      <input type="color" value={val} onChange={(e) => onChange({ ...data, headerLineColor: e.target.value })} className="w-7 h-7 rounded cursor-pointer border border-slate-200" />
+                      <input type="text" value={val} onChange={(e) => { if (/^#[0-9a-fA-F]{0,6}$/.test(e.target.value) || e.target.value === '') onChange({ ...data, headerLineColor: e.target.value || undefined }); }} onPaste={(e) => { const pasted = e.clipboardData.getData('text').trim(); if (/^#[0-9a-fA-F]{3,8}$/.test(pasted)) { e.preventDefault(); onChange({ ...data, headerLineColor: pasted }); }}} className="w-[72px] text-[10px] font-mono font-bold text-slate-600 bg-white border border-slate-200 rounded px-1.5 py-1 text-center" />
+                      {data.headerLineColor && <button onClick={() => onChange({ ...data, headerLineColor: undefined })} className="text-[9px] text-slate-400 hover:text-red-500">✕</button>}
+                    </div>
+                  </label>
+                );
+              })()}
+            </div>
+          </div>
+
+          {/* 헤더 뱃지 (MORNING REPORT / CLOSING REPORT) */}
+          <div>
+            <h4 className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-indigo-400" />헤더 뱃지
+              <button onClick={() => resetStyleGroup(['headerBadgeColor'])} className="ml-auto text-[9px] text-slate-300 hover:text-red-500 transition-colors" title="초기화"><RotateCcw size={10} /></button>
+            </h4>
+            <div className="grid grid-cols-1 gap-2">
+              {(() => {
+                const val = data.headerBadgeColor || (data.reportType === '장전' ? '#0ea5e9' : '#f59e0b');
+                return (
+                  <label className="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg border border-slate-100">
+                    <span className="text-[11px] font-bold text-slate-600">뱃지 색상</span>
+                    <div className="flex items-center gap-1.5">
+                      <input type="color" value={val} onChange={(e) => onChange({ ...data, headerBadgeColor: e.target.value })} className="w-7 h-7 rounded cursor-pointer border border-slate-200" />
+                      <input type="text" value={val} onChange={(e) => { if (/^#[0-9a-fA-F]{0,6}$/.test(e.target.value) || e.target.value === '') onChange({ ...data, headerBadgeColor: e.target.value || undefined }); }} onPaste={(e) => { const pasted = e.clipboardData.getData('text').trim(); if (/^#[0-9a-fA-F]{3,8}$/.test(pasted)) { e.preventDefault(); onChange({ ...data, headerBadgeColor: pasted }); }}} className="w-[72px] text-[10px] font-mono font-bold text-slate-600 bg-white border border-slate-200 rounded px-1.5 py-1 text-center" />
+                      {data.headerBadgeColor && <button onClick={() => onChange({ ...data, headerBadgeColor: undefined })} className="text-[9px] text-slate-400 hover:text-red-500">✕</button>}
+                    </div>
+                  </label>
+                );
+              })()}
+            </div>
+          </div>
+
+          {/* 현재 지표 */}
+          <div>
+            <h4 className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-400" />현재 지표
+              <button onClick={() => resetStyleGroup(['indicatorBoxColor','indicatorLabelSize','indicatorLabelWeight','indicatorValueSize','indicatorValueWeight','indicatorChangeSize','indicatorChangeWeight'])} className="ml-auto text-[9px] text-slate-300 hover:text-red-500 transition-colors" title="초기화"><RotateCcw size={10} /></button>
+            </h4>
+            <div className="grid grid-cols-1 gap-2">
+              {(() => {
+                const val = data.indicatorBoxColor || '#f8fafc';
+                return (
+                  <label className="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg border border-slate-100">
+                    <span className="text-[11px] font-bold text-slate-600">박스 색상</span>
+                    <div className="flex items-center gap-1.5">
+                      <input type="color" value={val} onChange={(e) => onChange({ ...data, indicatorBoxColor: e.target.value })} className="w-7 h-7 rounded cursor-pointer border border-slate-200" />
+                      <input type="text" value={val} onChange={(e) => { if (/^#[0-9a-fA-F]{0,6}$/.test(e.target.value) || e.target.value === '') onChange({ ...data, indicatorBoxColor: e.target.value || undefined }); }} onPaste={(e) => { const pasted = e.clipboardData.getData('text').trim(); if (/^#[0-9a-fA-F]{3,8}$/.test(pasted)) { e.preventDefault(); onChange({ ...data, indicatorBoxColor: pasted }); }}} className="w-[72px] text-[10px] font-mono font-bold text-slate-600 bg-white border border-slate-200 rounded px-1.5 py-1 text-center" />
+                      {data.indicatorBoxColor && <button onClick={() => onChange({ ...data, indicatorBoxColor: undefined })} className="text-[9px] text-slate-400 hover:text-red-500">✕</button>}
+                    </div>
+                  </label>
+                );
+              })()}
+              {/* 지표 텍스트 스타일 */}
+              {([
+                { title: '라벨', sizeKey: 'indicatorLabelSize', weightKey: 'indicatorLabelWeight', defaultSize: 16 },
+                { title: '값', sizeKey: 'indicatorValueSize', weightKey: 'indicatorValueWeight', defaultSize: 18 },
+                { title: '등락률', sizeKey: 'indicatorChangeSize', weightKey: 'indicatorChangeWeight', defaultSize: 14 },
+              ] as Array<{title:string; sizeKey:string; weightKey:string; defaultSize:number}>).map(({ title, sizeKey, weightKey, defaultSize }) => {
+                const curSize = (data as any)[sizeKey] ?? defaultSize;
+                const curWeight = (data as any)[weightKey] ?? '800';
+                return (
+                  <div key={sizeKey} className="flex items-center justify-between p-2 bg-slate-50 rounded-lg border border-slate-100">
+                    <span className="text-[11px] font-bold text-slate-600 w-[90px] shrink-0">📊 {title}</span>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => onChange({ ...data, [sizeKey]: Math.max(8, curSize - 1) })} className="w-5 h-5 rounded bg-slate-200 text-[10px] font-bold text-slate-600 hover:bg-slate-300">−</button>
+                      <span className="text-[11px] font-mono font-bold text-slate-700 w-[26px] text-center">{curSize}</span>
+                      <button onClick={() => onChange({ ...data, [sizeKey]: Math.min(30, curSize + 1) })} className="w-5 h-5 rounded bg-slate-200 text-[10px] font-bold text-slate-600 hover:bg-slate-300">+</button>
+                      <select value={curWeight} onChange={(e) => onChange({ ...data, [weightKey]: e.target.value })} className="text-[10px] font-bold text-slate-600 bg-white border border-slate-200 rounded px-1 py-0.5">
+                        <option value="400">Regular</option>
+                        <option value="600">Semi</option>
+                        <option value="700">Bold</option>
+                        <option value="800">Extra</option>
+                        <option value="900">Black</option>
+                      </select>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 전일 미증시 섹터 트렌드 */}
+          <div>
+            <h4 className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-blue-400" />섹터 트렌드
+              <button onClick={() => resetStyleGroup(['sectorTrendHeaderColor','sectorTrendSubHeaderColor','sectorTrendTableTextColor','sectorTrendTableTextSize','sectorTrendNameSize','sectorTrendNameWeight','sectorTrendIssueSize','sectorTrendIssueWeight'])} className="ml-auto text-[9px] text-slate-300 hover:text-red-500 transition-colors" title="초기화"><RotateCcw size={10} /></button>
+            </h4>
+            <div className="grid grid-cols-1 gap-2">
+              {[
+                { key: 'sectorTrendHeaderColor' as const, label: '헤더 색상', def: '#e2e8f0' },
+                { key: 'sectorTrendSubHeaderColor' as const, label: '소메뉴 헤더 색상', def: '#f1f5f9' },
+                { key: 'sectorTrendTableTextColor' as const, label: '테이블 텍스트 색상', def: '#334155' },
+              ].map(({ key, label, def }) => {
+                const val = (data as any)[key] || def;
+                return (
+                  <label key={key} className="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg border border-slate-100">
+                    <span className="text-[11px] font-bold text-slate-600">{label}</span>
+                    <div className="flex items-center gap-1.5">
+                      <input type="color" value={val} onChange={(e) => onChange({ ...data, [key]: e.target.value })} className="w-7 h-7 rounded cursor-pointer border border-slate-200" />
+                      <input type="text" value={val} onChange={(e) => { if (/^#[0-9a-fA-F]{0,6}$/.test(e.target.value) || e.target.value === '') onChange({ ...data, [key]: e.target.value || undefined }); }} onPaste={(e) => { const pasted = e.clipboardData.getData('text').trim(); if (/^#[0-9a-fA-F]{3,8}$/.test(pasted)) { e.preventDefault(); onChange({ ...data, [key]: pasted }); }}} className="w-[72px] text-[10px] font-mono font-bold text-slate-600 bg-white border border-slate-200 rounded px-1.5 py-1 text-center" />
+                      {(data as any)[key] && <button onClick={() => onChange({ ...data, [key]: undefined })} className="text-[9px] text-slate-400 hover:text-red-500">✕</button>}
+                    </div>
+                  </label>
+                );
+              })}
+              <label className="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg border border-slate-100">
+                <span className="text-[11px] font-bold text-slate-600">테이블 텍스트 크기</span>
+                <div className="flex items-center gap-1.5">
+                  <select value={data.sectorTrendTableTextSize || 16} onChange={(e) => onChange({ ...data, sectorTrendTableTextSize: Number(e.target.value) })} className="text-[11px] font-bold bg-white border border-slate-200 rounded px-2 py-1">
+                    {[12, 13, 14, 15, 16, 17, 18].map(s => <option key={s} value={s}>{s}px</option>)}
+                  </select>
+                  {data.sectorTrendTableTextSize && <button onClick={() => onChange({ ...data, sectorTrendTableTextSize: undefined })} className="text-[9px] text-slate-400 hover:text-red-500">✕</button>}
+                </div>
+              </label>
+              {/* 섹터 텍스트 스타일 */}
+              {([
+                { title: '섹터명', sizeKey: 'sectorTrendNameSize', weightKey: 'sectorTrendNameWeight', defaultSize: 17 },
+                { title: '이슈', sizeKey: 'sectorTrendIssueSize', weightKey: 'sectorTrendIssueWeight', defaultSize: 16 },
+              ] as Array<{title:string; sizeKey:string; weightKey:string; defaultSize:number}>).map(({ title, sizeKey, weightKey, defaultSize }) => {
+                const curSize = (data as any)[sizeKey] ?? defaultSize;
+                const curWeight = (data as any)[weightKey] ?? '800';
+                return (
+                  <div key={sizeKey} className="flex items-center justify-between p-2 bg-slate-50 rounded-lg border border-slate-100">
+                    <span className="text-[11px] font-bold text-slate-600 w-[90px] shrink-0">🏷️ {title}</span>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => onChange({ ...data, [sizeKey]: Math.max(8, curSize - 1) })} className="w-5 h-5 rounded bg-slate-200 text-[10px] font-bold text-slate-600 hover:bg-slate-300">−</button>
+                      <span className="text-[11px] font-mono font-bold text-slate-700 w-[26px] text-center">{curSize}</span>
+                      <button onClick={() => onChange({ ...data, [sizeKey]: Math.min(30, curSize + 1) })} className="w-5 h-5 rounded bg-slate-200 text-[10px] font-bold text-slate-600 hover:bg-slate-300">+</button>
+                      <select value={curWeight} onChange={(e) => onChange({ ...data, [weightKey]: e.target.value })} className="text-[10px] font-bold text-slate-600 bg-white border border-slate-200 rounded px-1 py-0.5">
+                        <option value="400">Regular</option>
+                        <option value="600">Semi</option>
+                        <option value="700">Bold</option>
+                        <option value="800">Extra</option>
+                        <option value="900">Black</option>
+                      </select>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 전일 미증시 마감 분석 */}
+          <div>
+            <h4 className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-purple-400" />마감 분석
+              <button onClick={() => resetStyleGroup(['usAnalysisHeaderColor','usAnalysisBoxColor'])} className="ml-auto text-[9px] text-slate-300 hover:text-red-500 transition-colors" title="초기화"><RotateCcw size={10} /></button>
+            </h4>
+            <div className="grid grid-cols-1 gap-2">
+              {[
+                { key: 'usAnalysisHeaderColor' as const, label: '헤더 색상', def: '#e2e8f0' },
+                { key: 'usAnalysisBoxColor' as const, label: '내용 박스 색상', def: '#fafafa' },
+              ].map(({ key, label, def }) => {
+                const val = (data as any)[key] || def;
+                return (
+                  <label key={key} className="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg border border-slate-100">
+                    <span className="text-[11px] font-bold text-slate-600">{label}</span>
+                    <div className="flex items-center gap-1.5">
+                      <input type="color" value={val} onChange={(e) => onChange({ ...data, [key]: e.target.value })} className="w-7 h-7 rounded cursor-pointer border border-slate-200" />
+                      <input type="text" value={val} onChange={(e) => { if (/^#[0-9a-fA-F]{0,6}$/.test(e.target.value) || e.target.value === '') onChange({ ...data, [key]: e.target.value || undefined }); }} onPaste={(e) => { const pasted = e.clipboardData.getData('text').trim(); if (/^#[0-9a-fA-F]{3,8}$/.test(pasted)) { e.preventDefault(); onChange({ ...data, [key]: pasted }); }}} className="w-[72px] text-[10px] font-mono font-bold text-slate-600 bg-white border border-slate-200 rounded px-1.5 py-1 text-center" />
+                      {(data as any)[key] && <button onClick={() => onChange({ ...data, [key]: undefined })} className="text-[9px] text-slate-400 hover:text-red-500">✕</button>}
+                    </div>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 오늘의 핵심 테마 */}
+          <div>
+            <h4 className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-amber-400" />핵심 테마
+              <button onClick={() => resetStyleGroup(['themeHeaderColor','themeCardHeaderColor','themeChipColor','themeNameSize','themeNameWeight','themeIssueSize','themeIssueWeight'])} className="ml-auto text-[9px] text-slate-300 hover:text-red-500 transition-colors" title="초기화"><RotateCcw size={10} /></button>
+            </h4>
+            <div className="grid grid-cols-1 gap-2">
+              {[
+                { key: 'themeHeaderColor' as const, label: '메인 헤더 색상', def: '#e2e8f0' },
+                { key: 'themeCardHeaderColor' as const, label: '소메뉴 헤더 색상', def: '#f1f5f9' },
+                { key: 'themeChipColor' as const, label: '종목 칩 색상', def: '#f1f5f9' },
+              ].map(({ key, label, def }) => {
+                const val = (data as any)[key] || def;
+                return (
+                  <label key={key} className="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg border border-slate-100">
+                    <span className="text-[11px] font-bold text-slate-600">{label}</span>
+                    <div className="flex items-center gap-1.5">
+                      <input type="color" value={val} onChange={(e) => onChange({ ...data, [key]: e.target.value })} className="w-7 h-7 rounded cursor-pointer border border-slate-200" />
+                      <input type="text" value={val} onChange={(e) => { if (/^#[0-9a-fA-F]{0,6}$/.test(e.target.value) || e.target.value === '') onChange({ ...data, [key]: e.target.value || undefined }); }} onPaste={(e) => { const pasted = e.clipboardData.getData('text').trim(); if (/^#[0-9a-fA-F]{3,8}$/.test(pasted)) { e.preventDefault(); onChange({ ...data, [key]: pasted }); }}} className="w-[72px] text-[10px] font-mono font-bold text-slate-600 bg-white border border-slate-200 rounded px-1.5 py-1 text-center" />
+                      {(data as any)[key] && <button onClick={() => onChange({ ...data, [key]: undefined })} className="text-[9px] text-slate-400 hover:text-red-500">✕</button>}
+                    </div>
+                  </label>
+                );
+              })}
+              {/* 테마 텍스트 스타일 */}
+              {([
+                { title: '테마명', sizeKey: 'themeNameSize', weightKey: 'themeNameWeight', defaultSize: 17 },
+                { title: '이슈', sizeKey: 'themeIssueSize', weightKey: 'themeIssueWeight', defaultSize: 16 },
+              ] as Array<{title:string; sizeKey:string; weightKey:string; defaultSize:number}>).map(({ title, sizeKey, weightKey, defaultSize }) => {
+                const curSize = (data as any)[sizeKey] ?? defaultSize;
+                const curWeight = (data as any)[weightKey] ?? '800';
+                return (
+                  <div key={sizeKey} className="flex items-center justify-between p-2 bg-slate-50 rounded-lg border border-slate-100">
+                    <span className="text-[11px] font-bold text-slate-600 w-[90px] shrink-0">⭐ {title}</span>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => onChange({ ...data, [sizeKey]: Math.max(8, curSize - 1) })} className="w-5 h-5 rounded bg-slate-200 text-[10px] font-bold text-slate-600 hover:bg-slate-300">−</button>
+                      <span className="text-[11px] font-mono font-bold text-slate-700 w-[26px] text-center">{curSize}</span>
+                      <button onClick={() => onChange({ ...data, [sizeKey]: Math.min(30, curSize + 1) })} className="w-5 h-5 rounded bg-slate-200 text-[10px] font-bold text-slate-600 hover:bg-slate-300">+</button>
+                      <select value={curWeight} onChange={(e) => onChange({ ...data, [weightKey]: e.target.value })} className="text-[10px] font-bold text-slate-600 bg-white border border-slate-200 rounded px-1 py-0.5">
+                        <option value="400">Regular</option>
+                        <option value="600">Semi</option>
+                        <option value="700">Bold</option>
+                        <option value="800">Extra</option>
+                        <option value="900">Black</option>
+                      </select>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 핵심 금일 시장 전략 */}
+          <div>
+            <h4 className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-red-400" />시장 전략
+              <button onClick={() => resetStyleGroup(['strategyBoxColor','stockChipColor'])} className="ml-auto text-[9px] text-slate-300 hover:text-red-500 transition-colors" title="초기화"><RotateCcw size={10} /></button>
+            </h4>
+            <div className="grid grid-cols-1 gap-2">
+              {[
+                { key: 'strategyBoxColor' as const, label: '박스 색상', def: '#1e293b' },
+                { key: 'stockChipColor' as const, label: '종목 칩 색상', def: '#ffffff40' },
+              ].map(({ key, label, def }) => {
+                const val = (data as any)[key] || def;
+                return (
+                  <label key={key} className="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg border border-slate-100">
+                    <span className="text-[11px] font-bold text-slate-600">{label}</span>
+                    <div className="flex items-center gap-1.5">
+                      <input type="color" value={val.length <= 7 ? val : val.slice(0,7)} onChange={(e) => onChange({ ...data, [key]: e.target.value })} className="w-7 h-7 rounded cursor-pointer border border-slate-200" />
+                      <input type="text" value={val} onChange={(e) => { if (/^#[0-9a-fA-F]{0,8}$/.test(e.target.value) || e.target.value === '') onChange({ ...data, [key]: e.target.value || undefined }); }} onPaste={(e) => { const pasted = e.clipboardData.getData('text').trim(); if (/^#[0-9a-fA-F]{3,8}$/.test(pasted)) { e.preventDefault(); onChange({ ...data, [key]: pasted }); }}} className="w-[72px] text-[10px] font-mono font-bold text-slate-600 bg-white border border-slate-200 rounded px-1.5 py-1 text-center" />
+                      {(data as any)[key] && <button onClick={() => onChange({ ...data, [key]: undefined })} className="text-[9px] text-slate-400 hover:text-red-500">✕</button>}
+                    </div>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 색상 프리셋 저장/불러오기 */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <h4 className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-violet-400" />저장된 색상 프리셋
+              </h4>
+              <span className="text-[9px] text-slate-400">{colorPresets.length}/5</span>
+            </div>
+            <button
+              onClick={handleSaveColorPreset}
+              disabled={colorPresets.length >= 5}
+              className={`w-full py-1.5 rounded-lg text-[11px] font-bold transition-all border ${
+                colorPresets.length >= 5
+                  ? "border-slate-200 text-slate-300 bg-slate-50 cursor-not-allowed"
+                  : "border-violet-200 text-violet-500 hover:text-violet-700 hover:border-violet-400 hover:bg-violet-50/50 bg-white"
+              }`}
+            >
+              💾 현재 색상 저장 {colorPresets.length >= 5 && "(슬롯 꽉참)"}
+            </button>
+            {colorPresets.length > 0 && (
+              <div className="space-y-1">
+                {colorPresets.map((preset) => {
+                  // 저장된 색상 중 최대 5개를 미리보기 원으로 표시
+                  const previewColors = Object.values(preset.colors).filter(v => typeof v === 'string' && v.startsWith('#')).slice(0, 5);
+                  return (
+                    <div key={preset.id} className="flex items-center gap-1.5 p-1.5 bg-slate-50 rounded-lg border border-slate-100 group/preset">
+                      <div className="flex gap-0.5 shrink-0">
+                        {previewColors.map((c, i) => (
+                          <span key={i} className="w-3 h-3 rounded-full border border-slate-200 shrink-0" style={{ backgroundColor: c as string }} />
+                        ))}
+                        {previewColors.length === 0 && <span className="w-3 h-3 rounded-full bg-slate-200 shrink-0" />}
+                      </div>
+                      <input
+                        type="text"
+                        value={preset.name}
+                        onChange={(e) => handleRenamePreset(preset.id, e.target.value)}
+                        className="text-[10px] font-bold text-slate-600 flex-1 truncate bg-transparent outline-none hover:bg-white focus:bg-white focus:ring-1 focus:ring-violet-300 rounded px-1 py-0.5 transition-all min-w-0"
+                        title="클릭하여 이름 변경"
+                      />
+                      <span className="text-[9px] text-slate-400 shrink-0">{preset.savedAt}</span>
+                      <button
+                        onClick={() => handleLoadColorPreset(preset)}
+                        className="text-[9px] font-bold px-1.5 py-0.5 bg-violet-100 text-violet-600 hover:bg-violet-200 rounded transition-colors shrink-0"
+                      >
+                        적용
+                      </button>
+                      <button
+                        onClick={() => { if (confirm(`"${preset.name}" 프리셋을 삭제하시겠습니까?`)) handleDeleteColorPreset(preset.id); }}
+                        className="text-[9px] text-slate-300 hover:text-red-500 transition-colors opacity-0 group-hover/preset:opacity-100 shrink-0"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* 전체 초기화 — 작은 버튼 */}
+          <button
+            onClick={() => {
+              if (!confirm('모든 스타일 설정을 기본값으로 초기화하시겠습니까?')) return;
+              const resetColors: Record<string, any> = {};
+              COLOR_KEYS.forEach(key => { resetColors[key] = undefined; });
+              onChange({ ...data, ...resetColors });
+            }}
+            className="w-full py-1 border border-dashed border-red-200 rounded-md text-[10px] font-bold text-red-300 hover:text-red-500 hover:border-red-400 hover:bg-red-50/50 transition-all"
+          >
+            스타일 초기화
+          </button>
+        </div>
+        </div>}
+      </div>
 
       {/* Editor Sections */}
       <div className="space-y-3">
@@ -377,6 +937,7 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
           isOpen={activeSection === 'setup'}
           onToggle={() => toggleSection('setup')}
           summary={`${data.reportType} | ${data.date}`}
+
         >
           <div className="space-y-4">
             <div>
@@ -410,6 +971,7 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
             ) : undefined
           }
           badge={`${data.summaryItems.length}개`}
+
         >
           <div className="space-y-3">
             {data.summaryItems.map((item, idx) => (
@@ -439,6 +1001,7 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
           isOpen={activeSection === 'coreview'}
           onToggle={() => toggleSection('coreview')}
           summary={data.currentMarketView.substring(0, 60) + '...'}
+
         >
           <div className="space-y-3">
             <div>
@@ -457,6 +1020,7 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
           onToggle={() => toggleSection('stocks')}
            summary={data.featuredStocks.map(s => s.keyword).join(', ')}
           badge={`${data.featuredStocks.length}/${MAX_STOCKS}`}
+
         >
           <div className="space-y-3">
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd('featuredStocks')}>
@@ -506,6 +1070,7 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
           icon={<PenTool size={14} />}
           isOpen={activeSection === 'insight'}
           onToggle={() => toggleSection('insight')}
+
         >
           <div className="space-y-3">
             <div>
@@ -527,6 +1092,7 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
           isOpen={activeSection === 'sectors'}
           onToggle={() => toggleSection('sectors')}
           badge={`${data.sectors.length}/${MAX_SECTORS}`}
+
         >
           <div className="space-y-3">
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd('sectors')}>
@@ -565,6 +1131,7 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
           isOpen={activeSection === 'schedule'}
           onToggle={() => toggleSection('schedule')}
           badge={`${data.marketSchedule.length}/${MAX_SCHEDULE}`}
+
         >
           <div className="space-y-3">
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd('marketSchedule')}>
@@ -595,6 +1162,7 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
           isOpen={activeSection === 'comment'}
           onToggle={() => toggleSection('comment')}
           summary={data.dailyComment?.substring(0, 50) + '...'}
+
         >
           <div className="space-y-3">
             <div>
@@ -604,6 +1172,18 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
           </div>
         </AccordionSection>
       </div>
+      {/* 인라인 복사 토스트 */}
+      {copyToast && (
+        <div
+          className="fixed z-[200] pointer-events-none animate-fade-in"
+          style={{ left: copyToast.x, top: copyToast.y, transform: 'translate(-50%, -100%)' }}
+        >
+          <div className="bg-emerald-600 text-white px-3 py-1.5 rounded-lg shadow-xl text-[10px] font-bold flex items-center gap-1.5 whitespace-nowrap">
+            <span className="text-[9px]">✓</span>
+            {copyToast.text} 복사됨
+          </div>
+        </div>
+      )}
     </div>
   );
 };

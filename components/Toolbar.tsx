@@ -99,14 +99,38 @@ const Toolbar: React.FC<ToolbarProps> = ({
     };
   }, []);
 
-  // Bold 상태 감지: 커서 위치에 따라 B 버튼 활성화
+  // Bold 상태 감지: <b>/<strong> 태그 또는 computed font-weight >= 700 체크
   useEffect(() => {
     const updateBoldState = () => {
       try {
+        const sel = window.getSelection();
+        if (!sel || sel.rangeCount === 0) return;
         const active = document.activeElement as HTMLElement;
-        if (active?.contentEditable === 'true') {
-          setIsBold(document.queryCommandState('bold'));
+        if (active?.contentEditable !== 'true') return;
+        let node: Node | null = sel.anchorNode;
+        let foundBold = false;
+        // 1) <b> or <strong> 태그 체크
+        while (node && node !== active) {
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            const tag = (node as HTMLElement).tagName?.toLowerCase();
+            if (tag === 'b' || tag === 'strong') {
+              foundBold = true;
+              break;
+            }
+          }
+          node = node.parentNode;
         }
+        // 2) computed style font-weight 체크 (CSS bold 포함)
+        if (!foundBold && sel.anchorNode) {
+          const el = sel.anchorNode.nodeType === Node.ELEMENT_NODE
+            ? sel.anchorNode as HTMLElement
+            : sel.anchorNode.parentElement;
+          if (el) {
+            const fw = parseInt(window.getComputedStyle(el).fontWeight, 10);
+            if (fw >= 700) foundBold = true;
+          }
+        }
+        setIsBold(foundBold);
       } catch {}
     };
     document.addEventListener('selectionchange', updateBoldState);
@@ -280,7 +304,20 @@ const Toolbar: React.FC<ToolbarProps> = ({
             e.preventDefault();
             document.execCommand('bold');
             setTimeout(() => {
-              try { setIsBold(document.queryCommandState('bold')); } catch {}
+              try {
+              const s = window.getSelection();
+              let n = s?.anchorNode;
+              let found = false;
+              const ae = document.activeElement;
+              while (n && n !== ae) {
+                if (n.nodeType === 1) {
+                  const t = (n as HTMLElement).tagName?.toLowerCase();
+                  if (t === 'b' || t === 'strong') { found = true; break; }
+                }
+                n = n.parentNode;
+              }
+              setIsBold(found);
+            } catch {}
             }, 0);
           }}
           className={isBold ? activeBtnClass : btnClass}

@@ -13,9 +13,10 @@ interface ExportModalProps {
   date: string;
   reportData?: ReportData;
   darkMode?: boolean;
+  onAutoSave?: () => void;
 }
 
-const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, reportType, date, reportData, darkMode = false }) => {
+const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, reportType, date, reportData, darkMode = false, onAutoSave }) => {
 
   const [isExporting, setIsExporting] = useState(false);
   const [isPngDone, setIsPngDone] = useState(false);
@@ -160,6 +161,8 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, reportType, 
 
       setIsPngDone(true);
       setTimeout(() => setIsPngDone(false), 3000);
+      // PNG 내보내기 완료 시 히스토리 자동 저장
+      if (onAutoSave) onAutoSave();
     } catch (err) {
       console.error('Export failed:', err);
       alert('이미지 생성에 실패했습니다. 다시 시도해주세요.');
@@ -256,6 +259,8 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, reportType, 
 
       setIsPdfDone(true);
       setTimeout(() => setIsPdfDone(false), 3000);
+      // PDF 내보내기 완료 시 히스토리 자동 저장
+      if (onAutoSave) onAutoSave();
     } catch (err) {
       console.error('PDF export failed:', err);
       alert('PDF 생성에 실패했습니다. 다시 시도해주세요.');
@@ -272,6 +277,8 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, reportType, 
       const url = `${window.location.origin}?share=${id}`;
       setShareUrl(url);
       await navigator.clipboard.writeText(url);
+      // 공유 링크 생성 시 히스토리 자동 저장
+      if (onAutoSave) onAutoSave();
     } catch (err) {
       console.error('Share failed:', err);
       alert('공유 링크 생성에 실패했습니다. 다시 시도해주세요.');

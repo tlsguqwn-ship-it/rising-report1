@@ -31,6 +31,7 @@ export interface ThemeStock {
 export interface ThemeGroup {
   id: string;
   keyword: string;
+  sentiment?: string;
   stocks: ThemeStock[];
 }
 
@@ -67,6 +68,55 @@ export interface ReportData {
   todayStrategyTitle: string;
   usSectors?: Sector[];             // 전일 미증시 섹터 트렌드
   usSectorsTitle?: string;
+
+  // 커스텀 색상 (undefined이면 기본 Tailwind 색상 사용)
+  // 현재 지표
+  indicatorBoxColor?: string;             // 지표 박스 배경색
+
+  // 전일 미증시 섹터 트렌드
+  sectorTrendHeaderColor?: string;        // 메인 헤더 배경색
+  sectorTrendSubHeaderColor?: string;     // 각 소메뉴 헤더 배경색
+  sectorTrendTableTextColor?: string;     // 종목명/종가/등락률 텍스트 색상
+  sectorTrendTableTextSize?: number;      // 테이블 텍스트 크기 (px)
+
+  // 전일 미증시 마감 분석
+  usAnalysisHeaderColor?: string;         // 헤더 배경색
+  usAnalysisBoxColor?: string;            // 내용 박스 배경색
+
+  // 오늘의 핵심 테마
+  themeHeaderColor?: string;              // 메인 헤더 배경색
+  themeCardHeaderColor?: string;          // 각 소메뉴 헤더 배경색
+  themeChipColor?: string;                // 종목 칩 배경색
+
+  // 핵심 금일 시장 전략
+  strategyBoxColor?: string;              // 박스 배경색
+  stockChipColor?: string;                // 종목 칩 배경색
+
+  // 헤더 뱃지 (MORNING REPORT / CLOSING REPORT)
+  headerBadgeColor?: string;              // 뱃지 배경색
+  headerLineColor?: string;               // 상단 강조 바(라인) 색상
+
+  // 지표 텍스트 스타일
+  indicatorLabelSize?: number;            // 라벨 크기 (px)
+  indicatorLabelColor?: string;           // 라벨 색상
+  indicatorLabelWeight?: string;          // 라벨 굵기
+  indicatorValueSize?: number;            // 지표값 크기 (px)
+  indicatorValueColor?: string;           // 지표값 색상
+  indicatorValueWeight?: string;          // 지표값 굵기
+  indicatorChangeSize?: number;           // 등락률 크기 (px)
+  indicatorChangeWeight?: string;         // 등락률 굵기
+
+  // 섹터 트렌드 텍스트 스타일
+  sectorTrendNameSize?: number;           // 섹터명 크기
+  sectorTrendNameWeight?: string;         // 섹터명 굵기
+  sectorTrendIssueSize?: number;          // 이슈 텍스트 크기
+  sectorTrendIssueWeight?: string;        // 이슈 텍스트 굵기
+
+  // 핵심 테마 텍스트 스타일
+  themeNameSize?: number;                 // 테마명 크기
+  themeNameWeight?: string;               // 테마명 굵기
+  themeIssueSize?: number;                // 이슈 텍스트 크기
+  themeIssueWeight?: string;              // 이슈 텍스트 굵기
 
 }
 

@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { ReportData } from './types';
-import { INITIAL_REPORT, PRE_MARKET_REPORT_TEMPLATE, CLOSE_REPORT_TEMPLATE, SHARED_FIELDS } from './constants';
+import { INITIAL_REPORT, PRE_MARKET_REPORT_TEMPLATE, CLOSE_REPORT_TEMPLATE, EMPTY_PRE_MARKET_TEMPLATE, EMPTY_CLOSE_TEMPLATE, SHARED_FIELDS } from './constants';
 import { useUndoRedo } from './hooks/useUndoRedo';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import Toolbar from './components/Toolbar';
@@ -25,14 +25,7 @@ const loadSavedTemplate = (type: '장전' | '마감'): ReportData | null => {
       if (data.title && titleMigrations[data.title]) {
         data.title = titleMigrations[data.title];
       }
-      // 마감 리포트 sentiment 마이그레이션: 긍정→강세, 부정→약세, 중립→보합
-      if (type === '마감' && data.sectors) {
-        const sentimentMap: Record<string, string> = { '긍정': '강세', '부정': '약세', '중립': '보합' };
-        data.sectors = data.sectors.map(s => ({
-          ...s,
-          sentiment: sentimentMap[s.sentiment] || s.sentiment,
-        }));
-      }
+      // sentiment 마이그레이션 제거됨 (usSectors는 긍정/부정/중립 사용)
       // featuredStocks 마이그레이션: 구 구조(name/change/reason) → 새 구조(keyword/stocks[])
       if (data.featuredStocks && data.featuredStocks.length > 0) {
         const first = data.featuredStocks[0] as any;
@@ -84,12 +77,30 @@ const App: React.FC = () => {
 };
 
 const MainEditor: React.FC = () => {
+  // 최초 로드: 히스토리 최신 항목 → 저장된 데이터 → 기본 템플릿 순서
   const lastMode = getLastMode();
-  const initialData = loadSavedTemplate(lastMode) || (lastMode === '장전' ? PRE_MARKET_REPORT_TEMPLATE : CLOSE_REPORT_TEMPLATE);
-  const { state: reportData, setState: setReportData, undo, redo, canUndo, canRedo, reset } = useUndoRedo<ReportData>(initialData);
+  const getInitialData = (): ReportData => {
+    // 1. 히스토리에서 최신 항목 시도
+    try {
+      const historyKey = `rising-report-history-${lastMode === '장전' ? 'pre' : 'close'}`;
+      const historyRaw = localStorage.getItem(historyKey);
+      if (historyRaw) {
+        const history = JSON.parse(historyRaw);
+        if (Array.isArray(history) && history.length > 0 && history[0].data) {
+          return history[0].data;
+        }
+      }
+    } catch { /* ignore */ }
+    // 2. 저장된 템플릿 시도
+    const saved = loadSavedTemplate(lastMode);
+    if (saved) return saved;
+    // 3. 기본 템플릿
+    return lastMode === '장전' ? PRE_MARKET_REPORT_TEMPLATE : CLOSE_REPORT_TEMPLATE;
+  };
+  const { state: reportData, setState: setReportData, undo, redo, canUndo, canRedo, reset } = useUndoRedo<ReportData>(getInitialData());
   const [showExport, setShowExport] = useState(false);
   const [zoom, setZoom] = useState(1.0);
-  const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [activeSection, setActiveSection] = useState<string | null>('stylePanel');
   const [saveToast, setSaveToast] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [templateHistory, setTemplateHistory] = useState<Array<{data: ReportData, savedAt: string}>>([]); 
@@ -219,7 +230,7 @@ const MainEditor: React.FC = () => {
       });
     });
 
-    const template = reportData.reportType === '장전' ? PRE_MARKET_REPORT_TEMPLATE : CLOSE_REPORT_TEMPLATE;
+    const template = reportData.reportType === '장전' ? EMPTY_PRE_MARKET_TEMPLATE : EMPTY_CLOSE_TEMPLATE;
     reset(template);
   }, [reportData.reportType, reset]);
 
@@ -234,7 +245,7 @@ const MainEditor: React.FC = () => {
       // 히스토리에 추가 (최근 5개)
       const historyKey = `rising-report-history-${reportData.reportType === '장전' ? 'pre' : 'close'}`;
       const now = new Date();
-      const timeStr = `${now.getMonth()+1}/${now.getDate()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+      const timeStr = `RISING STOCK ${reportData.reportType === '장전' ? '장전시황' : '마감시황'} ${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
       const entry = { data: JSON.parse(JSON.stringify(reportData)), savedAt: timeStr };
       let history: Array<{data: ReportData, savedAt: string}> = [];
       try {
@@ -350,6 +361,7 @@ const MainEditor: React.FC = () => {
         date={reportData.date}
         reportData={reportData}
         darkMode={darkMode}
+        onAutoSave={saveTemplate}
       />
       {saveToast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-6 py-3 rounded-xl shadow-2xl text-sm font-bold flex items-center gap-2 z-50 animate-fade-in">

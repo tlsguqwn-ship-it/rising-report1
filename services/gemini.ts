@@ -321,54 +321,69 @@ const fetchNightFutures = async (): Promise<{
 const fetchVIX = async (): Promise<{
   label: string; value: string; subText: string; trend: 'up' | 'down' | 'neutral';
 }> => {
-  try {
-    const targetUrl = 'https://kr.investing.com/indices/volatility-s-p-500';
-    const proxyUrl = IS_VERCEL
-      ? `/api/proxy?url=${encodeURIComponent(targetUrl)}`
-      : targetUrl;
+  const attempt = async (): Promise<{ label: string; value: string; subText: string; trend: 'up' | 'down' | 'neutral' } | null> => {
+    try {
+      const targetUrl = 'https://kr.investing.com/indices/volatility-s-p-500';
+      const proxyUrl = IS_VERCEL
+        ? `/api/proxy?url=${encodeURIComponent(targetUrl)}`
+        : targetUrl;
 
-    const res = await fetch(proxyUrl, { method: 'GET' });
-    if (!res.ok) throw new Error(`Investing.com VIX HTTP ${res.status}`);
+      const res = await fetch(proxyUrl, { method: 'GET' });
+      if (!res.ok) throw new Error(`Investing.com VIX HTTP ${res.status}`);
 
-    const html = await res.text();
-    console.log('Investing.com [VIX] HTML length:', html.length);
+      const html = await res.text();
+      console.log('Investing.com [VIX] HTML length:', html.length);
 
-    let value = 'N/A';
-    let subText = 'N/A';
-    let trend: 'up' | 'down' | 'neutral' = 'neutral';
+      let value = 'N/A';
+      let subText = 'N/A';
+      let trend: 'up' | 'down' | 'neutral' = 'neutral';
 
-    // 가격 추출
-    const priceMatch = html.match(/data-test="instrument-price-last"[^>]*>([0-9.,]+)</) ||
-                        html.match(/"last":\s*"?([0-9.,]+)"?/) ||
-                        html.match(/class="[^"]*last-price[^"]*"[^>]*>([0-9.,]+)</) ||
-                        html.match(/pid-\d+-last[^>]*>([0-9.,]+)</);
-    if (priceMatch) {
-      value = priceMatch[1];
-    }
-
-    // 등락률 추출
-    const pctEl = html.match(/data-test="instrument-price-change-percent"[^>]*>([\s\S]*?)<\/span>/);
-    if (pctEl) {
-      const pctText = pctEl[1].replace(/<!--[\s\S]*?-->/g, '').replace(/<[^>]*>/g, '').replace(/[()]/g, '').trim();
-      const pctNum = parseFloat(pctText.replace('%', ''));
-      if (!isNaN(pctNum)) {
-        subText = `${pctNum >= 0 ? '+' : ''}${pctNum}%`;
-        // VIX는 반대: VIX 상승 = 시장 불안 = down(파란색), VIX 하락 = 안정 = up(빨간색) → 일반 표시로 유지
-        trend = pctNum > 0 ? 'up' : pctNum < 0 ? 'down' : 'neutral';
+      // 가격 추출 - 여러 패턴 시도
+      const priceMatch = html.match(/data-test="instrument-price-last"[^>]*>([0-9.,]+)</) ||
+                          html.match(/"last":\s*"?([0-9.,]+)"?/) ||
+                          html.match(/class="[^"]*last-price[^"]*"[^>]*>([0-9.,]+)</) ||
+                          html.match(/pid-\d+-last[^>]*>([0-9.,]+)</) ||
+                          html.match(/data-test="instrument-header-price"[^>]*>([0-9.,]+)</) ||
+                          html.match(/instrument-price[^>]*>\s*([0-9.,]+)/);
+      if (priceMatch) {
+        value = priceMatch[1];
       }
-    }
 
-    if (value === 'N/A') {
-      console.log('Investing.com [VIX] parsing failed');
-      return { label: 'VIX(공포)', value: 'N/A', subText: 'N/A', trend: 'neutral' };
-    }
+      // 등락률 추출
+      const pctEl = html.match(/data-test="instrument-price-change-percent"[^>]*>([\s\S]*?)<\/span>/);
+      if (pctEl) {
+        const pctText = pctEl[1].replace(/<!--[\s\S]*?-->/g, '').replace(/<[^>]*>/g, '').replace(/[()]/g, '').trim();
+        const pctNum = parseFloat(pctText.replace('%', ''));
+        if (!isNaN(pctNum)) {
+          subText = `${pctNum >= 0 ? '+' : ''}${pctNum}%`;
+          trend = pctNum > 0 ? 'up' : pctNum < 0 ? 'down' : 'neutral';
+        }
+      }
 
-    console.log(`Investing.com [VIX] parsed: ${value} | ${subText} | ${trend}`);
-    return { label: 'VIX(공포)', value, subText, trend };
-  } catch (e) {
-    console.error('VIX fetch failed:', e);
-    return { label: 'VIX(공포)', value: 'N/A', subText: 'N/A', trend: 'neutral' };
-  }
+      if (value === 'N/A') {
+        console.log('Investing.com [VIX] parsing failed');
+        return null;
+      }
+
+      console.log(`Investing.com [VIX] parsed: ${value} | ${subText} | ${trend}`);
+      return { label: 'VIX(공포)', value, subText, trend };
+    } catch (e) {
+      console.error('VIX fetch attempt failed:', e);
+      return null;
+    }
+  };
+
+  // 1차 시도
+  let result = await attempt();
+  if (result) return result;
+
+  // 1초 대기 후 재시도
+  console.log('VIX 1차 시도 실패, 1초 후 재시도...');
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  result = await attempt();
+  if (result) return result;
+
+  return { label: 'VIX(공포)', value: 'N/A', subText: 'N/A', trend: 'neutral' };
 };
 
 /**
@@ -659,6 +674,34 @@ const fetchNaverDomesticAll = async (code: 'KOSPI' | 'KOSDAQ'): Promise<{
 };
 
 /**
+ * 지표 값/등락률을 소수점 2자리로 통일하는 포맷팅 함수
+ * 순수 숫자 부분만 소수점 2자리로 변환, 콤마/단위 등은 유지
+ */
+type IndicatorItem = { label: string; value: string; subText: string; trend: 'up' | 'down' | 'neutral' };
+const formatIndicatorDecimals = (item: IndicatorItem): IndicatorItem => {
+  const fmt = (s: string): string => {
+    if (!s || s === 'N/A' || s === '직접입력') return s;
+    // 억/만원 포함 시 (BTC 등) 그대로 반환
+    if (/[억만원]/.test(s)) return s;
+    // 순수 숫자 문자열에서 콤마 제거 후 파싱
+    const cleaned = s.replace(/,/g, '');
+    // 부호와 % 분리: +1.5% → sign=+, num=1.5, suffix=%
+    const match = cleaned.match(/^([+-]?)([\d.]+)(.*)/); 
+    if (!match) return s;
+    const [, sign, numStr, suffix] = match;
+    const num = parseFloat(numStr);
+    if (isNaN(num)) return s;
+    // 소수점 2자리 포맷
+    const formatted = num.toFixed(2);
+    // 1000 이상이면 콤마 추가
+    const parts = formatted.split('.');
+    const intPart = parseInt(parts[0]).toLocaleString('en-US');
+    return `${sign}${intPart}.${parts[1]}${suffix}`;
+  };
+  return { ...item, value: fmt(item.value), subText: fmt(item.subText) };
+};
+
+/**
  * Fetches real-time market indicators.
  * 장전: 네이버 금융(NASDAQ, 다우존스) + Investing.com(VIX, 야간선물) + 환율 + 보조(원유, 금, BTC)
  * 마감: 네이버 금융 직접 크롤링(KOSPI, KOSDAQ, 투자자별 매매동향, USD/KRW)
@@ -688,8 +731,8 @@ export const fetchMarketIndicators = async (reportType: '장전' | '마감'): Pr
         ]),
       ]);
       const fallback = { label: 'Error', value: 'N/A', subText: 'N/A', trend: 'neutral' as const };
-      const items = mainResults.map(r => r.status === 'fulfilled' ? r.value : fallback);
-      const subItems = subResults.map(r => r.status === 'fulfilled' ? r.value : fallback);
+      const items = mainResults.map(r => r.status === 'fulfilled' ? r.value : fallback).map(formatIndicatorDecimals);
+      const subItems = subResults.map(r => r.status === 'fulfilled' ? r.value : fallback).map(formatIndicatorDecimals);
       return { items, subItems };
     } else {
       // 마감: 네이버 금융 직접 크롤링 (통합 함수로 지수+투자자 한번에 추출)
@@ -709,7 +752,7 @@ export const fetchMarketIndicators = async (reportType: '장전' | '마감'): Pr
       const kosdaq = kosdaqResult.status === 'fulfilled' ? kosdaqResult.value : defaultAll('KOSDAQ');
       const fx = fxResult.status === 'fulfilled' ? fxResult.value : { label: '원달러환율', value: 'N/A', subText: 'N/A', trend: 'neutral' as const };
 
-      const items = [
+      const items: IndicatorItem[] = [
         { label: kospi.index.label, value: kospi.index.value, subText: `${kospi.index.changeAmount}  ${kospi.index.subText}`, trend: kospi.index.trend },
         { label: kosdaq.index.label, value: kosdaq.index.value, subText: `${kosdaq.index.changeAmount}  ${kosdaq.index.subText}`, trend: kosdaq.index.trend },
         kospi.foreign,
@@ -717,7 +760,7 @@ export const fetchMarketIndicators = async (reportType: '장전' | '마감'): Pr
         kosdaq.foreign,
         kosdaq.institution,
         fx,
-      ];
+      ].map(formatIndicatorDecimals);
       return { items };
     }
   } catch (error) {
