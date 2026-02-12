@@ -1048,6 +1048,7 @@ const ReportPreview: React.FC<Props> = ({
                       issue: "",
                       stocks: "",
                       perspective: "",
+                      column: (data.usSectors || []).length % 2,
                     };
                     onChange({ ...data, usSectors: [...(data.usSectors || []), newSector] });
                   }}
@@ -1071,6 +1072,7 @@ const ReportPreview: React.FC<Props> = ({
                   issue: "",
                   stocks: "",
                   perspective: "",
+                  column: (data.usSectors || []).length % 2,
                 };
                 onChange({ ...data, usSectors: [...(data.usSectors || []), newSector] });
               }}
