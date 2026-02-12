@@ -1011,11 +1011,26 @@ const ReportPreview: React.FC<Props> = ({
                   sector.sentiment === "강세" ? "bg-red-500"
                     : sector.sentiment === "약세" ? "bg-blue-500"
                       : "bg-slate-400";
+                const chipColor = isDark
+                  ? "bg-sky-900/30 text-sky-300 border-sky-500/30"
+                  : "bg-blue-50 text-blue-700 border-blue-200/80";
                 return (
                   <div
                     key={sector.id || idx}
-                    className={`rounded-lg border ${sentimentColor} p-2.5 flex flex-col gap-1`}
+                    className={`rounded-lg border ${sentimentColor} p-2.5 flex flex-col gap-1 relative group/sector`}
                   >
+                    {/* 섹터 삭제 버튼 */}
+                    {!isModalView && data.usSectors!.length > 1 && (
+                      <button
+                        onClick={() => {
+                          const updated = (data.usSectors || []).filter((_, i) => i !== idx);
+                          onChange({ ...data, usSectors: updated });
+                        }}
+                        className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-400 text-white text-[10px] font-bold opacity-0 group-hover/sector:opacity-100 transition-opacity no-print flex items-center justify-center z-10"
+                      >
+                        ×
+                      </button>
+                    )}
                     <div className="flex items-center gap-1.5">
                       <span className={`w-2 h-2 rounded-full ${dotColor} shrink-0`} />
                       <EditableText
@@ -1060,7 +1075,7 @@ const ReportPreview: React.FC<Props> = ({
                       className={`text-[12px] ${isDark ? "text-slate-400" : "text-slate-500"} leading-snug`}
                       placeholder="이슈 요약"
                     />
-                    <EditableText
+                    <ChipInput
                       value={sector.stocks}
                       onSave={(v) => {
                         const updated = [...(data.usSectors || [])];
@@ -1068,13 +1083,33 @@ const ReportPreview: React.FC<Props> = ({
                         onChange({ ...data, usSectors: updated });
                       }}
                       isModal={isModalView}
-                      className={`text-[12px] font-bold ${isDark ? "text-sky-400" : "text-blue-600"} leading-snug`}
-                      placeholder="관련 종목"
+                      placeholder="종목 입력 후 Enter"
+                      chipClassName={chipColor}
+                      size="sm"
                     />
                   </div>
                 );
               })}
             </div>
+            {/* 섹터 추가 버튼 */}
+            {!isModalView && data.usSectors.length < 10 && (
+              <button
+                onClick={() => {
+                  const newSector = {
+                    id: crypto.randomUUID(),
+                    name: "",
+                    sentiment: "중립",
+                    issue: "",
+                    stocks: "",
+                    perspective: "",
+                  };
+                  onChange({ ...data, usSectors: [...(data.usSectors || []), newSector] });
+                }}
+                className={`w-full py-1.5 flex items-center justify-center gap-1 text-[11px] font-bold ${isDark ? "text-slate-600 hover:text-amber-400" : "text-slate-400 hover:text-blue-500"} rounded-lg border border-dashed ${isDark ? "border-[#2a2a3a]" : "border-slate-200"} transition-colors no-print`}
+              >
+                <span className="text-base leading-none">+</span> 섹터 추가 ({data.usSectors.length}/10)
+              </button>
+            )}
           </div>
         )}
         {/* 미증시 마감 분석 (아래) */}
