@@ -1005,12 +1005,7 @@ const ReportPreview: React.FC<Props> = ({
                 <div key={col} className="flex-1 flex flex-col gap-2">
                   {data.usSectors!.filter((_, i) => i % 2 === col).map((sector) => {
                     const realIdx = data.usSectors!.indexOf(sector);
-                    const sentimentColor =
-                      sector.sentiment === "강세"
-                        ? isDark ? "border-red-500/40 bg-red-900/10" : "border-red-400/50 bg-red-50/50"
-                        : sector.sentiment === "약세"
-                          ? isDark ? "border-blue-500/40 bg-blue-900/10" : "border-blue-400/50 bg-blue-50/50"
-                          : isDark ? "border-slate-600/40 bg-slate-800/20" : "border-slate-300/50 bg-slate-50/50";
+                    const cardBorder = isDark ? "border-slate-600/40 bg-slate-800/20" : "border-slate-200/80 bg-white/60";
                     const dotColor =
                       sector.sentiment === "강세" ? "bg-red-500"
                         : sector.sentiment === "약세" ? "bg-blue-500"
@@ -1024,7 +1019,7 @@ const ReportPreview: React.FC<Props> = ({
                     return (
                       <div
                         key={sector.id || realIdx}
-                        className={`rounded-xl border ${sentimentColor} p-3 flex flex-col gap-3 relative group/sector`}
+                        className={`rounded-xl border ${cardBorder} p-3 flex flex-col gap-3 relative group/sector`}
                       >
                         {/* 섹터 삭제 버튼 */}
                         {!isModalView && data.usSectors!.length > 1 && (
@@ -1058,7 +1053,7 @@ const ReportPreview: React.FC<Props> = ({
                               updated[realIdx] = { ...updated[realIdx], sentiment: e.target.value };
                               onChange({ ...data, usSectors: updated });
                             }}
-                            className={`ml-auto text-[13px] font-bold rounded px-1.5 py-0.5 border-0 outline-none cursor-pointer ${
+                            className={`ml-auto text-[15px] font-bold rounded-md px-2.5 py-1 border-0 outline-none cursor-pointer ${
                               sector.sentiment === "강세"
                                 ? "bg-red-100 text-red-700"
                                 : sector.sentiment === "약세"
