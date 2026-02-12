@@ -1065,69 +1065,49 @@ const ReportPreview: React.FC<Props> = ({
   };
 
   // ===========================
-  // 전문가 분석 섹션 (2페이지)
-  // 3개 텍스트 블록
+  // 전일 미증시 마감 분석 (1페이지)
   // ===========================
-  const renderExpertAnalysisSections = () => (
-    <div className="flex flex-col gap-5 shrink-0">
-      {/* ── 섹션 1: 전일 미증시 마감 분석 ── */}
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center shrink-0">
-          <EditableText
-            value={data.usMarketAnalysisTitle}
-            {...ep("usMarketAnalysisTitle")}
-            tag="h2"
-            className={`text-[14px] font-black uppercase tracking-tighter ${pageText} flex items-center gap-2 before:content-[''] before:w-1.5 before:h-5 ${isDark ? "before:bg-amber-400" : "before:bg-blue-600"} before:rounded-full`}
-          />
-        </div>
-        <div className={`${sectionBg} rounded-xl border ${isDark ? "border-[#2a2a3a]" : "border-slate-200/60"} p-4 shadow-sm`}>
-          <EditableText
-            value={data.usMarketAnalysis}
-            {...ep("usMarketAnalysis")}
-            className={`text-[12px] font-medium ${pageText} leading-[1.8] whitespace-pre-wrap`}
-            placeholder={"EX.\n• 나스닥 +1.2% 상승, AI 반도체 섹터 강세\n• 엔비디아 실적 발표 앞두고 매수세 유입\n• 국채 금리 하락에 기술주 전반 상승"}
-          />
-        </div>
+  const renderUsMarketAnalysis = () => (
+    <div className="flex flex-col gap-2 shrink-0">
+      <div className="flex items-center shrink-0">
+        <EditableText
+          value={data.usMarketAnalysisTitle}
+          {...ep("usMarketAnalysisTitle")}
+          tag="h2"
+          className={`text-[14px] font-black uppercase tracking-tighter ${pageText} flex items-center gap-2 before:content-[''] before:w-1.5 before:h-5 ${isDark ? "before:bg-amber-400" : "before:bg-blue-600"} before:rounded-full`}
+        />
       </div>
-
-      {/* ── 섹션 2: 전일 국내증시 특징섹터 및 특징종목 ── */}
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center shrink-0">
-          <EditableText
-            value={data.domesticAnalysisTitle}
-            {...ep("domesticAnalysisTitle")}
-            tag="h2"
-            className={`text-[14px] font-black uppercase tracking-tighter ${pageText} flex items-center gap-2 before:content-[''] before:w-1.5 before:h-5 ${isDark ? "before:bg-amber-400" : "before:bg-red-500"} before:rounded-full`}
-          />
-        </div>
-        <div className={`${sectionBg} rounded-xl border ${isDark ? "border-[#2a2a3a]" : "border-slate-200/60"} p-4 shadow-sm`}>
-          <EditableText
-            value={data.domesticAnalysis}
-            {...ep("domesticAnalysis")}
-            className={`text-[12px] font-medium ${pageText} leading-[1.8] whitespace-pre-wrap`}
-            placeholder={"EX.\n1. 코스피 5,300pt 복귀, 외인 기관 동반 매수\n2. 반도체 장비주 강세 — HPSP, 한미반도체\n3. 바이오 섹터 소폭 약세 전환\n4. 2차전지 관련주 수급 개선 조짐"}
-          />
-        </div>
+      <div className={`${sectionBg} rounded-xl border ${isDark ? "border-[#2a2a3a]" : "border-slate-200/60"} p-4 shadow-sm`}>
+        <EditableText
+          value={data.usMarketAnalysis}
+          {...ep("usMarketAnalysis")}
+          className={`text-[12px] font-medium ${pageText} leading-[1.8] whitespace-pre-wrap`}
+          placeholder={"EX.\n• 나스닥 +1.2% 상승, AI 반도체 섹터 강세\n• 엔비디아 실적 발표 앞두고 매수세 유입\n• 국채 금리 하락에 기술주 전반 상승"}
+        />
       </div>
+    </div>
+  );
 
-      {/* ── 섹션 3: 금일 시장전략 ── */}
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center shrink-0">
-          <EditableText
-            value={data.todayStrategyTitle}
-            {...ep("todayStrategyTitle")}
-            tag="h2"
-            className={`text-[14px] font-black uppercase tracking-tighter ${pageText} flex items-center gap-2 before:content-[''] before:w-1.5 before:h-5 ${isDark ? "before:bg-amber-400" : "before:bg-emerald-500"} before:rounded-full`}
-          />
-        </div>
-        <div className={`${sectionBg} rounded-xl border ${isDark ? "border-[#2a2a3a]" : "border-slate-200/60"} p-5 shadow-sm`}>
-          <EditableText
-            value={data.todayStrategy}
-            {...ep("todayStrategy")}
-            className={`text-[12px] font-medium ${pageText} leading-[1.8] whitespace-pre-wrap`}
-            placeholder={"EX.\n• 마이크론 실적 발표 앞둔 반도체 관련 섹터 주목\n• 코스피 갭상승 시 추격 매수보다 눌림목 대기\n• 반도체 중 패키지/테스트 후공정 관련주 관심\n• 바이오는 단기 조정 이후 리바운드 시 진입 검토"}
-          />
-        </div>
+  // ===========================
+  // 전일 국내증시 특징 (2페이지)
+  // ===========================
+  const renderDomesticAnalysis = () => (
+    <div className="flex flex-col gap-2 shrink-0">
+      <div className="flex items-center shrink-0">
+        <EditableText
+          value={data.domesticAnalysisTitle}
+          {...ep("domesticAnalysisTitle")}
+          tag="h2"
+          className={`text-[14px] font-black uppercase tracking-tighter ${pageText} flex items-center gap-2 before:content-[''] before:w-1.5 before:h-5 ${isDark ? "before:bg-amber-400" : "before:bg-red-500"} before:rounded-full`}
+        />
+      </div>
+      <div className={`${sectionBg} rounded-xl border ${isDark ? "border-[#2a2a3a]" : "border-slate-200/60"} p-4 shadow-sm`}>
+        <EditableText
+          value={data.domesticAnalysis}
+          {...ep("domesticAnalysis")}
+          className={`text-[12px] font-medium ${pageText} leading-[1.8] whitespace-pre-wrap`}
+          placeholder={"EX.\n1. 코스피 5,300pt 복귀, 외인 기관 동반 매수\n2. 반도체 장비주 강세 — HPSP, 한미반도체\n3. 바이오 섹터 소폭 약세 전환\n4. 2차전지 관련주 수급 개선 조짐"}
+        />
       </div>
     </div>
   );
@@ -1151,6 +1131,7 @@ const ReportPreview: React.FC<Props> = ({
             {renderHeader()}
             {renderIndicators()}
             {renderInsight()}
+            {renderUsMarketAnalysis()}
           </div>
           {/* 페이지 번호 */}
           <div className="absolute bottom-[3mm] left-0 right-0 flex justify-center">
@@ -1194,6 +1175,7 @@ const ReportPreview: React.FC<Props> = ({
                 RISING
               </span>
             </div>
+            {renderDomesticAnalysis()}
             {renderFeaturedStocks()}
             {/* 오늘의 시장전략 */}
             <div
