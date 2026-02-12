@@ -64,6 +64,8 @@ export interface ReportData {
   domesticAnalysisTitle: string;
   todayStrategy: string;           // 금일 시장전략
   todayStrategyTitle: string;
+  usSectors?: Sector[];             // 전일 미증시 섹터 트렌드
+  usSectorsTitle?: string;
 
 }
 

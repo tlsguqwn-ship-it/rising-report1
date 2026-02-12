@@ -208,6 +208,41 @@ export const PRE_MARKET_REPORT_TEMPLATE: ReportData = {
   domesticAnalysisTitle: "전일 국내증시 특징섹터 및 특징종목",
   todayStrategy: "",
   todayStrategyTitle: "금일 시장전략",
+  usSectors: [
+    {
+      id: genId(),
+      name: "AI·반도체",
+      sentiment: "강세",
+      issue: "",
+      stocks: "",
+      perspective: "",
+    },
+    {
+      id: genId(),
+      name: "",
+      sentiment: "중립",
+      issue: "",
+      stocks: "",
+      perspective: "",
+    },
+    {
+      id: genId(),
+      name: "",
+      sentiment: "중립",
+      issue: "",
+      stocks: "",
+      perspective: "",
+    },
+    {
+      id: genId(),
+      name: "",
+      sentiment: "중립",
+      issue: "",
+      stocks: "",
+      perspective: "",
+    },
+  ],
+  usSectorsTitle: "전일 미증시 섹터 트렌드",
 };
 
 // KST 기준: 06:00~17:59 → 장전, 18:00~05:59 → 마감

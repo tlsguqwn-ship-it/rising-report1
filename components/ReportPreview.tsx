@@ -1008,6 +1008,96 @@ const ReportPreview: React.FC<Props> = ({
             placeholder={"EX.\n• 나스닥 +1.2% 상승, AI 반도체 섹터 강세\n• 엔비디아 실적 발표 앞두고 매수세 유입\n• 국채 금리 하락에 기술주 전반 상승"}
           />
         </div>
+        {/* 미증시 섹터 트렌드 */}
+        {data.usSectors && data.usSectors.length > 0 && (
+          <div className="flex flex-col gap-2 mt-2">
+            <div className="flex items-center shrink-0">
+              <EditableText
+                value={data.usSectorsTitle || "전일 미증시 섹터 트렌드"}
+                onSave={(v) => onChange({ ...data, usSectorsTitle: v })}
+                isModal={isModalView}
+                tag="h3"
+                className={`text-[12px] font-black uppercase tracking-tighter ${isDark ? "text-slate-400" : "text-slate-500"} flex items-center gap-2`}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {data.usSectors.map((sector, idx) => {
+                const sentimentColor =
+                  sector.sentiment === "강세"
+                    ? isDark ? "border-green-500/40 bg-green-900/10" : "border-green-400/50 bg-green-50/50"
+                    : sector.sentiment === "약세"
+                      ? isDark ? "border-red-500/40 bg-red-900/10" : "border-red-400/50 bg-red-50/50"
+                      : isDark ? "border-slate-600/40 bg-slate-800/20" : "border-slate-300/50 bg-slate-50/50";
+                const dotColor =
+                  sector.sentiment === "강세" ? "bg-green-500"
+                    : sector.sentiment === "약세" ? "bg-red-500"
+                      : "bg-slate-400";
+                return (
+                  <div
+                    key={sector.id || idx}
+                    className={`rounded-lg border ${sentimentColor} p-2.5 flex flex-col gap-1`}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span className={`w-2 h-2 rounded-full ${dotColor} shrink-0`} />
+                      <EditableText
+                        value={sector.name}
+                        onSave={(v) => {
+                          const updated = [...(data.usSectors || [])];
+                          updated[idx] = { ...updated[idx], name: v };
+                          onChange({ ...data, usSectors: updated });
+                        }}
+                        isModal={isModalView}
+                        className={`text-[11px] font-[800] ${isDark ? "text-slate-200" : "text-slate-800"} leading-tight`}
+                        placeholder="섹터명"
+                      />
+                      <select
+                        value={sector.sentiment}
+                        onChange={(e) => {
+                          const updated = [...(data.usSectors || [])];
+                          updated[idx] = { ...updated[idx], sentiment: e.target.value };
+                          onChange({ ...data, usSectors: updated });
+                        }}
+                        className={`ml-auto text-[9px] font-bold rounded px-1 py-0.5 border-0 outline-none cursor-pointer ${
+                          sector.sentiment === "강세"
+                            ? "bg-green-100 text-green-700"
+                            : sector.sentiment === "약세"
+                              ? "bg-red-100 text-red-700"
+                              : "bg-slate-100 text-slate-600"
+                        }`}
+                      >
+                        <option value="강세">강세</option>
+                        <option value="중립">중립</option>
+                        <option value="약세">약세</option>
+                      </select>
+                    </div>
+                    <EditableText
+                      value={sector.issue}
+                      onSave={(v) => {
+                        const updated = [...(data.usSectors || [])];
+                        updated[idx] = { ...updated[idx], issue: v };
+                        onChange({ ...data, usSectors: updated });
+                      }}
+                      isModal={isModalView}
+                      className={`text-[10px] ${isDark ? "text-slate-400" : "text-slate-500"} leading-snug`}
+                      placeholder="이슈 요약"
+                    />
+                    <EditableText
+                      value={sector.stocks}
+                      onSave={(v) => {
+                        const updated = [...(data.usSectors || [])];
+                        updated[idx] = { ...updated[idx], stocks: v };
+                        onChange({ ...data, usSectors: updated });
+                      }}
+                      isModal={isModalView}
+                      className={`text-[10px] font-bold ${isDark ? "text-sky-400" : "text-blue-600"} leading-snug`}
+                      placeholder="관련 종목"
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
         {/* 공략주 칩 */}
         <div
           className={`mt-1 flex items-center gap-3 shrink-0 flex-wrap`}
