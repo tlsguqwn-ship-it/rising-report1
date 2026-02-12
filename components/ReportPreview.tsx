@@ -1195,8 +1195,7 @@ const ReportPreview: React.FC<Props> = ({
               </span>
             </div>
             {renderFeaturedStocks()}
-            {renderExpertAnalysisSections()}
-            {/* 마무리 코멘트 */}
+            {/* 오늘의 시장전략 */}
             <div
               className={`shrink-0 mt-1 rounded-2xl border ${
                 isDark
@@ -1204,20 +1203,30 @@ const ReportPreview: React.FC<Props> = ({
                   : isPreMarket
                     ? "border-slate-800/20 bg-gradient-to-r from-slate-800 to-slate-700"
                     : "border-[#2a2035]/30 bg-gradient-to-r from-[#1c162a] to-[#221a30]"
-              } p-4 shadow-md`}
+              } p-5 shadow-md`}
             >
-              <div className="flex items-start gap-3">
-                <span className="text-[18px] leading-none mt-[3px]">💬</span>
-                <div className="flex-1">
-                  <span
-                    className={`text-[10px] font-black ${isDark ? "text-amber-400" : isPreMarket ? "text-slate-300" : "text-amber-400"} uppercase tracking-widest`}
-                  >
-                    오늘의 한마디
-                  </span>
+              <div className="flex items-center gap-3 mb-3">
+                <span className="text-[20px] leading-none">🎯</span>
+                <span
+                  className={`text-[13px] font-black ${isDark ? "text-amber-400" : isPreMarket ? "text-sky-300" : "text-amber-400"} uppercase tracking-widest`}
+                >
+                  {isPreMarket ? "금일 시장전략" : "내일 시장전략"}
+                </span>
+              </div>
+              <EditableText
+                value={data.todayStrategy}
+                {...ep("todayStrategy")}
+                className="text-[15px] font-bold text-white/90 leading-[2.0] text-justify"
+                placeholder="EX. 오늘의 시장전략을 적어주세요"
+              />
+              {/* 마무리 한마디 */}
+              <div className={`mt-4 pt-3 border-t border-white/10`}>
+                <div className="flex items-start gap-2">
+                  <span className="text-[14px] leading-none mt-[2px]">💬</span>
                   <EditableText
                     value={data.dailyComment}
                     {...ep("dailyComment")}
-                    className="text-[12px] font-bold text-white/90 leading-[1.6] mt-1"
+                    className="text-[12px] font-bold text-white/60 leading-[1.6] italic"
                     placeholder="EX. 오늘의 한마디를 적어주세요"
                   />
                 </div>
