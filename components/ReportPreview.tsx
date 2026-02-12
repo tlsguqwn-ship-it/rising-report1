@@ -408,6 +408,9 @@ const ReportPreview: React.FC<Props> = ({
   const isPreMarket = data.reportType === "장전";
   const isDark = !isPreMarket && darkMode;
 
+  // 드래그앤드롭 인디케이터 상태
+  const [dropIndicator, setDropIndicator] = useState<{ col: number; idx: number } | null>(null);
+
   // 마감 다크모드 vs 화이트모드 vs 장전 테마 색상
   const themeColor = isPreMarket
     ? "bg-[#0f172a]"
@@ -1005,18 +1008,38 @@ const ReportPreview: React.FC<Props> = ({
                 return (
                   <div
                     key={col}
-                    className="flex-1 flex flex-col gap-2 min-h-[40px]"
-                    onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; }}
+                    className={`flex-1 flex flex-col gap-2 min-h-[40px] rounded-lg transition-colors ${dropIndicator?.col === col ? (isDark ? "bg-slate-700/20" : "bg-blue-50/50") : ""}`}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = "move";
+                      // 인디케이터 위치 계산
+                      const cards = e.currentTarget.querySelectorAll("[data-sector-id]");
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const y = e.clientY - rect.top;
+                      let insertIdx = colSectors.length;
+                      cards.forEach((card, i) => {
+                        const cr = card.getBoundingClientRect();
+                        const mid = cr.top + cr.height / 2 - rect.top;
+                        if (y < mid && insertIdx > i) insertIdx = i;
+                      });
+                      if (!dropIndicator || dropIndicator.col !== col || dropIndicator.idx !== insertIdx) {
+                        setDropIndicator({ col, idx: insertIdx });
+                      }
+                    }}
+                    onDragLeave={(e) => {
+                      // 자식 요소로의 이동은 무시
+                      if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+                      setDropIndicator(null);
+                    }}
                     onDrop={(e) => {
                       e.preventDefault();
+                      setDropIndicator(null);
                       const dragId = e.dataTransfer.getData("text/plain");
                       if (!dragId) return;
                       const sectors = [...(data.usSectors || [])];
                       const dragIdx = sectors.findIndex((s) => s.id === dragId);
                       if (dragIdx === -1) return;
-                      // 열 변경
                       sectors[dragIdx] = { ...sectors[dragIdx], column: col };
-                      // 드롭 위치 계산: 이 열 안에서 어디에 넣을지
                       const colItems = sectors.filter((s) => s.id !== dragId && (s.column ?? 0) === col);
                       const rect = e.currentTarget.getBoundingClientRect();
                       const y = e.clientY - rect.top;
@@ -1027,13 +1050,10 @@ const ReportPreview: React.FC<Props> = ({
                         const mid = cr.top + cr.height / 2 - rect.top;
                         if (y < mid && insertBeforeIdx > i) insertBeforeIdx = i;
                       });
-                      // 드래그 항목 제거 후 재삽입
                       const dragged = sectors.splice(dragIdx, 1)[0];
-                      // 새 열에서의 삽입 위치를 전체 배열 상 위치로 변환
                       const finalColItems = sectors.filter((s) => (s.column ?? 0) === col);
                       let globalInsertIdx: number;
                       if (insertBeforeIdx >= finalColItems.length) {
-                        // 맨 끝에 추가
                         globalInsertIdx = sectors.length;
                       } else {
                         globalInsertIdx = sectors.indexOf(finalColItems[insertBeforeIdx]);
@@ -1042,7 +1062,7 @@ const ReportPreview: React.FC<Props> = ({
                       onChange({ ...data, usSectors: sectors });
                     }}
                   >
-                    {colSectors.map((sector) => {
+                    {colSectors.map((sector, colIdx) => {
                       const realIdx = data.usSectors!.indexOf(sector);
                       const cardBorder = isDark ? "border-slate-600/40 bg-slate-800/20" : "border-slate-200/80 bg-white/60";
                       const dotColor =
