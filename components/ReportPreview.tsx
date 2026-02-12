@@ -1010,12 +1010,9 @@ const ReportPreview: React.FC<Props> = ({
                       sector.sentiment === "강세" ? "bg-red-500"
                         : sector.sentiment === "약세" ? "bg-blue-500"
                           : "bg-slate-400";
-                    const chipColor =
-                      sector.sentiment === "강세"
-                        ? isDark ? "bg-red-900/30 text-red-300 border-red-500/30" : "bg-red-50 text-red-700 border-red-200/80"
-                        : sector.sentiment === "약세"
-                          ? isDark ? "bg-blue-900/30 text-blue-300 border-blue-500/30" : "bg-blue-50 text-blue-700 border-blue-200/80"
-                          : isDark ? "bg-slate-800/30 text-slate-300 border-slate-500/30" : "bg-slate-100 text-slate-600 border-slate-300/80";
+                    const chipColor = isDark
+                      ? "bg-slate-700/40 text-slate-200 border-slate-500/30"
+                      : "bg-slate-100 text-slate-700 border-slate-300/80";
                     return (
                       <div
                         key={sector.id || realIdx}
@@ -1073,7 +1070,7 @@ const ReportPreview: React.FC<Props> = ({
                             onChange({ ...data, usSectors: updated });
                           }}
                           isModal={isModalView}
-                          className={`text-[17px] ${isDark ? "text-slate-400" : "text-slate-500"} leading-relaxed`}
+                          className={`text-[17px] ${isDark ? "text-slate-200" : "text-slate-700"} leading-relaxed`}
                           placeholder="이슈 요약"
                         />
                         <ChipInput
@@ -1086,7 +1083,7 @@ const ReportPreview: React.FC<Props> = ({
                           isModal={isModalView}
                           placeholder="종목 입력 후 Enter"
                           chipClassName={chipColor}
-                          size="lg"
+                          size="sm"
                         />
                       </div>
                     );
