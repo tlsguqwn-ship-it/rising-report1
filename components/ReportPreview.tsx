@@ -408,8 +408,7 @@ const ReportPreview: React.FC<Props> = ({
   const isPreMarket = data.reportType === "장전";
   const isDark = !isPreMarket && darkMode;
 
-  // 드래그앤드롭 인디케이터 상태
-  const [dropIndicator, setDropIndicator] = useState<{ col: number; idx: number } | null>(null);
+
 
   // 마감 다크모드 vs 화이트모드 vs 장전 테마 색상
   const themeColor = isPreMarket
@@ -1001,68 +1000,17 @@ const ReportPreview: React.FC<Props> = ({
                 className={`text-[18px] font-black uppercase tracking-tighter ${pageText} flex items-center gap-2 before:content-[''] before:w-1.5 before:h-5 ${isDark ? "before:bg-amber-400" : "before:bg-blue-600"} before:rounded-full`}
               />
             </div>
-            {/* 2열 독립 높이 레이아웃 (드래그앤드롭) */}
+            {/* 2열 균등 배분 레이아웃 */}
             <div className="flex gap-2 items-start">
               {[0, 1].map((col) => {
-                const colSectors = (data.usSectors || []).filter((s) => (s.column ?? 0) === col);
+                // 인덱스 기반 균등 배분: 짝수→좌, 홀수→우
+                const colSectors = (data.usSectors || []).filter((_, i) => i % 2 === col);
                 return (
                   <div
                     key={col}
-                    className={`flex-1 flex flex-col gap-2 min-h-[40px] rounded-lg transition-colors ${dropIndicator?.col === col ? (isDark ? "bg-slate-700/20" : "bg-blue-50/50") : ""}`}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      e.dataTransfer.dropEffect = "move";
-                      // 인디케이터 위치 계산
-                      const cards = e.currentTarget.querySelectorAll("[data-sector-id]");
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      const y = e.clientY - rect.top;
-                      let insertIdx = colSectors.length;
-                      cards.forEach((card, i) => {
-                        const cr = card.getBoundingClientRect();
-                        const mid = cr.top + cr.height / 2 - rect.top;
-                        if (y < mid && insertIdx > i) insertIdx = i;
-                      });
-                      if (!dropIndicator || dropIndicator.col !== col || dropIndicator.idx !== insertIdx) {
-                        setDropIndicator({ col, idx: insertIdx });
-                      }
-                    }}
-                    onDragLeave={(e) => {
-                      // 자식 요소로의 이동은 무시
-                      if (e.currentTarget.contains(e.relatedTarget as Node)) return;
-                      setDropIndicator(null);
-                    }}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      setDropIndicator(null);
-                      const dragId = e.dataTransfer.getData("text/plain");
-                      if (!dragId) return;
-                      const sectors = [...(data.usSectors || [])];
-                      const dragIdx = sectors.findIndex((s) => s.id === dragId);
-                      if (dragIdx === -1) return;
-                      sectors[dragIdx] = { ...sectors[dragIdx], column: col };
-                      const colItems = sectors.filter((s) => s.id !== dragId && (s.column ?? 0) === col);
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      const y = e.clientY - rect.top;
-                      let insertBeforeIdx = colItems.length;
-                      const cards = e.currentTarget.querySelectorAll("[data-sector-id]");
-                      cards.forEach((card, i) => {
-                        const cr = card.getBoundingClientRect();
-                        const mid = cr.top + cr.height / 2 - rect.top;
-                        if (y < mid && insertBeforeIdx > i) insertBeforeIdx = i;
-                      });
-                      const dragged = sectors.splice(dragIdx, 1)[0];
-                      const finalColItems = sectors.filter((s) => (s.column ?? 0) === col);
-                      let globalInsertIdx: number;
-                      if (insertBeforeIdx >= finalColItems.length) {
-                        globalInsertIdx = sectors.length;
-                      } else {
-                        globalInsertIdx = sectors.indexOf(finalColItems[insertBeforeIdx]);
-                      }
-                      sectors.splice(globalInsertIdx, 0, dragged);
-                      onChange({ ...data, usSectors: sectors });
-                    }}
+                    className="flex-1 flex flex-col gap-2 min-h-[40px]"
                   >
-                    {colSectors.map((sector, colIdx) => {
+                    {colSectors.map((sector) => {
                       const realIdx = data.usSectors!.indexOf(sector);
                       const cardBorder = isDark ? "border-slate-600/40 bg-slate-800/20" : "border-slate-200/80 bg-white/60";
                       const dotColor =
@@ -1075,17 +1023,7 @@ const ReportPreview: React.FC<Props> = ({
                       return (
                         <div
                           key={sector.id || realIdx}
-                          data-sector-id={sector.id}
-                          draggable={!isModalView}
-                          onDragStart={(e) => {
-                            e.dataTransfer.setData("text/plain", sector.id);
-                            e.dataTransfer.effectAllowed = "move";
-                            (e.currentTarget as HTMLElement).style.opacity = "0.5";
-                          }}
-                          onDragEnd={(e) => {
-                            (e.currentTarget as HTMLElement).style.opacity = "1";
-                          }}
-                          className={`rounded-xl border ${cardBorder} p-2.5 flex flex-col gap-1.5 relative group/sector ${!isModalView ? "cursor-grab active:cursor-grabbing" : ""}`}
+                          className={`rounded-xl border ${cardBorder} p-2.5 flex flex-col gap-1.5 relative group/sector`}
                         >
                           {/* 섹터 삭제 버튼 */}
                           {!isModalView && data.usSectors!.length > 1 && (
@@ -1139,7 +1077,7 @@ const ReportPreview: React.FC<Props> = ({
                               onChange({ ...data, usSectors: updated });
                             }}
                             isModal={isModalView}
-                            className={`text-[13px] ${isDark ? "text-slate-300" : "text-slate-600"} leading-snug`}
+                            className={`text-[14px] font-semibold ${isDark ? "text-slate-200" : "text-slate-700"} leading-snug`}
                             placeholder="이슈 요약"
                           />
                           <ChipInput
@@ -1165,8 +1103,6 @@ const ReportPreview: React.FC<Props> = ({
             {!isModalView && data.usSectors.length < 10 && (
               <button
                 onClick={() => {
-                  const leftCount = (data.usSectors || []).filter((s) => (s.column ?? 0) === 0).length;
-                  const rightCount = (data.usSectors || []).filter((s) => (s.column ?? 0) === 1).length;
                   const newSector = {
                     id: crypto.randomUUID(),
                     name: "",
@@ -1174,7 +1110,6 @@ const ReportPreview: React.FC<Props> = ({
                     issue: "",
                     stocks: "",
                     perspective: "",
-                    column: leftCount <= rightCount ? 0 : 1,
                   };
                   onChange({ ...data, usSectors: [...(data.usSectors || []), newSector] });
                 }}
