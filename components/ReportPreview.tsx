@@ -860,7 +860,7 @@ const ReportPreview: React.FC<Props> = ({
                     updateArr("featuredStocks", gIdx, "keyword", v)
                   }
                   isModal={isModalView}
-                  className={`text-[13px] font-black ${isDark ? "text-amber-300" : "text-blue-700"} uppercase tracking-tight flex-1`}
+                  className={`text-[15px] font-black ${isDark ? "text-amber-300" : "text-blue-700"} uppercase tracking-tight flex-1`}
                   placeholder="EX. 반도체 장비"
                 />
               </div>
@@ -870,7 +870,7 @@ const ReportPreview: React.FC<Props> = ({
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr
-                      className={`${isDark ? "text-slate-500" : "text-slate-400"} text-[9px] font-bold uppercase tracking-wider`}
+                      className={`${isDark ? "text-slate-500" : "text-slate-400"} text-[11px] font-bold uppercase tracking-wider`}
                     >
                       <th className="py-1 pl-1" style={{ width: "42%" }}>
                         종목명
@@ -925,7 +925,7 @@ const ReportPreview: React.FC<Props> = ({
                                 updateStockField(gIdx, sIdx, "name", v)
                               }
                               isModal={isModalView}
-                              className={`text-[12px] font-bold ${pageText}`}
+                              className={`text-[14px] font-bold ${pageText}`}
                               placeholder="EX. 삼성전자"
                             />
                           </td>
@@ -936,7 +936,7 @@ const ReportPreview: React.FC<Props> = ({
                                 updateStockField(gIdx, sIdx, "price", v)
                               }
                               isModal={isModalView}
-                              className={`text-[12px] font-bold ${rateColor} text-right`}
+                              className={`text-[14px] font-bold ${rateColor} text-right`}
                               placeholder="0"
                             />
                           </td>
@@ -947,7 +947,7 @@ const ReportPreview: React.FC<Props> = ({
                                 updateStockField(gIdx, sIdx, "change", v)
                               }
                               isModal={isModalView}
-                              className={`text-[12px] font-[900] ${rateColor} text-right`}
+                              className={`text-[14px] font-[900] ${rateColor} text-right`}
                               placeholder="0%"
                             />
                           </td>
@@ -996,7 +996,7 @@ const ReportPreview: React.FC<Props> = ({
                 onSave={(v) => onChange({ ...data, usSectorsTitle: v })}
                 isModal={isModalView}
                 tag="h2"
-                className={`text-[14px] font-black uppercase tracking-tighter ${pageText} flex items-center gap-2 before:content-[''] before:w-1.5 before:h-5 ${isDark ? "before:bg-amber-400" : "before:bg-blue-600"} before:rounded-full`}
+                className={`text-[16px] font-black uppercase tracking-tighter ${pageText} flex items-center gap-2 before:content-[''] before:w-1.5 before:h-5 ${isDark ? "before:bg-amber-400" : "before:bg-blue-600"} before:rounded-full`}
               />
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -1026,7 +1026,7 @@ const ReportPreview: React.FC<Props> = ({
                           onChange({ ...data, usSectors: updated });
                         }}
                         isModal={isModalView}
-                        className={`text-[11px] font-[800] ${isDark ? "text-slate-200" : "text-slate-800"} leading-tight`}
+                        className={`text-[13px] font-[800] ${isDark ? "text-slate-200" : "text-slate-800"} leading-tight`}
                         placeholder="섹터명"
                       />
                       <select
@@ -1036,7 +1036,7 @@ const ReportPreview: React.FC<Props> = ({
                           updated[idx] = { ...updated[idx], sentiment: e.target.value };
                           onChange({ ...data, usSectors: updated });
                         }}
-                        className={`ml-auto text-[9px] font-bold rounded px-1 py-0.5 border-0 outline-none cursor-pointer ${
+                        className={`ml-auto text-[11px] font-bold rounded px-1 py-0.5 border-0 outline-none cursor-pointer ${
                           sector.sentiment === "강세"
                             ? "bg-red-100 text-red-700"
                             : sector.sentiment === "약세"
@@ -1057,7 +1057,7 @@ const ReportPreview: React.FC<Props> = ({
                         onChange({ ...data, usSectors: updated });
                       }}
                       isModal={isModalView}
-                      className={`text-[10px] ${isDark ? "text-slate-400" : "text-slate-500"} leading-snug`}
+                      className={`text-[12px] ${isDark ? "text-slate-400" : "text-slate-500"} leading-snug`}
                       placeholder="이슈 요약"
                     />
                     <EditableText
@@ -1068,7 +1068,7 @@ const ReportPreview: React.FC<Props> = ({
                         onChange({ ...data, usSectors: updated });
                       }}
                       isModal={isModalView}
-                      className={`text-[10px] font-bold ${isDark ? "text-sky-400" : "text-blue-600"} leading-snug`}
+                      className={`text-[12px] font-bold ${isDark ? "text-sky-400" : "text-blue-600"} leading-snug`}
                       placeholder="관련 종목"
                     />
                   </div>
@@ -1083,14 +1083,14 @@ const ReportPreview: React.FC<Props> = ({
             value={data.usMarketAnalysisTitle}
             {...ep("usMarketAnalysisTitle")}
             tag="h2"
-            className={`text-[14px] font-black uppercase tracking-tighter ${pageText} flex items-center gap-2 before:content-[''] before:w-1.5 before:h-5 ${isDark ? "before:bg-amber-400" : "before:bg-blue-600"} before:rounded-full`}
+            className={`text-[16px] font-black uppercase tracking-tighter ${pageText} flex items-center gap-2 before:content-[''] before:w-1.5 before:h-5 ${isDark ? "before:bg-amber-400" : "before:bg-blue-600"} before:rounded-full`}
           />
         </div>
         <div className={`${sectionBg} rounded-xl border ${isDark ? "border-[#2a2a3a]" : "border-slate-200/60"} p-4 shadow-sm`}>
           <EditableText
             value={data.usMarketAnalysis}
             {...ep("usMarketAnalysis")}
-            className={`text-[12px] font-medium ${pageText} leading-[1.8] whitespace-pre-wrap`}
+            className={`text-[14px] font-medium ${pageText} leading-[1.8] whitespace-pre-wrap`}
             placeholder={"EX.\n• 나스닥 +1.2% 상승, AI 반도체 섹터 강세\n• 엔비디아 실적 발표 앞두고 매수세 유입\n• 국채 금리 하락에 기술주 전반 상승"}
           />
         </div>
@@ -1108,14 +1108,14 @@ const ReportPreview: React.FC<Props> = ({
           value={data.domesticAnalysisTitle}
           {...ep("domesticAnalysisTitle")}
           tag="h2"
-          className={`text-[14px] font-black uppercase tracking-tighter ${pageText} flex items-center gap-2 before:content-[''] before:w-1.5 before:h-5 ${isDark ? "before:bg-amber-400" : "before:bg-red-500"} before:rounded-full`}
+          className={`text-[16px] font-black uppercase tracking-tighter ${pageText} flex items-center gap-2 before:content-[''] before:w-1.5 before:h-5 ${isDark ? "before:bg-amber-400" : "before:bg-red-500"} before:rounded-full`}
         />
       </div>
       <div className={`${sectionBg} rounded-xl border ${isDark ? "border-[#2a2a3a]" : "border-slate-200/60"} p-4 shadow-sm`}>
         <EditableText
           value={data.domesticAnalysis}
           {...ep("domesticAnalysis")}
-          className={`text-[12px] font-medium ${pageText} leading-[1.8] whitespace-pre-wrap`}
+          className={`text-[14px] font-medium ${pageText} leading-[1.8] whitespace-pre-wrap`}
           placeholder={"EX.\n1. 코스피 5,300pt 복귀, 외인 기관 동반 매수\n2. 반도체 장비주 강세 — HPSP, 한미반도체\n3. 바이오 섹터 소폭 약세 전환\n4. 2차전지 관련주 수급 개선 조짐"}
         />
       </div>
@@ -1199,7 +1199,7 @@ const ReportPreview: React.FC<Props> = ({
               <div className="flex items-center gap-3 mb-3">
                 <span className="text-[20px] leading-none">🎯</span>
                 <span
-                  className={`text-[13px] font-black ${isDark ? "text-amber-400" : isPreMarket ? "text-sky-300" : "text-amber-400"} uppercase tracking-widest`}
+                  className={`text-[15px] font-black ${isDark ? "text-amber-400" : isPreMarket ? "text-sky-300" : "text-amber-400"} uppercase tracking-widest`}
                 >
                   {isPreMarket ? "금일 시장전략" : "내일 시장전략"}
                 </span>
@@ -1207,7 +1207,7 @@ const ReportPreview: React.FC<Props> = ({
               <EditableText
                 value={data.todayStrategy}
                 {...ep("todayStrategy")}
-                className="text-[15px] font-bold text-white/90 leading-[2.0] text-justify"
+                className="text-[17px] font-bold text-white/90 leading-[2.0] text-justify"
                 placeholder="EX. 오늘의 시장전략을 적어주세요"
               />
               {/* 마무리 한마디 */}
@@ -1217,7 +1217,7 @@ const ReportPreview: React.FC<Props> = ({
                   <EditableText
                     value={data.dailyComment}
                     {...ep("dailyComment")}
-                    className="text-[12px] font-bold text-white/60 leading-[1.6] italic"
+                    className="text-[14px] font-bold text-white/60 leading-[1.6] italic"
                     placeholder="EX. 오늘의 한마디를 적어주세요"
                   />
                 </div>
@@ -1234,7 +1234,7 @@ const ReportPreview: React.FC<Props> = ({
                   }
                   onSave={(v) => onChange({ ...data, featuredStockLabel: v })}
                   isModal={isModalView}
-                  className={`shrink-0 uppercase tracking-widest text-[11px] font-[900] bg-white/10 text-amber-300 px-3 py-1.5 rounded-full`}
+                  className={`shrink-0 uppercase tracking-widest text-[13px] font-[900] bg-white/10 text-amber-300 px-3 py-1.5 rounded-full`}
                 />
                 <div className="flex-1">
                   <ChipInput

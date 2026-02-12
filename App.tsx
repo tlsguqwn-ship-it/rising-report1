@@ -48,6 +48,11 @@ const loadSavedTemplate = (type: '장전' | '마감'): ReportData | null => {
       // usMarketImage/domesticImage 제거 (구 필드)
       delete (data as any).usMarketImage;
       delete (data as any).domesticImage;
+      // usSectors 마이그레이션: 기존 데이터에 없으면 기본값 추가
+      if (!data.usSectors || data.usSectors.length === 0) {
+        data.usSectors = PRE_MARKET_REPORT_TEMPLATE.usSectors;
+        data.usSectorsTitle = PRE_MARKET_REPORT_TEMPLATE.usSectorsTitle;
+      }
       return data;
     }
   } catch { /* ignore */ }
