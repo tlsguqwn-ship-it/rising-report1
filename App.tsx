@@ -91,10 +91,7 @@ const MainEditor: React.FC = () => {
         }
       }
     } catch { /* ignore */ }
-    // 2. 저장된 템플릿 시도
-    const saved = loadSavedTemplate(lastMode);
-    if (saved) return saved;
-    // 3. 기본 템플릿
+    // 2. 기본 템플릿 (항상 샘플 데이터)
     return lastMode === '장전' ? PRE_MARKET_REPORT_TEMPLATE : CLOSE_REPORT_TEMPLATE;
   };
   const { state: reportData, setState: setReportData, undo, redo, canUndo, canRedo, reset } = useUndoRedo<ReportData>(getInitialData());

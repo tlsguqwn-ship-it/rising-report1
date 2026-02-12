@@ -177,15 +177,15 @@ export const PRE_MARKET_REPORT_TEMPLATE: ReportData = {
       keyword: 'AI & HBM 반도체',
       stocks: [
         { name: 'Micron', price: '$108.20', change: '+9.94%' },
-        { name: 'NVIDIA', price: '$875.30', change: '+2.1%' },
+        { name: 'NVIDIA', price: '$875.30', change: '+2.10%' },
       ],
     },
     {
       id: genId(),
       keyword: '에너지 & 원자재',
       stocks: [
-        { name: 'Exxon Mobil', price: '$112.50', change: '+1.8%' },
-        { name: 'Newmont', price: '$42.30', change: '+2.3%' },
+        { name: 'Exxon Mobil', price: '$112.50', change: '+1.80%' },
+        { name: 'Newmont', price: '$42.30', change: '+2.30%' },
       ],
     },
     {
@@ -193,8 +193,8 @@ export const PRE_MARKET_REPORT_TEMPLATE: ReportData = {
       keyword: 'AI 소프트웨어',
       sentiment: '약세',
       stocks: [
-        { name: 'Unity', price: '$18.20', change: '-26.0%' },
-        { name: 'Snowflake', price: '$165.40', change: '-3.2%' },
+        { name: 'Unity', price: '$18.20', change: '-26.00%' },
+        { name: 'Snowflake', price: '$165.40', change: '-3.20%' },
       ],
     },
     {
@@ -202,8 +202,8 @@ export const PRE_MARKET_REPORT_TEMPLATE: ReportData = {
       keyword: '부동산 & REITs',
       sentiment: '약세',
       stocks: [
-        { name: 'Realty Income', price: '$52.80', change: '-2.1%' },
-        { name: 'American Tower', price: '$195.60', change: '-1.5%' },
+        { name: 'Realty Income', price: '$52.80', change: '-2.10%' },
+        { name: 'American Tower', price: '$195.60', change: '-1.50%' },
       ],
     },
   ],
