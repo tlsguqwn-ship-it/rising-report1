@@ -1046,14 +1046,15 @@ const ReportPreview: React.FC<Props> = ({
                             className={`text-[18px] font-[800] ${isDark ? "text-slate-200" : "text-slate-800"} leading-tight`}
                             placeholder="섹터명"
                           />
-                          <select
-                            value={sector.sentiment}
-                            onChange={(e) => {
+                          <button
+                            onClick={() => {
+                              const cycle = ["강세", "중립", "약세"];
+                              const next = cycle[(cycle.indexOf(sector.sentiment) + 1) % 3];
                               const updated = [...(data.usSectors || [])];
-                              updated[realIdx] = { ...updated[realIdx], sentiment: e.target.value };
+                              updated[realIdx] = { ...updated[realIdx], sentiment: next };
                               onChange({ ...data, usSectors: updated });
                             }}
-                            className={`ml-auto text-[15px] font-bold rounded-md px-2.5 py-1 border-0 outline-none cursor-pointer ${
+                            className={`ml-auto text-[15px] font-bold rounded-md px-2.5 py-1 cursor-pointer transition-colors ${
                               sector.sentiment === "강세"
                                 ? "bg-red-100 text-red-700"
                                 : sector.sentiment === "약세"
@@ -1061,10 +1062,8 @@ const ReportPreview: React.FC<Props> = ({
                                   : "bg-slate-100 text-slate-600"
                             }`}
                           >
-                            <option value="강세">강세</option>
-                            <option value="중립">중립</option>
-                            <option value="약세">약세</option>
-                          </select>
+                            {sector.sentiment}
+                          </button>
                         </div>
                         <EditableText
                           value={sector.issue}
