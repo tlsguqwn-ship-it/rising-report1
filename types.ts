@@ -49,6 +49,16 @@ export interface ReportData {
   coreViewTitle: string;
   expertAnalysisSubtitle: string;
   dailyComment: string;
+  // 전문가 텍스트 분석 섹션 (2페이지)
+  usMarketAnalysis: string;        // 전일 미증시 마감 분석
+  usMarketAnalysisTitle: string;
+  domesticAnalysis: string;        // 전일 국내증시 특징섹터/종목
+  domesticAnalysisTitle: string;
+  todayStrategy: string;           // 금일 시장전략
+  todayStrategyTitle: string;
+  // 이미지 첨부 (추후 구현, 와이어프레임용)
+  usMarketImage?: string;          // 미증시 차트 이미지 URL
+  domesticImage?: string;          // 국내증시 이미지 URL
 }
 
 export interface EditorState {

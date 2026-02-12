@@ -108,7 +108,13 @@ export const CLOSE_REPORT_TEMPLATE: ReportData = {
   scheduleTitle: "내일 주요 일정",
   coreViewTitle: "마감 시황 요약",
   expertAnalysisSubtitle: "장 마감 총평 및 전략",
-  dailyComment: ""
+  dailyComment: "",
+  usMarketAnalysis: "",
+  usMarketAnalysisTitle: "전일 미증시 마감 분석",
+  domesticAnalysis: "",
+  domesticAnalysisTitle: "전일 국내증시 특징섹터 및 특징종목",
+  todayStrategy: "",
+  todayStrategyTitle: "금일 시장전략",
 };
 
 // ===========================
@@ -176,7 +182,13 @@ export const PRE_MARKET_REPORT_TEMPLATE: ReportData = {
   scheduleTitle: "금일 주요 일정",
   coreViewTitle: "모닝 핵심 시황",
   expertAnalysisSubtitle: "개장 전 투자 전략",
-  dailyComment: ""
+  dailyComment: "",
+  usMarketAnalysis: "",
+  usMarketAnalysisTitle: "전일 미증시 마감 분석",
+  domesticAnalysis: "",
+  domesticAnalysisTitle: "전일 국내증시 특징섹터 및 특징종목",
+  todayStrategy: "",
+  todayStrategyTitle: "금일 시장전략",
 };
 
 // KST 기준: 06:00~17:59 → 장전, 18:00~05:59 → 마감
