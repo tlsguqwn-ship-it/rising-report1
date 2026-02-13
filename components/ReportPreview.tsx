@@ -389,7 +389,7 @@ const StockNameInput: React.FC<{
         onKeyDown={handleKeyDown}
         onInput={handleInput}
         className={`outline-none transition-all duration-150 hover:ring-1 hover:ring-blue-200/60 focus:ring-2 focus:ring-blue-400/40 cursor-text`}
-        style={{ minHeight: "1.2em", minWidth: "2em", overflow: "visible", whiteSpace: "normal", wordBreak: "keep-all", fontSize: `${currentFontSize}px`, ...style }}
+        style={{ minHeight: "1.2em", minWidth: "2em", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis", fontSize: `${currentFontSize}px`, ...style }}
       />
       {showPlaceholder && (
         <span
@@ -528,7 +528,7 @@ const AutoFitText: React.FC<{
   }, [text, baseFontSize, minFontSize]);
 
   return (
-    <div ref={containerRef} className={className} style={{ ...style, overflow: 'visible', whiteSpace: 'normal', wordBreak: 'keep-all', maxWidth: '100%' }}>
+    <div ref={containerRef} className={className} style={{ ...style, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', maxWidth: '100%' }}>
       <span ref={textRef} style={{ fontSize: `${baseFontSize}px`, fontWeight: 'inherit', color: 'inherit' }}>{text}</span>
     </div>
   );
