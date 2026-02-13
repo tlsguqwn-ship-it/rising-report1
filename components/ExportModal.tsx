@@ -336,7 +336,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, reportType, 
 
           {/* Preview Content */}
           <div className="flex-1 overflow-y-auto bg-[#e8eaed] p-6 flex justify-center custom-scrollbar">
-            <div className="transform scale-[0.6] origin-top" style={{ minWidth: '430px' }}>
+            <div className="origin-top" style={{ width: '210mm', transform: 'scale(0.55)', transformOrigin: 'top center' }}>
               {reportData && (
                 <ReportPreview
                   data={reportData}

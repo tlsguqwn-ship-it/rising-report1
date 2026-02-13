@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Rising K-Stock 장전 시황 리포트 에디터" />
+    <title>Rising K-Stock 장전 리포트</title>
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌅</text></svg>"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Pretendard:wght@100;200;300;400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/index.css" />
+    <style>
+      .editor-input {
+        width: 100%;
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 6px;
+        padding: 6px 10px;
+        color: #e2e8f0;
+        font-size: 13px;
+        outline: none;
+        transition: border-color 0.15s, background 0.15s;
+      }
+      .editor-input:focus {
+        border-color: #3b82f6;
+        background: rgba(255,255,255,0.1);
+      }
+      .editor-input::placeholder { color: #475569; }
+      .editor-textarea {
+        width: 100%;
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 8px;
+        padding: 10px 12px;
+        color: #e2e8f0;
+        font-size: 13px;
+        line-height: 1.6;
+        outline: none;
+        resize: vertical;
+        transition: border-color 0.15s, background 0.15s;
+      }
+      .editor-textarea:focus {
+        border-color: #3b82f6;
+        background: rgba(255,255,255,0.1);
+      }
+      .editor-textarea::placeholder { color: #475569; }
+
+      /* 인쇄 스타일 */
+      @media print {
+        .no-print, nav, aside { display: none !important; }
+        main { overflow: visible !important; padding: 0 !important; background: white !important; }
+        main > div { transform: none !important; }
+        body { background: white !important; }
+      }
+
+      /* 스크롤바 */
+      aside::-webkit-scrollbar { width: 6px; }
+      aside::-webkit-scrollbar-track { background: transparent; }
+      aside::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+      aside::-webkit-scrollbar-thumb:hover { background: #475569; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/morning-entry.tsx"></script>
+  </body>
+</html>

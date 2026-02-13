@@ -100,6 +100,9 @@ const MainEditor: React.FC = () => {
     } catch { /* ignore */ }
     // 2. 하드코딩된 기본 저장 데이터 (저장히스토리에서 추출)
     try {
+      if (lastMode === '장전' && (defaultSavedData as any).pre) {
+        return { ...PRE_MARKET_REPORT_TEMPLATE, ...(defaultSavedData as any).pre } as ReportData;
+      }
       if (lastMode === '마감' && defaultSavedData.close) {
         return { ...CLOSE_REPORT_TEMPLATE, ...defaultSavedData.close } as ReportData;
       }
@@ -141,8 +144,7 @@ const MainEditor: React.FC = () => {
       const historyKey = `rising-report-history-${reportData.reportType === '장전' ? 'pre' : 'close'}`;
       const saved = localStorage.getItem(historyKey);
       if (saved) setTemplateHistory(JSON.parse(saved));
-    } catch { /* ignore */ }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    } catch { /* ignore */ }  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ===========================
@@ -169,7 +171,18 @@ const MainEditor: React.FC = () => {
     if (savedForNext) {
       setReportData(savedForNext);
     } else {
-      const template = next === '장전' ? { ...PRE_MARKET_REPORT_TEMPLATE } : { ...CLOSE_REPORT_TEMPLATE };
+      // defaultSavedData에서 기본 데이터 로드 시도
+      let template: ReportData | null = null;
+      try {
+        if (next === '장전' && (defaultSavedData as any).pre) {
+          template = { ...PRE_MARKET_REPORT_TEMPLATE, ...(defaultSavedData as any).pre } as ReportData;
+        } else if (next === '마감' && defaultSavedData.close) {
+          template = { ...CLOSE_REPORT_TEMPLATE, ...defaultSavedData.close } as ReportData;
+        }
+      } catch { /* ignore */ }
+      if (!template) {
+        template = next === '장전' ? { ...PRE_MARKET_REPORT_TEMPLATE } : { ...CLOSE_REPORT_TEMPLATE };
+      }
       SHARED_FIELDS.forEach((field) => {
         (template as any)[field] = (reportData as any)[field];
       });
@@ -236,15 +249,25 @@ const MainEditor: React.FC = () => {
   // Save / Load Template
   // ===========================
   const saveTemplate = useCallback(() => {
-    try {
-      const storageKey = getStorageKey(reportData.reportType);
+    const storageKey = getStorageKey(reportData.reportType);
+    const historyKey = `rising-report-history-${reportData.reportType === '장전' ? 'pre' : 'close'}`;
+    const otherHistoryKey = `rising-report-history-${reportData.reportType === '장전' ? 'close' : 'pre'}`;
+
+    const trySave = () => {
       localStorage.setItem(storageKey, JSON.stringify(reportData));
       
-      // 히스토리에 추가 (최근 5개)
-      const historyKey = `rising-report-history-${reportData.reportType === '장전' ? 'pre' : 'close'}`;
+      // 히스토리에 추가 (최근 5개) - 이미지 데이터는 용량 절약을 위해 제외
       const now = new Date();
       const timeStr = `RISING STOCK ${reportData.reportType === '장전' ? '장전시황' : '마감시황'} ${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-      const entry = { data: JSON.parse(JSON.stringify(reportData)), savedAt: timeStr };
+      const historyData = { ...reportData };
+      // base64 이미지 필드 제거 (한 장당 1~2MB → 히스토리 5개면 10MB 초과 방지)
+      delete historyData.strategyImage;
+      delete historyData.usAnalysisImage;
+      delete historyData.kospiHeatmapImage;
+      delete historyData.kosdaqHeatmapImage;
+      delete historyData.closingAnalysisImage;
+      delete historyData.leadingSectorsImage;
+      const entry = { data: historyData, savedAt: timeStr };
       let history: Array<{data: ReportData, savedAt: string}> = [];
       try {
         const existing = localStorage.getItem(historyKey);
@@ -254,11 +277,37 @@ const MainEditor: React.FC = () => {
       if (history.length > 5) history = history.slice(0, 5);
       localStorage.setItem(historyKey, JSON.stringify(history));
       setTemplateHistory(history);
-      
+    };
+
+    try {
+      trySave();
       setSaveToast(true);
       setTimeout(() => setSaveToast(false), 2000);
     } catch {
-      alert('⚠️ 저장 실패: 브라우저 저장공간이 부족합니다.');
+      // 용량 부족 시 자동 정리 후 재시도
+      try {
+        // 1) 반대편 모드 히스토리 삭제
+        localStorage.removeItem(otherHistoryKey);
+        // 2) 현재 모드 히스토리 축소 (최근 2개만)
+        try {
+          const existing = localStorage.getItem(historyKey);
+          if (existing) {
+            const h = JSON.parse(existing);
+            if (h.length > 2) localStorage.setItem(historyKey, JSON.stringify(h.slice(0, 2)));
+          }
+        } catch { localStorage.removeItem(historyKey); }
+        // 3) 색상 프리셋 정리
+        try {
+          const presets = localStorage.getItem('rising_color_presets');
+          if (presets && presets.length > 5000) localStorage.removeItem('rising_color_presets');
+        } catch { /* ignore */ }
+        // 재시도
+        trySave();
+        setSaveToast(true);
+        setTimeout(() => setSaveToast(false), 2000);
+      } catch {
+        alert('⚠️ 저장 실패: 브라우저 저장공간이 부족합니다.\n히스토리를 정리했지만 여전히 부족합니다.');
+      }
     }
   }, [reportData]);
 
@@ -284,6 +333,8 @@ const MainEditor: React.FC = () => {
     else if (path.includes('sector') || path.includes('Sector') || path.includes('sectorTrend')) styleSubId = 'style-sub-sector';
     else if (path.includes('theme') || path.includes('Theme')) styleSubId = 'style-sub-theme';
     else if (path.includes('usMarketAnalysis') || path.includes('usAnalysis')) styleSubId = 'style-sub-usAnalysis';
+    else if (path.includes('todayStrategy') || path.includes('strategy')) styleSubId = 'style-sub-strategy';
+    else if (path.includes('domesticAnalysis') || path.includes('domestic')) styleSubId = 'style-sub-domestic';
 
     if (styleSubId) {
       // 색상·스타일·텍스트 설정 패널 열기
@@ -308,7 +359,7 @@ const MainEditor: React.FC = () => {
 
     // 기존: 콘텐츠 편집 AccordionSection 열기
     let targetSection = '';
-    if (path.includes('expert') || path.includes('domestic') || path.includes('todayStrategy')) targetSection = 'insight';
+    if (path.includes('expert')) targetSection = 'insight';
     else if (path.includes('sector')) targetSection = 'sectors';
     else if (path.includes('featuredStock')) targetSection = 'stocks';
     else if (path.includes('market') || path.includes('schedule')) targetSection = 'schedule';

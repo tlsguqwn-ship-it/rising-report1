@@ -142,7 +142,60 @@ export const CLOSE_REPORT_TEMPLATE: ReportData = {
   domesticAnalysis: "1. 코스피 5,300선 돌파: 외인과 기관 강력한 동반 매수로 증시 하방경직성 확인 중.\n2. 피지컬 AI와 반도체의 독주: LG전자, 현대차 로봇 강화 소식에 23% 급등\n3. 대미 원전 협력에 원전주 강세\n4. 실적 및 주주환원 모멘텀, 새벽배송 모멘텀에 이마트 및 소비재 강세",
   domesticAnalysisTitle: "전일 국내증시 특징섹터 및 특징종목",
   todayStrategy: "마이크론 9% 상승에 국내장 반도체 강세 시작.\n코스피 갭상승 출발 유력 (역사상 신고가)\n신고가 이후 하방경직성 체크 후 매매 유효.\n반도체 > 휴머노이드로봇 > 전력설비 > 원전 > 우주항공 지속되는 테마순환매\n따라잡는 매매보다 길목에서 기다리는 매매 필수전략.",
-  todayStrategyTitle: "금일 시장전략",
+  todayStrategyTitle: "내일 시장전략",
+
+  // ===== 마감 전용 필드 =====
+  powerMapTitle: "국내장 파워맵",
+  powerMapChecklist: [
+    "코스피 2,620선 마감, 외인·기관 동반 매수",
+    "반도체 장비주 강세 — 삼성전자, SK하이닉스",
+    "원달러 환율 1,452원 (-0.24%) 소폭 하락",
+    "",
+    "",
+  ],
+  closingAnalysisTitle: "국내장 마감 분석",
+  closingAnalysis: "코스피 2,620선에서 견조한 마감.\n외인·기관 동반 순매수로 수급 안정.\n반도체 섹터 중심으로 강세 흐름 지속.\n환율 소폭 하락하며 외국인 투자심리 개선.",
+
+  leadingSectorsTitle: "주도섹터",
+  leadingSectors: [
+    {
+      id: genId(),
+      name: "반도체 장비",
+      sentiment: "강세",
+      issue: "마이크론 9.94% 급등에 따른 HBM 관련 장비주 강세",
+      stocks: "삼성전자, SK하이닉스, 한미반도체",
+      perspective: "",
+    },
+    {
+      id: genId(),
+      name: "휴머노이드 로봇",
+      sentiment: "강세",
+      issue: "LG전자·현대차 로봇 강화 소식에 관련주 급등",
+      stocks: "LG전자, 현대차, 레인보우로보틱스",
+      perspective: "",
+    },
+    {
+      id: genId(),
+      name: "원전",
+      sentiment: "강세",
+      issue: "대미 원전 협력 소식에 원전주 강세",
+      stocks: "두산에너빌리티, 한전기술",
+      perspective: "",
+    },
+  ],
+
+  leadingStocksTitle: "주도주",
+  leadingStocks: "삼성전자, SK하이닉스, LG전자",
+  notableStocksTitle: "특징주",
+  notableStocks: "두산에너빌리티, 한전기술, 레인보우로보틱스",
+
+  // 마감 리포트 섹션 헤더 색상
+  closingHeaderColor: "#f59e0b",
+  closingHeaderTextColor: "#1e293b",
+
+  // 마감 리포트 헤더/푸터 기본색
+  sectorTrendHeaderColor: "#f59e0b",
+  usAnalysisHeaderColor: "#f59e0b",
 };
 
 // ===========================

@@ -151,8 +151,11 @@ const FieldTip: React.FC<{ text: string }> = ({ text }) => {
 const COLOR_KEYS = [
   'indicatorBoxColor', 'sectorTrendHeaderColor', 'sectorTrendSubHeaderColor',
   'sectorTrendTableTextColor', 'sectorTrendTableTextSize', 'usAnalysisHeaderColor',
-  'usAnalysisBoxColor', 'themeHeaderColor', 'themeCardHeaderColor', 'themeChipColor',
-  'strategyBoxColor', 'stockChipColor', 'headerBadgeColor',
+  'usAnalysisBoxColor', 'usAnalysisTextSize', 'usAnalysisTextColor',
+  'domesticTextSize', 'domesticTextColor',
+  'themeHeaderColor', 'themeCardHeaderColor', 'themeChipColor', 'themeChipTextColor',
+  'strategyBoxColor', 'stockChipColor', 'strategyTextSize', 'strategyTextColor', 'headerBadgeColor',
+  'disclaimerTextSize', 'disclaimerTextColor', 'pageNumberSize', 'pageNumberColor',
   'indicatorLabelSize', 'indicatorLabelColor', 'indicatorLabelWeight',
   'indicatorValueSize', 'indicatorValueColor', 'indicatorValueWeight',
   'indicatorChangeSize', 'indicatorChangeWeight',
@@ -406,6 +409,153 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
           )}
         </div>
       </div>
+
+      {/* [마감 전용] 히트맵 자동 캡쳐 */}
+      {data.reportType === '마감' && (
+        <div className="bg-gradient-to-br from-amber-900 to-yellow-900 rounded-2xl p-5 text-white shadow-xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/10 blur-[50px] rounded-full" />
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-8 h-8 bg-gradient-to-br from-amber-400 to-orange-500 rounded-lg flex items-center justify-center shadow-lg">
+              <span className="text-[16px]">🗺️</span>
+            </div>
+            <div>
+              <h2 className="text-xs font-black tracking-tight uppercase">히트맵 자동 캡쳐</h2>
+              <p className="text-[9px] text-amber-300/70 font-bold uppercase tracking-widest">Puppeteer 자동 스크린샷</p>
+            </div>
+          </div>
+          <div className="space-y-2">
+            {/* 한번에 모두 캡쳐 */}
+            <button
+              onClick={async () => {
+                const btn = document.getElementById('btn-capture-all') as HTMLButtonElement;
+                if (btn) btn.disabled = true;
+                try {
+                  const results: any = {};
+                  for (const market of ['kospi', 'kosdaq'] as const) {
+                    const statusEl = document.getElementById(`capture-status-${market}`);
+                    if (statusEl) statusEl.textContent = '캡쳐 중...';
+                    const res = await fetch(`/api/capture-heatmap?market=${market}`);
+                    const json = await res.json();
+                    if (json.success) {
+                      results[market] = json.dataUrl;
+                      if (statusEl) statusEl.textContent = '✅ 완료';
+                    } else {
+                      if (statusEl) statusEl.textContent = '❌ 실패';
+                      alert(`${market.toUpperCase()} 캡쳐 실패: ${json.error}`);
+                    }
+                  }
+                  const update: any = { ...data };
+                  if (results.kospi) update.kospiHeatmapImage = { src: results.kospi, width: 300, x: 0, y: 0 };
+                  if (results.kosdaq) update.kosdaqHeatmapImage = { src: results.kosdaq, width: 300, x: 0, y: 0 };
+                  onChange(update);
+                } catch (err: any) {
+                  alert(`캡쳐 오류: ${err.message}`);
+                } finally {
+                  if (btn) btn.disabled = false;
+                  setTimeout(() => {
+                    for (const m of ['kospi','kosdaq']) {
+                      const el = document.getElementById(`capture-status-${m}`);
+                      if (el) el.textContent = '';
+                    }
+                  }, 3000);
+                }
+              }}
+              id="btn-capture-all"
+              className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 disabled:opacity-50 disabled:cursor-wait text-white py-3 px-4 rounded-xl text-[13px] font-bold shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+            >
+              <RefreshCw size={15} /> KOSPI + KOSDAQ 한번에 캡쳐
+            </button>
+
+            {/* 개별 캡쳐 버튼 */}
+            <div className="grid grid-cols-2 gap-2">
+              {(['kospi', 'kosdaq'] as const).map((market) => (
+                <button
+                  key={market}
+                  onClick={async () => {
+                    const btn = document.getElementById(`btn-capture-${market}`) as HTMLButtonElement;
+                    if (btn) btn.disabled = true;
+                    const statusEl = document.getElementById(`capture-status-${market}`);
+                    if (statusEl) statusEl.textContent = '캡쳐 중...';
+                    try {
+                      const res = await fetch(`/api/capture-heatmap?market=${market}`);
+                      const json = await res.json();
+                      if (json.success) {
+                        const key = market === 'kospi' ? 'kospiHeatmapImage' : 'kosdaqHeatmapImage';
+                        onChange({ ...data, [key]: { src: json.dataUrl, width: 300, x: 0, y: 0 } });
+                        if (statusEl) statusEl.textContent = '✅ 완료';
+                      } else {
+                        if (statusEl) statusEl.textContent = '❌ 실패';
+                        alert(`캡쳐 실패: ${json.error}`);
+                      }
+                    } catch (err: any) {
+                      if (statusEl) statusEl.textContent = '❌ 오류';
+                      alert(`캡쳐 오류: ${err.message}`);
+                    } finally {
+                      if (btn) btn.disabled = false;
+                      setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 3000);
+                    }
+                  }}
+                  id={`btn-capture-${market}`}
+                  className="bg-white/15 hover:bg-white/25 disabled:opacity-50 disabled:cursor-wait text-white py-2.5 px-3 rounded-xl text-[11px] font-bold transition-all active:scale-[0.98] flex flex-col items-center justify-center gap-1 border border-white/10"
+                >
+                  <span className="flex items-center gap-1">📊 {market.toUpperCase()} 캡쳐</span>
+                  <span id={`capture-status-${market}`} className="text-[9px] text-amber-300 min-h-[14px]">
+                    {data[market === 'kospi' ? 'kospiHeatmapImage' : 'kosdaqHeatmapImage'] ? '✅ 이미지 있음' : ''}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            {/* 수동 첨부 (대체 수단) */}
+            <details className="group">
+              <summary className="text-[10px] text-amber-400/60 text-center cursor-pointer hover:text-amber-300/80 transition-colors">
+                📎 수동 이미지 첨부 (대체 수단)
+              </summary>
+              <div className="grid grid-cols-2 gap-2 mt-2">
+                {(['kospi', 'kosdaq'] as const).map((market) => (
+                  <label key={`manual-${market}`} className="bg-white/10 hover:bg-white/20 text-white py-2 px-3 rounded-xl text-[10px] font-bold transition-all flex items-center justify-center gap-1 border border-white/10 cursor-pointer">
+                    📎 {market.toUpperCase()} 첨부
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = (ev) => {
+                            const key = market === 'kospi' ? 'kospiHeatmapImage' : 'kosdaqHeatmapImage';
+                            onChange({ ...data, [key]: { src: ev.target?.result as string, width: 300, x: 0, y: 0 } });
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
+                ))}
+              </div>
+            </details>
+
+            {/* 삭제 버튼 */}
+            {(data.kospiHeatmapImage || data.kosdaqHeatmapImage) && (
+              <button
+                onClick={() => {
+                  if (confirm('히트맵 이미지를 모두 삭제하시겠습니까?')) {
+                    onChange({ ...data, kospiHeatmapImage: undefined, kosdaqHeatmapImage: undefined });
+                  }
+                }}
+                className="w-full bg-red-500/20 hover:bg-red-500/30 text-red-300 py-1.5 px-3 rounded-lg text-[10px] font-bold transition-all flex items-center justify-center gap-1 border border-red-500/20"
+              >
+                🗑️ 히트맵 이미지 모두 삭제
+              </button>
+            )}
+            <p className="text-[9px] text-amber-400/50 text-center">
+              캡쳐 버튼 클릭 시 자동으로 한경 마켓맵을 캡쳐합니다 (약 8초 소요)
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Save Button */}
       {onSave && (
@@ -776,7 +926,7 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
             </h4>
             <div className="grid grid-cols-1 gap-2">
               {[
-                { key: 'usAnalysisHeaderColor' as const, label: '헤더 색상', def: '#e2e8f0' },
+                { key: 'usAnalysisHeaderColor' as const, label: '헤더 색상', def: '#0ea5e9' },
                 { key: 'usAnalysisBoxColor' as const, label: '내용 박스 색상', def: '#fafafa' },
               ].map(({ key, label, def }) => {
                 const val = (data as any)[key] || def;
@@ -791,6 +941,65 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
                   </label>
                 );
               })}
+              {/* 본문 텍스트 크기/색상 */}
+              <div className="flex items-center justify-between p-2 bg-slate-50 rounded-lg border border-slate-100">
+                <span className="text-[11px] font-bold text-slate-600">📝 본문 텍스트</span>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => onChange({ ...data, usAnalysisTextSize: Math.max(10, (data.usAnalysisTextSize || 16) - 1) })} className="w-5 h-5 rounded bg-slate-200 text-[10px] font-bold text-slate-600 hover:bg-slate-300">−</button>
+                  <span className="text-[11px] font-mono font-bold text-slate-700 w-[26px] text-center">{data.usAnalysisTextSize || 16}</span>
+                  <button onClick={() => onChange({ ...data, usAnalysisTextSize: Math.min(24, (data.usAnalysisTextSize || 16) + 1) })} className="w-5 h-5 rounded bg-slate-200 text-[10px] font-bold text-slate-600 hover:bg-slate-300">+</button>
+                  <input type="color" value={data.usAnalysisTextColor || '#fafafa'} onChange={(e) => onChange({ ...data, usAnalysisTextColor: e.target.value })} className="w-6 h-6 rounded cursor-pointer border border-slate-200" />
+                  {(data.usAnalysisTextSize || data.usAnalysisTextColor) && <button onClick={() => onChange({ ...data, usAnalysisTextSize: undefined, usAnalysisTextColor: undefined })} className="text-[9px] text-slate-400 hover:text-red-500">✕</button>}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* [마감 전용] 마감 섹션 공통 색상 */}
+          {data.reportType === '마감' && (
+            <div id="style-sub-closing">
+              <h4 className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-amber-400" />마감 섹션 색상
+                <button onClick={() => resetStyleGroup(['closingHeaderColor','closingHeaderTextColor'])} className="ml-auto text-[9px] text-slate-300 hover:text-red-500 transition-colors" title="초기화"><RotateCcw size={10} /></button>
+              </h4>
+              <div className="grid grid-cols-1 gap-2">
+                {[
+                  { key: 'closingHeaderColor' as const, label: '섹션 헤더 배경', def: '#f59e0b' },
+                  { key: 'closingHeaderTextColor' as const, label: '섹션 헤더 텍스트', def: '#1e293b' },
+                ].map(({ key, label, def }) => {
+                  const val = (data as any)[key] || def;
+                  return (
+                    <label key={key} className="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg border border-slate-100">
+                      <span className="text-[11px] font-bold text-slate-600">{label}</span>
+                      <div className="flex items-center gap-1.5">
+                        <input type="color" value={val} onChange={(e) => onChange({ ...data, [key]: e.target.value })} className="w-7 h-7 rounded cursor-pointer border border-slate-200" />
+                        <input type="text" value={val} onChange={(e) => { if (/^#[0-9a-fA-F]{0,6}$/.test(e.target.value) || e.target.value === '') onChange({ ...data, [key]: e.target.value || undefined }); }} onPaste={(e) => { const pasted = e.clipboardData.getData('text').trim(); if (/^#[0-9a-fA-F]{3,8}$/.test(pasted)) { e.preventDefault(); onChange({ ...data, [key]: pasted }); }}} className="w-[72px] text-[10px] font-mono font-bold text-slate-600 bg-white border border-slate-200 rounded px-1.5 py-1 text-center" />
+                        {(data as any)[key] && <button onClick={() => onChange({ ...data, [key]: undefined })} className="text-[9px] text-slate-400 hover:text-red-500">✕</button>}
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* 전일 국내증시 특징 */}
+          <div id="style-sub-domestic">
+            <h4 className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-green-400" />국내증시 특징
+              <button onClick={() => resetStyleGroup(['domesticTextSize','domesticTextColor'])} className="ml-auto text-[9px] text-slate-300 hover:text-red-500 transition-colors" title="초기화"><RotateCcw size={10} /></button>
+            </h4>
+            <div className="grid grid-cols-1 gap-2">
+              <div className="flex items-center justify-between p-2 bg-slate-50 rounded-lg border border-slate-100">
+                <span className="text-[11px] font-bold text-slate-600">📝 본문 텍스트</span>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => onChange({ ...data, domesticTextSize: Math.max(10, (data.domesticTextSize || 16) - 1) })} className="w-5 h-5 rounded bg-slate-200 text-[10px] font-bold text-slate-600 hover:bg-slate-300">−</button>
+                  <span className="text-[11px] font-mono font-bold text-slate-700 w-[26px] text-center">{data.domesticTextSize || 16}</span>
+                  <button onClick={() => onChange({ ...data, domesticTextSize: Math.min(24, (data.domesticTextSize || 16) + 1) })} className="w-5 h-5 rounded bg-slate-200 text-[10px] font-bold text-slate-600 hover:bg-slate-300">+</button>
+                  <input type="color" value={data.domesticTextColor || '#334155'} onChange={(e) => onChange({ ...data, domesticTextColor: e.target.value })} className="w-6 h-6 rounded cursor-pointer border border-slate-200" />
+                  {(data.domesticTextSize || data.domesticTextColor) && <button onClick={() => onChange({ ...data, domesticTextSize: undefined, domesticTextColor: undefined })} className="text-[9px] text-slate-400 hover:text-red-500">✕</button>}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -798,13 +1007,14 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
           <div id="style-sub-theme">
             <h4 className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-amber-400" />핵심 테마
-              <button onClick={() => resetStyleGroup(['themeHeaderColor','themeCardHeaderColor','themeChipColor','themeNameSize','themeNameWeight','themeIssueSize','themeIssueWeight'])} className="ml-auto text-[9px] text-slate-300 hover:text-red-500 transition-colors" title="초기화"><RotateCcw size={10} /></button>
+              <button onClick={() => resetStyleGroup(['themeHeaderColor','themeCardHeaderColor','themeChipColor','themeChipTextColor','themeNameSize','themeNameWeight','themeIssueSize','themeIssueWeight'])} className="ml-auto text-[9px] text-slate-300 hover:text-red-500 transition-colors" title="초기화"><RotateCcw size={10} /></button>
             </h4>
             <div className="grid grid-cols-1 gap-2">
               {[
                 { key: 'themeHeaderColor' as const, label: '메인 헤더 색상', def: '#e2e8f0' },
                 { key: 'themeCardHeaderColor' as const, label: '소메뉴 헤더 색상', def: '#f1f5f9' },
                 { key: 'themeChipColor' as const, label: '종목 칩 색상', def: '#f1f5f9' },
+                { key: 'themeChipTextColor' as const, label: '칩 텍스트 색상', def: '#334155' },
               ].map(({ key, label, def }) => {
                 const val = (data as any)[key] || def;
                 return (
@@ -849,10 +1059,10 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
           </div>
 
           {/* 핵심 금일 시장 전략 */}
-          <div>
+          <div id="style-sub-strategy">
             <h4 className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-red-400" />시장 전략
-              <button onClick={() => resetStyleGroup(['strategyBoxColor','stockChipColor'])} className="ml-auto text-[9px] text-slate-300 hover:text-red-500 transition-colors" title="초기화"><RotateCcw size={10} /></button>
+              <button onClick={() => resetStyleGroup(['strategyBoxColor','stockChipColor','strategyTextSize','strategyTextColor'])} className="ml-auto text-[9px] text-slate-300 hover:text-red-500 transition-colors" title="초기화"><RotateCcw size={10} /></button>
             </h4>
             <div className="grid grid-cols-1 gap-2">
               {[
@@ -871,6 +1081,47 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
                   </label>
                 );
               })}
+              {/* 본문 텍스트 크기/색상 */}
+              <div className="flex items-center justify-between p-2 bg-slate-50 rounded-lg border border-slate-100">
+                <span className="text-[11px] font-bold text-slate-600">📝 본문 텍스트</span>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => onChange({ ...data, strategyTextSize: Math.max(10, (data.strategyTextSize || 18) - 1) })} className="w-5 h-5 rounded bg-slate-200 text-[10px] font-bold text-slate-600 hover:bg-slate-300">−</button>
+                  <span className="text-[11px] font-mono font-bold text-slate-700 w-[26px] text-center">{data.strategyTextSize || 18}</span>
+                  <button onClick={() => onChange({ ...data, strategyTextSize: Math.min(28, (data.strategyTextSize || 18) + 1) })} className="w-5 h-5 rounded bg-slate-200 text-[10px] font-bold text-slate-600 hover:bg-slate-300">+</button>
+                  <input type="color" value={data.strategyTextColor || '#e6e6e6'} onChange={(e) => onChange({ ...data, strategyTextColor: e.target.value })} className="w-6 h-6 rounded cursor-pointer border border-slate-200" />
+                  {(data.strategyTextSize || data.strategyTextColor) && <button onClick={() => onChange({ ...data, strategyTextSize: undefined, strategyTextColor: undefined })} className="text-[9px] text-slate-400 hover:text-red-500">✕</button>}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 하단 면책·페이지번호 */}
+          <div id="style-sub-footer">
+            <h4 className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-gray-400" />면책·페이지번호
+              <button onClick={() => resetStyleGroup(['disclaimerTextSize','disclaimerTextColor','pageNumberSize','pageNumberColor'])} className="ml-auto text-[9px] text-slate-300 hover:text-red-500 transition-colors" title="초기화"><RotateCcw size={10} /></button>
+            </h4>
+            <div className="grid grid-cols-1 gap-2">
+              <div className="flex items-center justify-between p-2 bg-slate-50 rounded-lg border border-slate-100">
+                <span className="text-[11px] font-bold text-slate-600">📝 면책 텍스트</span>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => onChange({ ...data, disclaimerTextSize: Math.max(5, (data.disclaimerTextSize || 7) - 1) })} className="w-5 h-5 rounded bg-slate-200 text-[10px] font-bold text-slate-600 hover:bg-slate-300">−</button>
+                  <span className="text-[11px] font-mono font-bold text-slate-700 w-[26px] text-center">{data.disclaimerTextSize || 7}</span>
+                  <button onClick={() => onChange({ ...data, disclaimerTextSize: Math.min(14, (data.disclaimerTextSize || 7) + 1) })} className="w-5 h-5 rounded bg-slate-200 text-[10px] font-bold text-slate-600 hover:bg-slate-300">+</button>
+                  <input type="color" value={data.disclaimerTextColor || '#64748b'} onChange={(e) => onChange({ ...data, disclaimerTextColor: e.target.value })} className="w-6 h-6 rounded cursor-pointer border border-slate-200" />
+                  {(data.disclaimerTextSize || data.disclaimerTextColor) && <button onClick={() => onChange({ ...data, disclaimerTextSize: undefined, disclaimerTextColor: undefined })} className="text-[9px] text-slate-400 hover:text-red-500">✕</button>}
+                </div>
+              </div>
+              <div className="flex items-center justify-between p-2 bg-slate-50 rounded-lg border border-slate-100">
+                <span className="text-[11px] font-bold text-slate-600">#️⃣ 페이지 번호</span>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => onChange({ ...data, pageNumberSize: Math.max(5, (data.pageNumberSize || 7) - 1) })} className="w-5 h-5 rounded bg-slate-200 text-[10px] font-bold text-slate-600 hover:bg-slate-300">−</button>
+                  <span className="text-[11px] font-mono font-bold text-slate-700 w-[26px] text-center">{data.pageNumberSize || 7}</span>
+                  <button onClick={() => onChange({ ...data, pageNumberSize: Math.min(14, (data.pageNumberSize || 7) + 1) })} className="w-5 h-5 rounded bg-slate-200 text-[10px] font-bold text-slate-600 hover:bg-slate-300">+</button>
+                  <input type="color" value={data.pageNumberColor || '#64748b'} onChange={(e) => onChange({ ...data, pageNumberColor: e.target.value })} className="w-6 h-6 rounded cursor-pointer border border-slate-200" />
+                  {(data.pageNumberSize || data.pageNumberColor) && <button onClick={() => onChange({ ...data, pageNumberSize: undefined, pageNumberColor: undefined })} className="text-[9px] text-slate-400 hover:text-red-500">✕</button>}
+                </div>
+              </div>
             </div>
           </div>
 

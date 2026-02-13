@@ -84,18 +84,33 @@ export interface ReportData {
   // 전일 미증시 마감 분석
   usAnalysisHeaderColor?: string;         // 헤더 배경색
   usAnalysisBoxColor?: string;            // 내용 박스 배경색
+  usAnalysisTextSize?: number;            // 본문 텍스트 크기
+  usAnalysisTextColor?: string;           // 본문 텍스트 색상
+
+  // 전일 국내증시 특징
+  domesticTextSize?: number;              // 본문 텍스트 크기
+  domesticTextColor?: string;             // 본문 텍스트 색상
 
   // 오늘의 핵심 테마
   themeHeaderColor?: string;              // 메인 헤더 배경색
   themeCardHeaderColor?: string;          // 각 소메뉴 헤더 배경색
   themeChipColor?: string;                // 종목 칩 배경색
+  themeChipTextColor?: string;            // 종목 칩 텍스트 색상
 
   // 핵심 금일 시장 전략
   strategyBoxColor?: string;              // 박스 배경색
   stockChipColor?: string;                // 종목 칩 배경색
+  strategyTextSize?: number;              // 본문 텍스트 크기
+  strategyTextColor?: string;             // 본문 텍스트 색상
 
   // 헤더 뱃지 (MORNING REPORT / CLOSING REPORT)
   headerBadgeColor?: string;              // 뱃지 배경색
+
+  // 하단 면책/페이지번호
+  disclaimerTextSize?: number;             // 면책 텍스트 크기
+  disclaimerTextColor?: string;            // 면책 텍스트 색상
+  pageNumberSize?: number;                 // 페이지 번호 크기
+  pageNumberColor?: string;                // 페이지 번호 색상
   headerLineColor?: string;               // 상단 강조 바(라인) 색상
 
   // 지표 텍스트 스타일
@@ -124,6 +139,35 @@ export interface ReportData {
   // 섹션 첨부 이미지
   strategyImage?: { src: string; width: number; x: number; y: number; aspect?: number };
   usAnalysisImage?: { src: string; width: number; x: number; y: number; aspect?: number };
+
+  // ===== 마감 리포트 전용 필드 =====
+  // 국내장 파워맵 (히트맵)
+  kospiHeatmapImage?: { src: string; width: number; x: number; y: number; aspect?: number };
+  kosdaqHeatmapImage?: { src: string; width: number; x: number; y: number; aspect?: number };
+  powerMapChecklist?: string[];    // 파워맵 핵심 체크리스트
+  powerMapTitle?: string;          // "국내장 파워맵"
+
+  // 국내장 마감 분석
+  closingAnalysis?: string;
+  closingAnalysisTitle?: string;
+
+  // 주도섹터
+  leadingSectors?: Sector[];
+  leadingSectorsTitle?: string;
+
+  // 주도주 / 특징주
+  leadingStocks?: string;          // 주도주 텍스트
+  leadingStocksTitle?: string;
+  notableStocks?: string;          // 특징주 텍스트
+  notableStocksTitle?: string;
+
+  // 마감 리포트 섹션 헤더 색상
+  closingHeaderColor?: string;     // 마감 섹션 헤더 배경 (#f59e0b)
+  closingHeaderTextColor?: string; // 마감 섹션 헤더 텍스트 (#1e293b)
+
+  // 마감 리포트 첨부 이미지
+  closingAnalysisImage?: { src: string; width: number; x: number; y: number; aspect?: number };
+  leadingSectorsImage?: { src: string; width: number; x: number; y: number; aspect?: number };
 
 }
 

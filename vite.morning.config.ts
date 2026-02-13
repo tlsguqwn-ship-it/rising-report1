@@ -2,62 +2,53 @@ import path from "path";
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
-import { captureHeatmapPlugin } from "./plugins/capture-heatmap-plugin";
 
+/**
+ * 장전리포트 전용 Vite 설정
+ * - 기존 vite.config.ts(마감리포트)와 완전히 독립
+ * - port 3006에서 실행
+ * - 실행: npx vite --config vite.morning.config.ts
+ */
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, ".", "");
   return {
     server: {
-      port: 3000,
+      port: 3006,
       host: "0.0.0.0",
       proxy: {
         '/api/perplexity': {
           target: 'https://api.perplexity.ai',
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api\/perplexity/, ''),
-          headers: {
-            'Origin': 'https://api.perplexity.ai'
-          }
+          headers: { 'Origin': 'https://api.perplexity.ai' }
         },
         '/api/naver-finance': {
           target: 'https://finance.naver.com',
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api\/naver-finance/, ''),
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-          }
+          headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
         },
         '/api/naver-mobile': {
           target: 'https://m.stock.naver.com',
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api\/naver-mobile/, ''),
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15'
-          }
+          headers: { 'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15' }
         },
         '/api/naver-search': {
           target: 'https://ac.stock.naver.com',
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api\/naver-search/, ''),
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            'Accept': 'application/json',
-            'Referer': 'https://m.stock.naver.com/'
-          }
+          headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json', 'Referer': 'https://m.stock.naver.com/' }
         },
         '/api/naver-stock': {
           target: 'https://api.stock.naver.com',
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api\/naver-stock/, '/stock'),
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            'Accept': 'application/json',
-            'Referer': 'https://m.stock.naver.com/'
-          }
+          headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json', 'Referer': 'https://m.stock.naver.com/' }
         }
       }
     },
-    plugins: [react(), tailwindcss(), captureHeatmapPlugin()],
+    plugins: [react(), tailwindcss()],
     define: {
       "process.env.API_KEY": JSON.stringify(env.GEMINI_API_KEY),
       "process.env.GEMINI_API_KEY": JSON.stringify(env.GEMINI_API_KEY),
@@ -65,6 +56,13 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "."),
+      },
+    },
+    // morning.html을 엔트리포인트로 사용
+    root: ".",
+    build: {
+      rollupOptions: {
+        input: path.resolve(__dirname, "morning.html"),
       },
     },
   };
