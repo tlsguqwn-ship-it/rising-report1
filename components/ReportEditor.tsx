@@ -216,6 +216,22 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
     saveColorPresets(colorPresets.filter(p => p.id !== id));
   };
 
+  /** contentEditable 내 선택된 텍스트가 있으면 foreColor 적용, 없으면 false 반환 */
+  const applyColorToSelection = (color: string): boolean => {
+    const sel = window.getSelection();
+    if (sel && !sel.isCollapsed && sel.anchorNode) {
+      const editable = (sel.anchorNode.nodeType === Node.TEXT_NODE
+        ? sel.anchorNode.parentElement
+        : sel.anchorNode as HTMLElement
+      )?.closest('[contenteditable="true"]');
+      if (editable) {
+        document.execCommand('foreColor', false, color);
+        return true;
+      }
+    }
+    return false;
+  };
+
   const handleCopyColor = (color: string, label: string, e: React.MouseEvent) => {
     navigator.clipboard.writeText(color);
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
@@ -528,7 +544,7 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
                     <button
                       key={ac.key}
                       title={`${ac.label}: ${ac.color}`}
-                      onClick={(e) => handleCopyColor(ac.color, ac.label, e)}
+                      onMouseDown={(e) => { e.preventDefault(); if (!applyColorToSelection(ac.color)) handleCopyColor(ac.color, ac.label, e); }}
                       className="w-7 h-7 rounded-lg border-2 border-emerald-400 hover:scale-110 hover:shadow-md transition-all cursor-pointer relative group/ac ring-1 ring-emerald-200"
                       style={{ backgroundColor: ac.color }}
                     >
@@ -537,7 +553,7 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
                     </button>
                   ))}
                 </div>
-                <p className="text-[9px] text-emerald-500 mt-2 font-semibold">현재 적용중인 색상입니다. 클릭 시 복사됩니다.</p>
+                <p className="text-[9px] text-emerald-500 mt-2 font-semibold">텍스트 선택 시 클릭하면 색상 적용, 미선택 시 복사됩니다.</p>
               </div>
             );
           })()}
@@ -581,7 +597,7 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
                 <button
                   key={preset.color}
                   title={`${preset.label} (${preset.color})`}
-                  onClick={(e) => handleCopyColor(preset.color, preset.label, e)}
+                  onMouseDown={(e) => { e.preventDefault(); if (!applyColorToSelection(preset.color)) handleCopyColor(preset.color, preset.label, e); }}
                   className="w-7 h-7 rounded-lg border border-slate-200 hover:scale-110 hover:shadow-md transition-all cursor-pointer relative group/qp active:scale-90"
                   style={{ backgroundColor: preset.color }}
                 >
@@ -589,7 +605,7 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
                 </button>
               ))}
             </div>
-            <p className="text-[9px] text-slate-400 mt-2">클릭하면 색상코드가 복사됩니다. 아래 코드 입력칸에 붙여넣으세요.</p>
+            <p className="text-[9px] text-slate-400 mt-2">텍스트 선택 후 클릭하면 색상 적용 · 미선택 시 색상코드 복사</p>
           </div>
 
           {/* 상단 강조 라인 */}
