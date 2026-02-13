@@ -483,6 +483,19 @@ const Toolbar: React.FC<ToolbarProps> = ({
       {/* Right: Actions */}
       <div className="flex gap-2 items-center">
         <button
+          onClick={onUndo}
+          disabled={!canUndo}
+          className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl font-bold transition-all active:scale-95 text-xs border ${
+            canUndo
+              ? 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200 shadow-sm'
+              : 'bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed'
+          }`}
+          title="되돌리기 (Ctrl+Z)"
+        >
+          <Undo2 size={14} />
+          되돌리기
+        </button>
+        <button
           onClick={onExport}
           className="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg transition-all active:scale-95 flex items-center gap-2 text-xs"
         >

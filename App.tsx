@@ -300,9 +300,9 @@ const MainEditor: React.FC = () => {
 
     // 기존: 콘텐츠 편집 AccordionSection 열기
     let targetSection = '';
-    if (path.includes('sector')) targetSection = 'sectors';
+    if (path.includes('usMarketAnalysis') || path.includes('expert') || path.includes('Analysis')) targetSection = 'insight';
+    else if (path.includes('sector')) targetSection = 'sectors';
     else if (path.includes('featuredStock')) targetSection = 'stocks';
-    else if (path.includes('expert') || path.includes('Analysis')) targetSection = 'insight';
     else if (path.includes('market') || path.includes('schedule')) targetSection = 'schedule';
     else if (path.includes('summary') || path.includes('currentMarket')) targetSection = 'coreview';
     else if (path.includes('title') || path.includes('date')) targetSection = 'setup';

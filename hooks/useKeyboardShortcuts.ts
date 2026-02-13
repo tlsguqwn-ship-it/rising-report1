@@ -17,8 +17,9 @@ export function useKeyboardShortcuts(shortcuts: ShortcutMap) {
     ].filter(Boolean).join('+');
 
     if (shortcuts[key]) {
-      // Allow ctrl+z / ctrl+shift+z even while editing
-      if (isEditing && key !== 'ctrl+z' && key !== 'ctrl+shift+z') return;
+      // contentEditable 편집 중에는 Ctrl+Z/Shift+Z를 브라우저 기본 undo/redo로 넘김
+      if (isEditing && (key === 'ctrl+z' || key === 'ctrl+shift+z')) return;
+      if (isEditing) return;
       e.preventDefault();
       shortcuts[key]();
     }
