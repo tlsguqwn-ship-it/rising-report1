@@ -1,5 +1,6 @@
 import React, { useRef, useCallback, useState, useEffect } from "react";
 import { ReportData } from "../types";
+import { fetchStockPrice } from "../lib/stockFetcher";
 import {
   createEmptyStock,
   createEmptySector,
@@ -1201,14 +1202,39 @@ const ReportPreview: React.FC<Props> = ({
                                 <EditableText
                                   value={stock.name}
                                   onSave={(v) => {
+                                    // 1) 종목명 즉시 업데이트
                                     const newStocks = data.featuredStocks.map((g, gi) =>
                                       gi === gIdx ? { ...g, stocks: g.stocks.map((s, si) => si === sIdx ? { ...s, name: v } : s) } : g
                                     );
                                     onChange({ ...data, featuredStocks: newStocks });
+
+                                    // 2) 가격/등락률이 기본값이면 자동 조회
+                                    const isDefaultPrice = !stock.price || stock.price === '0' || stock.price === '0.00' || stock.price === '$0.00' || stock.price === '$0';
+                                    const isDefaultChange = !stock.change || stock.change === '0%' || stock.change === '+0.00%' || stock.change === '+0%' || stock.change === '0.00%';
+                                    if (v.trim() && (isDefaultPrice || isDefaultChange)) {
+                                      fetchStockPrice(v.trim()).then((result) => {
+                                        if (!result) return;
+                                        const updated = data.featuredStocks.map((g, gi) =>
+                                          gi === gIdx ? {
+                                            ...g,
+                                            stocks: g.stocks.map((s, si) => {
+                                              if (si !== sIdx) return s;
+                                              return {
+                                                ...s,
+                                                name: v,
+                                                price: (!s.price || s.price === '0' || s.price === '0.00' || s.price === '$0.00' || s.price === '$0') ? result.price : s.price,
+                                                change: (!s.change || s.change === '0%' || s.change === '+0.00%' || s.change === '+0%' || s.change === '0.00%') ? result.change : s.change,
+                                              };
+                                            })
+                                          } : g
+                                        );
+                                        onChange({ ...data, featuredStocks: updated });
+                                      });
+                                    }
                                   }}
                                   isModal={false}
                                   className={`font-bold ${pageText}`}
-                                  placeholder="EX. 삼성전자"
+                                  placeholder="종목명 입력 후 Enter"
                                   style={{ fontSize: data.sectorTrendTableTextSize ? `${data.sectorTrendTableTextSize}px` : '16px', ...(data.sectorTrendTableTextColor ? { color: data.sectorTrendTableTextColor } : {}) }}
                                 />
                               )}
