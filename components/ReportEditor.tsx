@@ -769,7 +769,7 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
           </div>
 
           {/* 전일 미증시 마감 분석 */}
-          <div>
+          <div id="style-sub-usAnalysis">
             <h4 className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-purple-400" />마감 분석
               <button onClick={() => resetStyleGroup(['usAnalysisHeaderColor','usAnalysisBoxColor'])} className="ml-auto text-[9px] text-slate-300 hover:text-red-500 transition-colors" title="초기화"><RotateCcw size={10} /></button>

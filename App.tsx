@@ -276,6 +276,7 @@ const MainEditor: React.FC = () => {
     if (path.includes('indicator')) styleSubId = 'style-sub-indicator';
     else if (path.includes('sector') || path.includes('Sector') || path.includes('sectorTrend')) styleSubId = 'style-sub-sector';
     else if (path.includes('theme') || path.includes('Theme')) styleSubId = 'style-sub-theme';
+    else if (path.includes('usMarketAnalysis') || path.includes('usAnalysis')) styleSubId = 'style-sub-usAnalysis';
 
     if (styleSubId) {
       // 색상·스타일·텍스트 설정 패널 열기
@@ -300,7 +301,7 @@ const MainEditor: React.FC = () => {
 
     // 기존: 콘텐츠 편집 AccordionSection 열기
     let targetSection = '';
-    if (path.includes('usMarketAnalysis') || path.includes('expert') || path.includes('Analysis')) targetSection = 'insight';
+    if (path.includes('expert') || path.includes('domestic') || path.includes('todayStrategy')) targetSection = 'insight';
     else if (path.includes('sector')) targetSection = 'sectors';
     else if (path.includes('featuredStock')) targetSection = 'stocks';
     else if (path.includes('market') || path.includes('schedule')) targetSection = 'schedule';
