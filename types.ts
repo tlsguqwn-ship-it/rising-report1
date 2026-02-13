@@ -26,6 +26,8 @@ export interface ThemeStock {
   name: string;
   price: string;
   change: string;
+  ticker?: string;
+  exchange?: string;
 }
 
 export interface ThemeGroup {
@@ -117,6 +119,11 @@ export interface ReportData {
   themeNameWeight?: string;               // 테마명 굵기
   themeIssueSize?: number;                // 이슈 텍스트 크기
   themeIssueWeight?: string;              // 이슈 텍스트 굵기
+
+
+  // 섹션 첨부 이미지
+  strategyImage?: { src: string; width: number; x: number; y: number; aspect?: number };
+  usAnalysisImage?: { src: string; width: number; x: number; y: number; aspect?: number };
 
 }
 

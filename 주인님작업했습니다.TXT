@@ -1,0 +1,72 @@
+============================================================
+  미국 종목 자동 주가 조회 기능 구현 완료
+  작업일: 2026-02-13
+  커밋: b2ef0ad (로컬 전용, GitHub 미푸시)
+============================================================
+
+■ 작업 개요
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+종목명(한글/영문/티커)을 입력하고 Enter를 누르면
+전일 종가와 등락률이 자동으로 입력되는 기능을 구현했습니다.
+
+■ 구현 파일 목록
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. [신규] lib/stockMap.ts
+   - 미국 인기 종목 150+개 매핑 사전
+   - 한글명, 영문명, 티커, 로이터코드, 거래소 정보 포함
+   - 별칭 지원 (예: "마소"→MSFT, "페이스북"→META, "나스닥3배"→TQQQ)
+   - findStock() 함수: 정확매칭 + 부분매칭 검색
+
+2. [신규] lib/stockFetcher.ts
+   - 네이버 증권 API 연동 (api.stock.naver.com)
+   - 로컬 개발: Vite 프록시 (/api/naver-stock/) 사용
+   - Vercel 배포: 범용 프록시 (/api/proxy?url=) 사용
+   - 반환 데이터: 종목명, 가격($XXX.XX), 등락률(+X.XX%)
+
+3. [수정] components/ReportPreview.tsx
+   - fetchStockPrice import 추가
+   - renderUsMarketAnalysis() 내 종목명 EditableText onSave 핸들러에
+     자동 조회 로직 구현
+   - 가격/등락률이 기본값(0, 0%)일 때만 자동 입력 (수동 입력값 보존)
+
+4. [수정] vite.config.ts
+   - /api/naver-stock → api.stock.naver.com 프록시 추가
+   - Referer, User-Agent 헤더 설정
+
+■ 동작 원리
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. 사용자가 "전일 미증시 섹터 트렌드" 테이블에서 종목명 입력
+2. Enter 키를 눌러 저장하면 onSave 핸들러 실행
+3. 가격/등락률이 기본값이면 fetchStockPrice() 자동 호출
+4. 네이버 증권 API에서 전일 종가, 등락률 조회
+5. 결과를 $XXX.XX / +X.XX% 형식으로 자동 입력
+6. 이미 수동으로 입력한 값이 있으면 덮어쓰지 않음
+
+■ 검증 결과
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- Vite 프록시: /api/naver-stock/NVDA.O/basic → 200 OK, JSON 정상 반환 ✓
+- fetchStockPrice("엔비디아") → $189.08, -0.51% 정상 반환 ✓
+- fetchStockPrice("테슬라") → 정상 동작 확인 ✓
+- 한글, 영문, 티커 모두 검색 가능 ✓
+
+■ 지원 종목 카테고리 (150+개)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- AI/반도체: NVDA, AMD, INTC, MU, AVGO, QCOM, TSM, ARM, MRVL, ASML 등
+- 빅테크: AAPL, MSFT, GOOGL, AMZN, META, NFLX, TSLA
+- AI 소프트웨어: CRM, PLTR, SNOW, CRWD, DDOG 등
+- 우주/방산: LMT, RTX, NOC, BA, RKLB, LUNR 등
+- 전기차: RIVN, LCID, NIO, XPEV, LI, GM, F
+- 바이오/제약: LLY, NVO, UNH, JNJ, ABBV, PFE, MRK, MRNA 등
+- 에너지: XOM, CVX, COP, OXY, SLB
+- 금융: JPM, BAC, GS, MS, V, MA, BRK.B 등
+- 소비재: WMT, COST, HD, NKE, SBUX, MCD, KO, DIS 등
+- SaaS/클라우드: ORCL, IBM, NOW, PANW, SHOP, PYPL, COIN 등
+- 양자컴퓨터: IONQ, RGTI, QBTS
+- ETF: SPY, QQQ, SOXX, SOXL, TQQQ, SQQQ, ARKK 등
+
+■ 주의사항
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- 로컬 커밋만 완료, GitHub에는 push하지 않았습니다
+- Vercel 배포 시 /api/proxy 범용 프록시를 통해 동작합니다
+- 매핑 사전에 없는 종목은 조회되지 않습니다
+  (필요시 lib/stockMap.ts의 STOCK_LIST에 추가)

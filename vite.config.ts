@@ -34,6 +34,16 @@ export default defineConfig(({ mode }) => {
             'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15'
           }
         },
+        '/api/naver-search': {
+          target: 'https://ac.stock.naver.com',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api\/naver-search/, ''),
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Accept': 'application/json',
+            'Referer': 'https://m.stock.naver.com/'
+          }
+        },
         '/api/naver-stock': {
           target: 'https://api.stock.naver.com',
           changeOrigin: true,

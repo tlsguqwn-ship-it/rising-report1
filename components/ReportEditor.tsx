@@ -83,8 +83,8 @@ const AccordionSection: React.FC<{
   badge?: React.ReactNode;
   onReset?: () => void;
   children: React.ReactNode;
-}> = ({ label, icon, isOpen, onToggle, summary, summaryNode, badge, onReset, children }) => (
-  <div className={`overflow-hidden transition-all duration-200 border ${isOpen ? 'bg-white border-slate-200 shadow-md ring-1 ring-slate-900/5' : 'bg-white border-slate-100 hover:border-slate-200 shadow-sm'} rounded-2xl`}>
+}> = ({ id, label, icon, isOpen, onToggle, summary, summaryNode, badge, onReset, children }) => (
+  <div id={`editor-section-${id}`} className={`overflow-hidden transition-all duration-200 border ${isOpen ? 'bg-white border-slate-200 shadow-md ring-1 ring-slate-900/5' : 'bg-white border-slate-100 hover:border-slate-200 shadow-sm'} rounded-2xl`}>
     <button
       onClick={onToggle}
       className="w-full px-5 py-3.5 flex items-center justify-between text-left transition-colors"
@@ -639,7 +639,7 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
           </div>
 
           {/* 현재 지표 */}
-          <div>
+          <div id="style-sub-indicator">
             <h4 className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-400" />현재 지표
               <button onClick={() => resetStyleGroup(['indicatorBoxColor','indicatorLabelSize','indicatorLabelWeight','indicatorValueSize','indicatorValueWeight','indicatorChangeSize','indicatorChangeWeight'])} className="ml-auto text-[9px] text-slate-300 hover:text-red-500 transition-colors" title="초기화"><RotateCcw size={10} /></button>
@@ -660,12 +660,13 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
               })()}
               {/* 지표 텍스트 스타일 */}
               {([
-                { title: '라벨', sizeKey: 'indicatorLabelSize', weightKey: 'indicatorLabelWeight', defaultSize: 16 },
-                { title: '값', sizeKey: 'indicatorValueSize', weightKey: 'indicatorValueWeight', defaultSize: 18 },
-                { title: '등락률', sizeKey: 'indicatorChangeSize', weightKey: 'indicatorChangeWeight', defaultSize: 14 },
-              ] as Array<{title:string; sizeKey:string; weightKey:string; defaultSize:number}>).map(({ title, sizeKey, weightKey, defaultSize }) => {
+                { title: '라벨', sizeKey: 'indicatorLabelSize', weightKey: 'indicatorLabelWeight', defaultSize: 16, colorKey: 'indicatorLabelColor', defaultColor: '#64748b' },
+                { title: '값', sizeKey: 'indicatorValueSize', weightKey: 'indicatorValueWeight', defaultSize: 18, colorKey: 'indicatorValueColor', defaultColor: '#0f172a' },
+                { title: '등락률', sizeKey: 'indicatorChangeSize', weightKey: 'indicatorChangeWeight', defaultSize: 14, colorKey: '', defaultColor: '' },
+              ] as Array<{title:string; sizeKey:string; weightKey:string; defaultSize:number; colorKey:string; defaultColor:string}>).map(({ title, sizeKey, weightKey, defaultSize, colorKey, defaultColor }) => {
                 const curSize = (data as any)[sizeKey] ?? defaultSize;
                 const curWeight = (data as any)[weightKey] ?? '800';
+                const curColor = colorKey ? ((data as any)[colorKey] || defaultColor) : '';
                 return (
                   <div key={sizeKey} className="flex items-center justify-between p-2 bg-slate-50 rounded-lg border border-slate-100">
                     <span className="text-[11px] font-bold text-slate-600 w-[90px] shrink-0">📊 {title}</span>
@@ -680,6 +681,7 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
                         <option value="800">Extra</option>
                         <option value="900">Black</option>
                       </select>
+                      {colorKey && <span className="w-4 h-4 rounded-full border border-slate-300 shrink-0" style={{ backgroundColor: curColor }} title={`텍스트 색상: ${curColor}`} />}
                     </div>
                   </div>
                 );
@@ -688,7 +690,7 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
           </div>
 
           {/* 전일 미증시 섹터 트렌드 */}
-          <div>
+          <div id="style-sub-sector">
             <h4 className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-blue-400" />섹터 트렌드
               <button onClick={() => resetStyleGroup(['sectorTrendHeaderColor','sectorTrendSubHeaderColor','sectorTrendTableTextColor','sectorTrendTableTextSize','sectorTrendNameSize','sectorTrendNameWeight','sectorTrendIssueSize','sectorTrendIssueWeight'])} className="ml-auto text-[9px] text-slate-300 hover:text-red-500 transition-colors" title="초기화"><RotateCcw size={10} /></button>
@@ -722,11 +724,12 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
               </label>
               {/* 섹터 텍스트 스타일 */}
               {([
-                { title: '섹터명', sizeKey: 'sectorTrendNameSize', weightKey: 'sectorTrendNameWeight', defaultSize: 17 },
-                { title: '이슈', sizeKey: 'sectorTrendIssueSize', weightKey: 'sectorTrendIssueWeight', defaultSize: 16 },
-              ] as Array<{title:string; sizeKey:string; weightKey:string; defaultSize:number}>).map(({ title, sizeKey, weightKey, defaultSize }) => {
+                { title: '섹터명', sizeKey: 'sectorTrendNameSize', weightKey: 'sectorTrendNameWeight', defaultSize: 17, colorKey: 'sectorTrendTableTextColor', defaultColor: '#334155' },
+                { title: '이슈', sizeKey: 'sectorTrendIssueSize', weightKey: 'sectorTrendIssueWeight', defaultSize: 16, colorKey: 'sectorTrendTableTextColor', defaultColor: '#334155' },
+              ] as Array<{title:string; sizeKey:string; weightKey:string; defaultSize:number; colorKey:string; defaultColor:string}>).map(({ title, sizeKey, weightKey, defaultSize, colorKey, defaultColor }) => {
                 const curSize = (data as any)[sizeKey] ?? defaultSize;
                 const curWeight = (data as any)[weightKey] ?? '800';
+                const curColor = colorKey ? ((data as any)[colorKey] || defaultColor) : '';
                 return (
                   <div key={sizeKey} className="flex items-center justify-between p-2 bg-slate-50 rounded-lg border border-slate-100">
                     <span className="text-[11px] font-bold text-slate-600 w-[90px] shrink-0">🏷️ {title}</span>
@@ -741,6 +744,7 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
                         <option value="800">Extra</option>
                         <option value="900">Black</option>
                       </select>
+                      {colorKey && <span className="w-4 h-4 rounded-full border border-slate-300 shrink-0" style={{ backgroundColor: curColor }} title={`텍스트 색상: ${curColor}`} />}
                     </div>
                   </div>
                 );
@@ -775,7 +779,7 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
           </div>
 
           {/* 오늘의 핵심 테마 */}
-          <div>
+          <div id="style-sub-theme">
             <h4 className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-amber-400" />핵심 테마
               <button onClick={() => resetStyleGroup(['themeHeaderColor','themeCardHeaderColor','themeChipColor','themeNameSize','themeNameWeight','themeIssueSize','themeIssueWeight'])} className="ml-auto text-[9px] text-slate-300 hover:text-red-500 transition-colors" title="초기화"><RotateCcw size={10} /></button>
@@ -800,11 +804,12 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
               })}
               {/* 테마 텍스트 스타일 */}
               {([
-                { title: '테마명', sizeKey: 'themeNameSize', weightKey: 'themeNameWeight', defaultSize: 17 },
-                { title: '이슈', sizeKey: 'themeIssueSize', weightKey: 'themeIssueWeight', defaultSize: 16 },
-              ] as Array<{title:string; sizeKey:string; weightKey:string; defaultSize:number}>).map(({ title, sizeKey, weightKey, defaultSize }) => {
+                { title: '테마명', sizeKey: 'themeNameSize', weightKey: 'themeNameWeight', defaultSize: 17, colorKey: '', defaultColor: '' },
+                { title: '이슈', sizeKey: 'themeIssueSize', weightKey: 'themeIssueWeight', defaultSize: 16, colorKey: '', defaultColor: '' },
+              ] as Array<{title:string; sizeKey:string; weightKey:string; defaultSize:number; colorKey:string; defaultColor:string}>).map(({ title, sizeKey, weightKey, defaultSize, colorKey, defaultColor }) => {
                 const curSize = (data as any)[sizeKey] ?? defaultSize;
                 const curWeight = (data as any)[weightKey] ?? '800';
+                const curColor = colorKey ? ((data as any)[colorKey] || defaultColor) : '';
                 return (
                   <div key={sizeKey} className="flex items-center justify-between p-2 bg-slate-50 rounded-lg border border-slate-100">
                     <span className="text-[11px] font-bold text-slate-600 w-[90px] shrink-0">⭐ {title}</span>
@@ -819,6 +824,7 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
                         <option value="800">Extra</option>
                         <option value="900">Black</option>
                       </select>
+                      {colorKey && <span className="w-4 h-4 rounded-full border border-slate-300 shrink-0" style={{ backgroundColor: curColor }} title={`텍스트 색상: ${curColor}`} />}
                     </div>
                   </div>
                 );
@@ -970,7 +976,7 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
               </p>
             ) : undefined
           }
-          badge={`${data.summaryItems.length}개`}
+
 
         >
           <div className="space-y-3">
@@ -1019,7 +1025,7 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
           isOpen={activeSection === 'stocks'}
           onToggle={() => toggleSection('stocks')}
            summary={data.featuredStocks.map(s => s.keyword).join(', ')}
-          badge={`${data.featuredStocks.length}/${MAX_STOCKS}`}
+
 
         >
           <div className="space-y-3">
@@ -1091,7 +1097,7 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
           icon={<Layers size={14} />}
           isOpen={activeSection === 'sectors'}
           onToggle={() => toggleSection('sectors')}
-          badge={`${data.sectors.length}/${MAX_SECTORS}`}
+
 
         >
           <div className="space-y-3">
@@ -1106,6 +1112,7 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
                           <option value="긍정">긍정</option>
                           <option value="중립">중립</option>
                           <option value="부정">부정</option>
+                          <option value="공략">공략</option>
                         </select>
                       </div>
                       <textarea value={sector.issue} onChange={(e) => updateArrayItem('sectors', idx, 'issue', e.target.value)} className={`${inputStyle} min-h-[50px]`} placeholder="이슈 분석" />
@@ -1130,7 +1137,7 @@ const ReportEditor: React.FC<Props> = ({ data, onChange, activeSection, onSectio
           icon={<Calendar size={14} />}
           isOpen={activeSection === 'schedule'}
           onToggle={() => toggleSection('schedule')}
-          badge={`${data.marketSchedule.length}/${MAX_SCHEDULE}`}
+
 
         >
           <div className="space-y-3">

@@ -80,6 +80,12 @@ const MainEditor: React.FC = () => {
   // 최초 로드: 히스토리 최신 항목 → 저장된 데이터 → 기본 템플릿 순서
   const lastMode = getLastMode();
   const getInitialData = (): ReportData => {
+    // 0. 완전 초기화 플래그가 있으면 빈 템플릿 반환
+    const resetFlag = localStorage.getItem('rising-report-reset-pending');
+    if (resetFlag) {
+      localStorage.removeItem('rising-report-reset-pending');
+      return lastMode === '장전' ? EMPTY_PRE_MARKET_TEMPLATE : EMPTY_CLOSE_TEMPLATE;
+    }
     // 1. 히스토리에서 최신 항목 시도
     try {
       const historyKey = `rising-report-history-${lastMode === '장전' ? 'pre' : 'close'}`;
@@ -210,26 +216,14 @@ const MainEditor: React.FC = () => {
   // ===========================
   const handleFullReset = useCallback(() => {
     if (!confirm('저장된 템플릿을 포함한 모든 데이터를 완전히 초기화합니다. 계속하시겠습니까?')) return;
+    // localStorage 삭제
     localStorage.removeItem(getStorageKey(reportData.reportType));
-
-    // 모든 contenteditable 요소의 인라인 서식 정리
-    document.querySelectorAll('[contenteditable="true"]').forEach(el => {
-      const htmlEl = el as HTMLElement;
-      htmlEl.style.fontSize = '';
-      htmlEl.style.color = '';
-      htmlEl.querySelectorAll('font').forEach(font => {
-        const text = document.createTextNode(font.textContent || '');
-        font.parentNode?.replaceChild(text, font);
-      });
-      htmlEl.querySelectorAll('span[style]').forEach(span => {
-        const text = document.createTextNode(span.textContent || '');
-        span.parentNode?.replaceChild(text, span);
-      });
-    });
-
-    const template = reportData.reportType === '장전' ? EMPTY_PRE_MARKET_TEMPLATE : EMPTY_CLOSE_TEMPLATE;
-    reset(template);
-  }, [reportData.reportType, reset]);
+    // 히스토리도 삭제
+    localStorage.removeItem(`rising-report-history-${reportData.reportType === '장전' ? 'pre' : 'close'}`);
+    // 초기화 플래그 설정 → 새로고침 후 빈 템플릿 로드
+    localStorage.setItem('rising-report-reset-pending', '1');
+    window.location.reload();
+  }, [reportData.reportType]);
 
   // ===========================
   // Save / Load Template
@@ -277,13 +271,54 @@ const MainEditor: React.FC = () => {
   // Element selection from preview → editor sync
   // ===========================
   const handleElementSelect = useCallback((path: string) => {
-    // Auto-open the relevant accordion section
-    if (path.includes('sector')) setActiveSection('sectors');
-    else if (path.includes('featuredStock')) setActiveSection('stocks');
-    else if (path.includes('expert') || path.includes('Analysis')) setActiveSection('insight');
-    else if (path.includes('market') || path.includes('schedule')) setActiveSection('schedule');
-    else if (path.includes('summary') || path.includes('currentMarket')) setActiveSection('coreview');
-    else if (path.includes('title') || path.includes('date')) setActiveSection('setup');
+    // 스타일 패널 내부 서브섹션 매핑
+    let styleSubId = '';
+    if (path.includes('indicator')) styleSubId = 'style-sub-indicator';
+    else if (path.includes('sector') || path.includes('Sector') || path.includes('sectorTrend')) styleSubId = 'style-sub-sector';
+    else if (path.includes('theme') || path.includes('Theme')) styleSubId = 'style-sub-theme';
+
+    if (styleSubId) {
+      // 색상·스타일·텍스트 설정 패널 열기
+      setActiveSection('stylePanel');
+      // 패널 렌더링 후 서브섹션으로 스크롤 + 하이라이트
+      setTimeout(() => {
+        const el = document.getElementById(styleSubId);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.style.transition = 'outline 0.3s ease, outline-offset 0.3s ease';
+          el.style.outline = '2px solid #60a5fa';
+          el.style.outlineOffset = '4px';
+          el.style.borderRadius = '12px';
+          setTimeout(() => {
+            el.style.outline = '';
+            el.style.outlineOffset = '';
+          }, 1500);
+        }
+      }, 200);
+      return;
+    }
+
+    // 기존: 콘텐츠 편집 AccordionSection 열기
+    let targetSection = '';
+    if (path.includes('sector')) targetSection = 'sectors';
+    else if (path.includes('featuredStock')) targetSection = 'stocks';
+    else if (path.includes('expert') || path.includes('Analysis')) targetSection = 'insight';
+    else if (path.includes('market') || path.includes('schedule')) targetSection = 'schedule';
+    else if (path.includes('summary') || path.includes('currentMarket')) targetSection = 'coreview';
+    else if (path.includes('title') || path.includes('date')) targetSection = 'setup';
+
+    if (targetSection) {
+      setActiveSection(targetSection);
+      setTimeout(() => {
+        const el = document.getElementById(`editor-section-${targetSection}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.style.transition = 'box-shadow 0.3s ease';
+          el.style.boxShadow = '0 0 0 3px #60a5fa';
+          setTimeout(() => { el.style.boxShadow = ''; }, 1500);
+        }
+      }, 150);
+    }
   }, []);
 
   return (

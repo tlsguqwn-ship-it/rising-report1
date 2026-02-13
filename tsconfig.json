@@ -16,6 +16,7 @@
       "@/*": ["./*"]
     },
     "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
     "noEmit": true
   },
   "include": ["src", "types.ts", "vite-env.d.ts", "*.ts", "*.tsx"]

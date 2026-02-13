@@ -80,16 +80,17 @@ const EditableText: React.FC<{
   const handleBlur = useCallback(() => {
     const el = ref.current;
     if (!el) return;
-    // innerHTML로 저장하여 <b>, <strong> 등 서식 태그 보존
-    const html = el.innerHTML || "";
     // 순수 텍스트가 비어있는지 확인
     const text = el.innerText?.trim() || "";
     setLocalEmpty(!text);
     setIsFocused(false);
-    if (html !== savedValue.current) {
-      onSave(html);
+    // multiline이 아닌 단일행 필드: innerText만 저장 (br 등 HTML 잔여물 방지)
+    // multiline 필드: innerHTML로 저장하여 <b>, <strong> 등 서식 태그 보존
+    const saveValue = multiline ? (el.innerHTML || "") : text;
+    if (saveValue !== savedValue.current) {
+      onSave(saveValue);
     }
-  }, [onSave]);
+  }, [onSave, multiline]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === "Escape") {
@@ -189,6 +190,278 @@ const EditableText: React.FC<{
 };
 
 // ===========================
+// 종목명 자동완성 입력 컴포넌트
+// 입력 중 실시간으로 후보 종목 드롭다운 표시
+// ===========================
+const StockNameInput: React.FC<{
+  value: string;
+  onStockSelect: (stockInfo: import("../lib/stockMap").StockInfo) => void;
+  onTextSave: (text: string) => void;
+  className?: string;
+  style?: React.CSSProperties;
+  placeholder?: string;
+  darkMode?: boolean;
+  baseFontSize?: number;
+  minFontSize?: number;
+}> = ({ value, onStockSelect, onTextSave, className = "", style, placeholder, darkMode = false, baseFontSize = 16, minFontSize = 9 }) => {
+  const inputRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const savedValue = useRef(value);
+  const [isFocused, setIsFocused] = useState(false);
+  const [candidates, setCandidates] = useState<import("../lib/stockMap").StockInfo[]>([]);
+  const [selectedIdx, setSelectedIdx] = useState(-1);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const didSelectRef = useRef(false);
+  const [currentFontSize, setCurrentFontSize] = useState(baseFontSize);
+
+  // 폰트 자동 축소: 텍스트가 컨테이너보다 넓으면 축소
+  const autoFitFont = useCallback(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    let size = baseFontSize;
+    el.style.fontSize = `${size}px`;
+    // scrollWidth > clientWidth 이면 0.5px씩 축소
+    while (el.scrollWidth > el.clientWidth && size > minFontSize) {
+      size -= 0.5;
+      el.style.fontSize = `${size}px`;
+    }
+    setCurrentFontSize(size);
+  }, [baseFontSize, minFontSize]);
+
+  const isEmpty = !value || value.trim() === "";
+  const [localEmpty, setLocalEmpty] = useState(isEmpty);
+
+  useEffect(() => {
+    setLocalEmpty(!value || value.trim() === "");
+  }, [value]);
+
+  // 값 동기화 (외부에서 변경 시)
+  const lastExternalValue = useRef(value);
+  useEffect(() => {
+    if (inputRef.current && value !== lastExternalValue.current) {
+      if (document.activeElement !== inputRef.current) {
+        inputRef.current.innerText = value || "";
+        // 값 변경 시 폰트 자동 조정
+        setTimeout(() => autoFitFont(), 0);
+      }
+      lastExternalValue.current = value;
+    }
+  }, [value, autoFitFont]);
+
+  useEffect(() => {
+    if (inputRef.current && !inputRef.current.innerText) {
+      inputRef.current.innerText = value || "";
+    }
+    // 초기 마운트 시에도 폰트 자동 조정
+    setTimeout(() => autoFitFont(), 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const doSearch = useCallback((query: string) => {
+    import("../lib/stockMap").then(({ searchStocks }) => {
+      const results = searchStocks(query, 8);
+      setCandidates(results);
+      setSelectedIdx(-1);
+      setShowDropdown(results.length > 0);
+    });
+  }, []);
+
+  const handleFocus = useCallback(() => {
+    savedValue.current = inputRef.current?.innerText || value;
+    setIsFocused(true);
+    didSelectRef.current = false;
+    // 포커스 시 전체 선택
+    if (!isEmpty && inputRef.current) {
+      setTimeout(() => {
+        const sel = window.getSelection();
+        if (sel && inputRef.current) {
+          const range = document.createRange();
+          range.selectNodeContents(inputRef.current);
+          sel.removeAllRanges();
+          sel.addRange(range);
+        }
+      }, 0);
+    }
+  }, [value, isEmpty]);
+
+  const handleSelect = useCallback((stock: import("../lib/stockMap").StockInfo) => {
+    didSelectRef.current = true;
+    // 한글명을 입력 필드에 설정
+    if (inputRef.current) {
+      inputRef.current.innerText = stock.nameKr;
+    }
+    setShowDropdown(false);
+    setCandidates([]);
+    onStockSelect(stock);
+    // 폰트 자동 조정 후 blur
+    setTimeout(() => {
+      autoFitFont();
+      inputRef.current?.blur();
+    }, 0);
+  }, [onStockSelect, autoFitFont]);
+
+  const handleBlur = useCallback(() => {
+    // 드롭다운 클릭 시 blur가 먼저 발생하므로 약간 지연
+    setTimeout(() => {
+      setIsFocused(false);
+      setShowDropdown(false);
+      setCandidates([]);
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
+
+      // 이미 종목을 선택했으면 onTextSave 중복 호출 안 함
+      if (didSelectRef.current) return;
+
+      const el = inputRef.current;
+      if (!el) return;
+      const text = el.innerText?.trim() || "";
+      setLocalEmpty(!text);
+      if (text !== savedValue.current?.trim()) {
+        onTextSave(text);
+      }
+    }, 200);
+  }, [onTextSave]);
+
+  const handleInput = useCallback(() => {
+    const text = inputRef.current?.innerText?.trim() || "";
+    setLocalEmpty(!text);
+
+    // 디바운스 검색
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    if (text.length >= 1) {
+      debounceTimer.current = setTimeout(() => doSearch(text), 300);
+    } else {
+      setCandidates([]);
+      setShowDropdown(false);
+    }
+  }, [doSearch]);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      setShowDropdown(false);
+      setCandidates([]);
+      inputRef.current?.blur();
+      return;
+    }
+
+    if (showDropdown && candidates.length > 0) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setSelectedIdx(prev => Math.min(prev + 1, candidates.length - 1));
+        return;
+      }
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setSelectedIdx(prev => Math.max(prev - 1, -1));
+        return;
+      }
+      if (e.key === "Enter") {
+        e.preventDefault();
+        if (selectedIdx >= 0 && selectedIdx < candidates.length) {
+          handleSelect(candidates[selectedIdx]);
+        } else {
+          // 선택 없이 Enter → 드롭다운 닫고 blur
+          setShowDropdown(false);
+          setCandidates([]);
+          inputRef.current?.blur();
+        }
+        return;
+      }
+    }
+
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      inputRef.current?.blur();
+    }
+  }, [showDropdown, candidates, selectedIdx, handleSelect]);
+
+  const showPlaceholder = localEmpty && placeholder && !isFocused;
+
+  return (
+    <div style={{ position: "relative", ...style }} className={className}>
+      <div
+        ref={inputRef}
+        contentEditable
+        suppressContentEditableWarning
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        onKeyDown={handleKeyDown}
+        onInput={handleInput}
+        className={`outline-none transition-all duration-150 hover:ring-1 hover:ring-blue-200/60 focus:ring-2 focus:ring-blue-400/40 cursor-text`}
+        style={{ minHeight: "1.2em", minWidth: "2em", overflow: "hidden", whiteSpace: "nowrap", fontSize: `${currentFontSize}px`, ...style }}
+      />
+      {showPlaceholder && (
+        <span
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: 0,
+            right: 0,
+            transform: "translateY(-50%)",
+            pointerEvents: "none",
+            color: "#cbd5e1",
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            userSelect: "none",
+          }}
+        >
+          {placeholder}
+        </span>
+      )}
+      {/* 자동완성 드롭다운 */}
+      {showDropdown && candidates.length > 0 && (
+        <div
+          ref={dropdownRef}
+          style={{
+            position: "absolute",
+            top: "100%",
+            left: 0,
+            zIndex: 9999,
+            minWidth: "240px",
+            maxHeight: "240px",
+            overflowY: "auto",
+            borderRadius: "8px",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.25)",
+            border: darkMode ? "1px solid #333" : "1px solid #e2e8f0",
+            backgroundColor: darkMode ? "#1a1a2e" : "#fff",
+          }}
+          onMouseDown={(e) => e.preventDefault()} // blur 방지
+        >
+          {candidates.map((stock, idx) => (
+            <div
+              key={stock.reuters}
+              onClick={() => handleSelect(stock)}
+              style={{
+                padding: "8px 12px",
+                cursor: "pointer",
+                fontSize: "13px",
+                backgroundColor:
+                  idx === selectedIdx
+                    ? darkMode ? "#2a2a4a" : "#eef2ff"
+                    : "transparent",
+                borderBottom: idx < candidates.length - 1
+                  ? darkMode ? "1px solid #222" : "1px solid #f1f5f9"
+                  : "none",
+              }}
+              onMouseEnter={() => setSelectedIdx(idx)}
+            >
+              <div style={{ fontWeight: 600, color: darkMode ? "#e2e8f0" : "#1e293b" }}>
+                {stock.nameKr}
+              </div>
+              <div style={{ fontSize: "14px", fontWeight: 400, color: darkMode ? "#94a3b8" : "#64748b", marginTop: "2px" }}>
+                {stock.ticker} · {stock.exchange}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ===========================
 // 인라인 컬러피커 (hover 시 🎨 버튼)
 // ===========================
 const ColorPicker: React.FC<{
@@ -274,6 +547,7 @@ const ChipInput: React.FC<{
   size?: "sm" | "lg";
   vertical?: boolean;
   noWrap?: boolean;
+  inline?: boolean;
 }> = ({
   value,
   onSave,
@@ -284,6 +558,7 @@ const ChipInput: React.FC<{
   size = "sm",
   vertical = false,
   noWrap = false,
+  inline = false,
 }) => {
   const [inputVal, setInputVal] = useState("");
   const chipRefs = useRef<(HTMLSpanElement | null)[]>([]);
@@ -387,7 +662,7 @@ const ChipInput: React.FC<{
         {chips.map((chip, i) => (
           <span
             key={i}
-            className={`inline-flex items-center ${isLg ? "px-3.5 py-1.5 rounded-full text-[13px]" : "px-2.5 py-1 rounded-md text-[14px]"} font-bold border whitespace-nowrap ${chipClass}`}
+            className={`inline-flex items-center ${isLg ? "px-3.5 py-1.5 rounded-full text-[16px]" : "px-2 py-0.5 rounded-md text-[16px]"} font-bold border whitespace-nowrap ${chipClass}`}
             style={chipStyle}
           >
             {chip}
@@ -483,14 +758,17 @@ const ChipInput: React.FC<{
 
   return (
     <div
-      className={`flex ${noWrap ? '' : 'flex-wrap'} ${isLg ? "gap-3" : "gap-1.5"} items-center ${isLg ? "min-h-[32px]" : "min-h-[22px]"}`}
+      className={inline ? '' : `flex ${noWrap ? '' : 'flex-wrap'} ${isLg ? "gap-3" : "gap-1.5"} items-center ${isLg ? "min-h-[32px]" : "min-h-[22px]"}`}
+      style={inline ? { display: 'contents' } : { overflow: 'visible' }}
     >
       {chips.length > 0 ? (
         <>
           {chips.slice(0, -1).map((chip, i) => renderChip(chip, i))}
-          <span className={`inline-flex items-center whitespace-nowrap ${isLg ? "gap-3" : "gap-1.5"}`}>
+          <span className="relative inline-flex items-center">
             {renderChip(chips[chips.length - 1], chips.length - 1)}
-            {addBtn}
+            <span className={`absolute left-full ${isLg ? "ml-3" : "ml-1.5"} no-print inline-flex items-center`}>
+              {addBtn}
+            </span>
           </span>
         </>
       ) : (
@@ -501,10 +779,347 @@ const ChipInput: React.FC<{
 };
 
 // ===========================
+// 드래그 가능한 첨부 이미지 컴포넌트
+// 기본: float:right 배치 (텍스트 줄 사이 삽입)
+// 드래그: 자유 이동 → 드롭 시 새 y 위치로 복귀
+// 리사이즈: 4방향 (width만 변경)
+// ===========================
+const DraggableImage: React.FC<{
+  src: string;
+  width: number;
+  x: number;
+  y: number;
+  aspect?: number;
+  onUpdate: (patch: { width?: number; x?: number; y?: number; aspect?: number }) => void;
+  onRemove: () => void;
+  isModal?: boolean;
+}> = ({ src, width, x, y, aspect, onUpdate, onRemove, isModal = false }) => {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const imgRef = useRef<HTMLDivElement>(null);
+  const [resizing, setResizing] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const [naturalAspect, setNaturalAspect] = useState(aspect || 1);
+  const [containerWidth, setContainerWidth] = useState(500);
+  const startRef = useRef({ mx: 0, my: 0, x: 0, y: 0, width: 0 });
+  const aspectRef = useRef(aspect || 1);
+  const dragStarted = useRef(false);
+
+  // aspect prop이 변경되면 동기화 (모달에서 재사용 시 중요)
+  useEffect(() => {
+    if (aspect && aspect !== 1) {
+      aspectRef.current = aspect;
+      setNaturalAspect(aspect);
+    }
+  }, [aspect]);
+
+  // 부모의 콘텐츠 영역 너비 측정 (padding 제외)
+  const getContentWidth = useCallback(() => {
+    const parent = wrapRef.current?.parentElement;
+    if (!parent) return containerWidth;
+    const cs = getComputedStyle(parent);
+    const pl = parseFloat(cs.paddingLeft) || 0;
+    const pr = parseFloat(cs.paddingRight) || 0;
+    return parent.clientWidth - pl - pr;
+  }, [containerWidth]);
+
+  // 컨테이너 너비 측정 (DOM 마운트 후 정확한 값 사용)
+  useEffect(() => {
+    const measure = () => {
+      const cw = getContentWidth();
+      if (cw > 0) setContainerWidth(cw);
+    };
+    measure();
+    // ResizeObserver로 컨테이너 크기 변경 추적
+    const parent = wrapRef.current?.parentElement;
+    if (parent) {
+      const ro = new ResizeObserver(() => measure());
+      ro.observe(parent);
+      return () => ro.disconnect();
+    }
+  }, [getContentWidth]);
+
+  // 텍스트 형제 요소의 높이 측정 (이미지 Y 제한용)
+  const getTextContentHeight = () => {
+    const parent = wrapRef.current?.parentElement;
+    if (!parent) return 500;
+    const editableEl = parent.querySelector('[contenteditable="true"]');
+    return editableEl ? (editableEl as HTMLElement).offsetHeight : parent.clientHeight;
+  };
+
+  // x 위치 기반 float 방향 (드래그로만 전환, 리사이즈 시 x 불변)
+  const floatSide = x >= containerWidth / 2 ? "right" : "left";
+
+  // 이미지 높이 계산 (shape-outside용)
+  const imgHeight = Math.round(width / naturalAspect);
+  const totalHeight = y + imgHeight;
+  const SIDE_GAP = 8;
+
+  // 실제 width 제한: 컨테이너 - 간격
+  const clampedWidth = Math.min(width, containerWidth - SIDE_GAP);
+
+  const handleImgLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    if (img.naturalWidth && img.naturalHeight) {
+      const asp = img.naturalWidth / img.naturalHeight;
+      aspectRef.current = asp;
+      setNaturalAspect(asp);
+      // 비율 정보를 영속 데이터에 저장 (모달에서 재사용)
+      if (!isModal && asp !== aspect) {
+        onUpdate({ aspect: asp });
+      }
+    }
+  }, [isModal, aspect, onUpdate]);
+
+  // === 드래그: x+y 변경 (좌우 이동 + 위아래 텍스트 감싸기 조절) ===
+  const handleDragStart = useCallback((e: React.MouseEvent) => {
+    if (isModal) return;
+    const target = e.target as HTMLElement;
+    if (target.dataset?.resize || target.closest("[data-resize]")) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    startRef.current = { mx: e.clientX, my: e.clientY, x, y, width };
+    dragStarted.current = false;
+
+    const onMove = (ev: MouseEvent) => {
+      const dx = ev.clientX - startRef.current.mx;
+      const dy = ev.clientY - startRef.current.my;
+
+      if (!dragStarted.current) {
+        if (Math.abs(dx) < 5 && Math.abs(dy) < 5) return;
+        dragStarted.current = true;
+        setDragging(true);
+      }
+
+      const cw = getContentWidth();
+      const newX = Math.max(0, Math.min(cw, startRef.current.x + dx));
+
+      // Y 제한: 이미지 하단이 텍스트 높이를 초과하지 않도록
+      const currentImgH = Math.round(startRef.current.width / aspectRef.current);
+      const textH = getTextContentHeight();
+      const maxY = Math.max(0, textH - currentImgH);
+      const newY = Math.max(0, Math.min(maxY, startRef.current.y + dy));
+      onUpdate({ x: newX, y: newY });
+    };
+
+    const onUp = () => {
+      dragStarted.current = false;
+      setDragging(false);
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  }, [isModal, x, y, width, onUpdate, containerWidth]);
+
+  // === 리사이즈: width만 변경 (x 불변 → float 방향 전환 없음) ===
+  const handleResizeStart = useCallback((e: React.MouseEvent, corner: string) => {
+    if (isModal) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setResizing(true);
+    startRef.current = { mx: e.clientX, my: e.clientY, x, y, width };
+
+    const container = wrapRef.current?.parentElement;
+    // 최대 너비: 컨테이너 너비 - 간격
+    // 최대 너비: 콘텐츠 영역 전체 - SIDE_GAP (텍스트와의 간격)
+    const contentW = getContentWidth();
+    const maxWidth = contentW - SIDE_GAP;
+    const isLeftHandle = corner === "nw" || corner === "sw";
+
+    const onMove = (ev: MouseEvent) => {
+      const dx = ev.clientX - startRef.current.mx;
+      const curFloat = startRef.current.x >= contentW / 2 ? "right" : "left";
+
+      // float 방향에 따라 핸들 동작 보정:
+      // float:right → 왼쪽이 열린 쪽 (왼쪽 핸들이 주 리사이즈)
+      // float:left → 오른쪽이 열린 쪽 (오른쪽 핸들이 주 리사이즈)
+      let delta: number;
+      if (curFloat === "right") {
+        // float:right: 왼쪽 핸들 = 왼쪽 드래그 확대, 오른쪽 핸들도 같은 방향
+        delta = -dx;
+      } else {
+        // float:left: 오른쪽 핸들 = 오른쪽 드래그 확대, 왼쪽 핸들도 같은 방향
+        delta = dx;
+      }
+
+      const newWidth = Math.max(60, Math.min(maxWidth, startRef.current.width + delta));
+      onUpdate({ width: newWidth });
+    };
+
+    const onUp = () => {
+      setResizing(false);
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  }, [isModal, x, y, width, onUpdate, containerWidth]);
+
+  const active = resizing || hovered || dragging;
+
+  // 모달(인쇄) 모드 — 에디터와 동일한 구조 사용
+  if (isModal) {
+    const modalAspect = aspectRef.current || naturalAspect || 1;
+    const modalImgH = Math.round(clampedWidth / modalAspect);
+    const modalTotal = y + modalImgH;
+    return (
+      <div ref={wrapRef} style={{
+        float: floatSide as "left" | "right",
+        width: `${clampedWidth + SIDE_GAP}px`,
+        height: `${modalTotal}px`,
+        shapeOutside: `inset(${y}px 0 0 0)`,
+        position: "relative" as const,
+        userSelect: "none" as const,
+      }}>
+        <div style={{
+          position: "absolute", bottom: 0,
+          ...(floatSide === "right" ? { right: 0 } : { left: 0 }),
+          width: `${clampedWidth}px`,
+        }}>
+          <img src={src} alt="첨부" onLoad={handleImgLoad}
+            style={{ width: "100%", height: "auto", display: "block", borderRadius: 8, pointerEvents: "none" }}
+            draggable={false} />
+        </div>
+      </div>
+    );
+  }
+
+  // clampedWidth 기반 높이 재계산
+  const displayHeight = Math.round(clampedWidth / naturalAspect);
+  const displayTotalHeight = y + displayHeight;
+
+  return (
+    <div
+      ref={wrapRef}
+      style={{
+        float: floatSide as "left" | "right",
+        width: `${clampedWidth + SIDE_GAP}px`,
+        height: `${displayTotalHeight}px`,
+        shapeOutside: `inset(${y}px 0 0 0)`,
+        position: "relative",
+        pointerEvents: "none",
+        zIndex: 10,
+      }}
+    >
+      {/* 실제 이미지 컨테이너 */}
+      <div
+        ref={imgRef}
+        className="group/img"
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => { if (!resizing && !dragging) setHovered(false); }}
+        style={{
+          position: "absolute",
+          bottom: 0,
+          ...(floatSide === "right" ? { right: 0 } : { left: 0 }),
+          width: `${clampedWidth}px`,
+          userSelect: "none",
+          cursor: dragging ? "grabbing" : "grab",
+          pointerEvents: "auto",
+        }}
+        onMouseDown={handleDragStart}
+      >
+        <img src={src} alt="첨부 이미지" onLoad={handleImgLoad}
+          style={{ width: "100%", height: "auto", display: "block", borderRadius: 8, pointerEvents: "none" }}
+          draggable={false} />
+
+        {/* 활성 테두리 */}
+        {active && (
+          <div className="absolute inset-0 rounded-lg pointer-events-none no-print"
+            style={{ border: "2px solid #3b82f6", boxShadow: "0 0 0 1px rgba(59,130,246,0.2)" }} />
+        )}
+
+        {/* 삭제 버튼 */}
+        <button
+          onClick={(e) => { e.stopPropagation(); onRemove(); }}
+          onMouseDown={(e) => e.stopPropagation()}
+          className="no-print flex items-center justify-center"
+          style={{
+            position: "absolute", top: -6, right: -6, width: 20, height: 20,
+            borderRadius: "50%", background: "#ef4444", color: "#fff",
+            fontSize: 11, fontWeight: 700, border: "2px solid #fff",
+            boxShadow: "0 1px 4px rgba(0,0,0,0.25)", cursor: "pointer",
+            opacity: active ? 1 : 0, transition: "opacity 0.15s", zIndex: 52,
+          }}
+        >×</button>
+
+        {/* 리사이즈 핸들 — 네 꼭지점 */}
+        {["nw","ne","sw","se"].map((corner) => (
+          <div
+            key={corner}
+            data-resize={corner}
+            onMouseDown={(e) => handleResizeStart(e, corner)}
+            className="no-print"
+            style={{
+              position: "absolute",
+              width: 14, height: 14,
+              borderRadius: "50%",
+              background: "#3b82f6",
+              border: "2px solid #fff",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
+              zIndex: 51,
+              opacity: active ? 1 : 0,
+              transition: "opacity 0.15s",
+              cursor: `${corner}-resize`,
+              ...(corner.includes("n") ? { top: -3 } : { bottom: -3 }),
+              ...(corner.includes("w") ? { left: -3 } : { right: -3 }),
+          }}
+        />
+      ))}
+    </div>
+    </div>
+  );
+};
+
+// 사진 첨부 버튼 (헤더 우측)
+const ImageAttachButton: React.FC<{
+  onAttach: (src: string) => void;
+  isModal?: boolean;
+}> = ({ onAttach, isModal = false }) => {
+  const inputRef = useRef<HTMLInputElement>(null);
+  if (isModal) return null;
+  return (
+    <>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            const result = ev.target?.result as string;
+            if (result) onAttach(result);
+          };
+          reader.readAsDataURL(file);
+          e.target.value = "";
+        }}
+      />
+      <button
+        onClick={(e) => { e.stopPropagation(); inputRef.current?.click(); }}
+        className="ml-auto shrink-0 w-7 h-7 rounded-lg bg-white/80 hover:bg-blue-50 border border-slate-200 flex items-center justify-center text-slate-400 hover:text-blue-500 transition-colors no-print shadow-sm"
+        title="사진 첨부"
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+          <circle cx="8.5" cy="8.5" r="1.5"/>
+          <polyline points="21 15 16 10 5 21"/>
+        </svg>
+      </button>
+    </>
+  );
+};
+
+// ===========================
 // 감성 배지
 // ===========================
-const SENTIMENTS_PRE = ["긍정", "중립", "부정"];
-const SENTIMENTS_CLOSE = ["강세", "보합", "약세"];
+const SENTIMENTS_PRE = ["긍정", "중립", "부정", "공략"];
+const SENTIMENTS_CLOSE = ["강세", "보합", "약세", "공략"];
 const SentimentBadge = ({
   sentiment,
   onClick,
@@ -514,15 +1129,18 @@ const SentimentBadge = ({
 }) => {
   const isPos = sentiment.includes("긍정") || sentiment.includes("강세");
   const isNeg = sentiment.includes("부정") || sentiment.includes("약세");
+  const isAtk = sentiment.includes("공략");
   return (
     <span
       onClick={onClick}
       className={`px-2.5 py-0.5 rounded text-[15px] font-black tracking-tighter uppercase ${onClick ? "cursor-pointer hover:opacity-80 active:scale-95 transition-all" : ""} ${
-        isPos
-          ? "bg-[#f04452] text-white"
-          : isNeg
-            ? "bg-[#3182f6] text-white"
-            : "bg-[#6b7684] text-white"
+        isAtk
+          ? "bg-[#16a34a] text-white"
+          : isPos
+            ? "bg-[#f04452] text-white"
+            : isNeg
+              ? "bg-[#3182f6] text-white"
+              : "bg-[#6b7684] text-white"
       }`}
     >
       {sentiment}
@@ -657,12 +1275,13 @@ const ReportPreview: React.FC<Props> = ({
       <div className="flex items-center justify-between">
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-4">
-            <span
+            <EditableText
+              value={isPreMarket ? (data.headerBadgeText || "MORNING REPORT") : (data.headerBadgeText || "CLOSING REPORT")}
+              onSave={(v) => onChange({ ...data, headerBadgeText: v })}
+              isModal={isModalView}
               className={`px-3.5 py-1.5 text-[13px] font-black text-white rounded-lg ${typeBadge} uppercase tracking-tight shadow-sm`}
               style={data.headerBadgeColor ? { backgroundColor: data.headerBadgeColor } : undefined}
-            >
-              {isPreMarket ? "MORNING REPORT" : "CLOSING REPORT"}
-            </span>
+            />
           </div>
           <EditableText
             value={data.title}
@@ -710,6 +1329,7 @@ const ReportPreview: React.FC<Props> = ({
         <div
           className={`shrink-0 ${sectionBg} p-2.5 rounded-2xl border ${cardBorder}`}
           style={data.indicatorBoxColor ? { backgroundColor: data.indicatorBoxColor } : undefined}
+          onClick={() => onElementSelect?.('indicator')}
         >
           {/* 상단: 코스피/코스닥 대형 박스 */}
           <div className="grid grid-cols-2 gap-2 mb-2">
@@ -806,7 +1426,7 @@ const ReportPreview: React.FC<Props> = ({
 
     // 장전 리포트: 기존 5열 그리드 + 보조 지표 행
     return (
-      <div className="shrink-0 bg-slate-50/80 p-2.5 rounded-2xl border border-slate-100" style={data.indicatorBoxColor ? { backgroundColor: data.indicatorBoxColor } : undefined}>
+      <div className="shrink-0 bg-slate-50/80 p-2.5 rounded-2xl border border-slate-100" style={data.indicatorBoxColor ? { backgroundColor: data.indicatorBoxColor } : undefined} onClick={() => onElementSelect?.('indicator')}>
         <div className={`grid grid-cols-${itemCount} gap-2`}>
           {data.summaryItems.map((item, idx) => (
             <div
@@ -931,6 +1551,7 @@ const ReportPreview: React.FC<Props> = ({
     return (
       <div
         className={`shrink-0 rounded-2xl border ${isDark ? "border-[#2a2a3a]" : "border-slate-200/60"} shadow-sm ${cardBg} relative group/addwrap overflow-visible`}
+        onClick={() => onElementSelect?.('theme')}
       >
         <div
           className={`${isDark ? "bg-[#16161e]" : "bg-slate-200/70"} px-5 py-2.5 border-b ${cardBorder} rounded-t-2xl`}
@@ -950,9 +1571,10 @@ const ReportPreview: React.FC<Props> = ({
                       const realIdx = sIdx;
                       const cardBorder2 = isDark ? "border-slate-600/40 bg-slate-800/20" : "border-slate-200 bg-white shadow-sm";
                       const dotColor =
-                        sector.sentiment === "긍정" ? "bg-red-500"
-                          : sector.sentiment === "부정" ? "bg-blue-500"
-                            : "bg-slate-400";
+                        sector.sentiment === "공략" ? "bg-green-500"
+                          : sector.sentiment === "긍정" ? "bg-red-500"
+                            : sector.sentiment === "부정" ? "bg-blue-500"
+                              : "bg-slate-400";
                       const chipColor2 = isDark
                         ? "bg-slate-700/40 text-slate-200 border-slate-500/30"
                         : "bg-slate-100 text-slate-700 border-slate-300/80";
@@ -988,18 +1610,20 @@ const ReportPreview: React.FC<Props> = ({
                             />
                             <button
                               onClick={() => {
-                                const cycle = ["긍정", "부정", "중립"];
+                                const cycle = ["긍정", "부정", "중립", "공략"];
                                 const next = cycle[(cycle.indexOf(sector.sentiment) + 1) % cycle.length];
                                 const updated = [...(data.usSectors || [])];
                                 updated[realIdx] = { ...updated[realIdx], sentiment: next };
                                 onChange({ ...data, usSectors: updated });
                               }}
                               className={`ml-auto text-[15px] font-bold rounded px-1.5 py-0.5 cursor-pointer transition-colors shrink-0 ${
-                                sector.sentiment === "긍정"
-                                  ? "bg-red-100 text-red-700"
-                                  : sector.sentiment === "부정"
-                                    ? "bg-blue-100 text-blue-700"
-                                    : "bg-slate-100 text-slate-600"
+                                sector.sentiment === "공략"
+                                  ? "bg-green-100 text-green-700"
+                                  : sector.sentiment === "긍정"
+                                    ? "bg-red-100 text-red-700"
+                                    : sector.sentiment === "부정"
+                                      ? "bg-blue-100 text-blue-700"
+                                      : "bg-slate-100 text-slate-600"
                               }`}
                             >
                               {sector.sentiment}
@@ -1029,9 +1653,21 @@ const ReportPreview: React.FC<Props> = ({
                             }}
                             isModal={isModalView}
                             placeholder="EX. 관련 종목 입력 후 Enter"
-                            chipClassName={data.themeChipColor ? "text-white border-white/30" : chipColor2}
+                            chipClassName={
+                              data.themeChipColor ? "text-white border-white/30"
+                              : (sector as any).sentiment === "공략" ? "text-green-700 border-green-300"
+                              : (sector as any).sentiment === "긍정" || (sector as any).sentiment === "강세" ? "text-red-700 border-red-300"
+                              : (sector as any).sentiment === "부정" || (sector as any).sentiment === "약세" ? "text-blue-700 border-blue-300"
+                              : chipColor2
+                            }
                             size="sm"
-                            chipStyle={data.themeChipColor ? { backgroundColor: data.themeChipColor } : undefined}
+                            chipStyle={
+                              data.themeChipColor ? { backgroundColor: data.themeChipColor }
+                              : (sector as any).sentiment === "공략" ? { backgroundColor: '#dcfce7', borderColor: '#86efac' }
+                              : (sector as any).sentiment === "긍정" || (sector as any).sentiment === "강세" ? { backgroundColor: '#fee2e2', borderColor: '#fca5a5' }
+                              : (sector as any).sentiment === "부정" || (sector as any).sentiment === "약세" ? { backgroundColor: '#dbeafe', borderColor: '#93c5fd' }
+                              : undefined
+                            }
                           />
                           </div>
                           </div>
@@ -1094,7 +1730,7 @@ const ReportPreview: React.FC<Props> = ({
     return (
       <div className="flex flex-col gap-2 shrink-0">
         {/* 1페이지 섹터 트렌드 — 내부는 featuredStocks 기반 테이블 */}
-        <div className={`flex flex-col rounded-xl border ${isDark ? "border-[#2a2a3a]" : "border-slate-200/70"} ${isDark ? "bg-[#12121a]/50" : "bg-slate-50/30"} relative group/addwrap2 overflow-visible`}>
+        <div className={`flex flex-col rounded-xl border ${isDark ? "border-[#2a2a3a]" : "border-slate-200/70"} ${isDark ? "bg-[#12121a]/50" : "bg-slate-50/30"} relative group/addwrap2 overflow-visible`} onClick={() => onElementSelect?.('sectorTrend')}>
           <div className={`px-4 py-2.5 border-b ${isDark ? "border-[#2a2a3a] bg-[#16161e]" : "border-slate-200/50 bg-slate-200/70"} rounded-t-xl`} style={data.sectorTrendHeaderColor ? { backgroundColor: data.sectorTrendHeaderColor } : undefined}>
             <EditableText
               value={data.usSectorsTitle || "전일 미증시 섹터 트렌드"}
@@ -1145,11 +1781,13 @@ const ReportPreview: React.FC<Props> = ({
                         onChange({ ...data, featuredStocks: newGroups });
                       }}
                       className={`ml-auto text-[15px] font-bold rounded px-1.5 py-0.5 cursor-pointer transition-colors shrink-0 ${
-                        (group as any).sentiment === "약세"
-                          ? "bg-blue-100 text-blue-700"
-                          : (group as any).sentiment === "보합"
-                            ? "bg-slate-100 text-slate-600"
-                            : "bg-red-100 text-red-700"
+                        (group as any).sentiment === "공략"
+                          ? "bg-green-100 text-green-700"
+                          : (group as any).sentiment === "약세"
+                            ? "bg-blue-100 text-blue-700"
+                            : (group as any).sentiment === "보합"
+                              ? "bg-slate-100 text-slate-600"
+                              : "bg-red-100 text-red-700"
                       }`}
                     >
                       {(group as any).sentiment || "강세"}
@@ -1158,11 +1796,13 @@ const ReportPreview: React.FC<Props> = ({
                   {isModalView && (
                     <span
                       className={`ml-auto text-[15px] font-bold rounded px-1.5 py-0.5 shrink-0 ${
-                        (group as any).sentiment === "약세"
-                          ? "bg-blue-100 text-blue-700"
-                          : (group as any).sentiment === "보합"
-                            ? "bg-slate-100 text-slate-600"
-                            : "bg-red-100 text-red-700"
+                        (group as any).sentiment === "공략"
+                          ? "bg-green-100 text-green-700"
+                          : (group as any).sentiment === "약세"
+                            ? "bg-blue-100 text-blue-700"
+                            : (group as any).sentiment === "보합"
+                              ? "bg-slate-100 text-slate-600"
+                              : "bg-red-100 text-red-700"
                       }`}
                     >
                       {(group as any).sentiment || "강세"}
@@ -1171,7 +1811,7 @@ const ReportPreview: React.FC<Props> = ({
                 </div>
                 {/* 종목 리스트 */}
                 <div className="px-3 py-1">
-                  <table className="w-full text-left border-collapse">
+                  <table className="w-full text-left border-collapse" style={{ tableLayout: 'fixed' }}>
                     <thead>
                       <tr className={`${isDark ? "text-slate-500" : "text-slate-400"} font-bold uppercase tracking-wider`} style={{ fontSize: data.sectorTrendTableTextSize ? `${data.sectorTrendTableTextSize}px` : '15px', ...(data.sectorTrendTableTextColor ? { color: data.sectorTrendTableTextColor } : {}) }}>
                         <th className="py-0.5 pl-1" style={{ width: "42%" }}>종목명</th>
@@ -1191,6 +1831,7 @@ const ReportPreview: React.FC<Props> = ({
                         return (
                           <tr key={sIdx} className={`${isDark ? "hover:bg-[#22222e]" : "hover:bg-white"} transition-colors group/stock relative`}>
                             <td className="py-0.5 pl-1 align-middle">
+                              <div className="flex flex-col">
                               {isModalView ? (
                                 <AutoFitText
                                   text={stock.name}
@@ -1199,45 +1840,71 @@ const ReportPreview: React.FC<Props> = ({
                                   style={data.sectorTrendTableTextColor ? { color: data.sectorTrendTableTextColor } : undefined}
                                 />
                               ) : (
-                                <EditableText
+                                <StockNameInput
                                   value={stock.name}
-                                  onSave={(v) => {
-                                    // 1) 종목명 즉시 업데이트
+                                  onStockSelect={(stockInfo) => {
+                                    // 1) 종목명 설정 + ticker/exchange 저장 + 가격/등락률 초기화
                                     const newStocks = data.featuredStocks.map((g, gi) =>
-                                      gi === gIdx ? { ...g, stocks: g.stocks.map((s, si) => si === sIdx ? { ...s, name: v } : s) } : g
+                                      gi === gIdx ? { ...g, stocks: g.stocks.map((s, si) => si === sIdx ? {
+                                        ...s,
+                                        name: stockInfo.nameKr,
+                                        ticker: stockInfo.ticker,
+                                        exchange: stockInfo.exchange,
+                                        price: '',
+                                        change: '',
+                                      } : s) } : g
                                     );
                                     onChange({ ...data, featuredStocks: newStocks });
 
-                                    // 2) 가격/등락률이 기본값이면 자동 조회
-                                    const isDefaultPrice = !stock.price || stock.price === '0' || stock.price === '0.00' || stock.price === '$0.00' || stock.price === '$0';
-                                    const isDefaultChange = !stock.change || stock.change === '0%' || stock.change === '+0.00%' || stock.change === '+0%' || stock.change === '0.00%';
-                                    if (v.trim() && (isDefaultPrice || isDefaultChange)) {
-                                      fetchStockPrice(v.trim()).then((result) => {
-                                        if (!result) return;
-                                        const updated = data.featuredStocks.map((g, gi) =>
-                                          gi === gIdx ? {
-                                            ...g,
-                                            stocks: g.stocks.map((s, si) => {
-                                              if (si !== sIdx) return s;
-                                              return {
-                                                ...s,
-                                                name: v,
-                                                price: (!s.price || s.price === '0' || s.price === '0.00' || s.price === '$0.00' || s.price === '$0') ? result.price : s.price,
-                                                change: (!s.change || s.change === '0%' || s.change === '+0.00%' || s.change === '+0%' || s.change === '0.00%') ? result.change : s.change,
-                                              };
-                                            })
-                                          } : g
-                                        );
-                                        onChange({ ...data, featuredStocks: updated });
-                                      });
+                                    // 2) 선택된 종목의 가격 자동 조회
+                                    fetchStockPrice(stockInfo.nameKr).then((result) => {
+                                      if (!result) return;
+                                      const updated = data.featuredStocks.map((g, gi) =>
+                                        gi === gIdx ? {
+                                          ...g,
+                                          stocks: g.stocks.map((s, si) => {
+                                            if (si !== sIdx) return s;
+                                            return {
+                                              ...s,
+                                              name: stockInfo.nameKr,
+                                              ticker: stockInfo.ticker,
+                                              exchange: stockInfo.exchange,
+                                              price: result.price,
+                                              change: result.change,
+                                            };
+                                          })
+                                        } : g
+                                      );
+                                      onChange({ ...data, featuredStocks: updated });
+                                    });
+                                  }}
+                                  onTextSave={(text) => {
+                                    // 선택 없이 직접 입력만 한 경우: 텍스트만 저장, 가격/등락률 초기화
+                                    const prevName = stock.name?.trim() || '';
+                                    if (text !== prevName) {
+                                      const newStocks = data.featuredStocks.map((g, gi) =>
+                                        gi === gIdx ? { ...g, stocks: g.stocks.map((s, si) => si === sIdx ? {
+                                          ...s,
+                                          name: text,
+                                          price: '',
+                                          change: '',
+                                        } : s) } : g
+                                      );
+                                      onChange({ ...data, featuredStocks: newStocks });
                                     }
                                   }}
-                                  isModal={false}
                                   className={`font-bold ${pageText}`}
-                                  placeholder="종목명 입력 후 Enter"
-                                  style={{ fontSize: data.sectorTrendTableTextSize ? `${data.sectorTrendTableTextSize}px` : '16px', ...(data.sectorTrendTableTextColor ? { color: data.sectorTrendTableTextColor } : {}) }}
+                                  placeholder="종목명 입력"
+                                  baseFontSize={data.sectorTrendTableTextSize || 16}
+                                  style={data.sectorTrendTableTextColor ? { color: data.sectorTrendTableTextColor } : undefined}
                                 />
                               )}
+                              {stock.ticker && (
+                                <span className="text-[11px] leading-tight" style={{ color: isDark ? '#888' : '#999' }}>
+                                  {stock.ticker}
+                                </span>
+                              )}
+                              </div>
                             </td>
                             <td className="py-0.5 text-right pr-3 align-middle">
                               <EditableText
@@ -1340,15 +2007,31 @@ const ReportPreview: React.FC<Props> = ({
         </div>
         {/* 미증시 마감 분석 (아래) — 타이틀+본문 한 박스 */}
         <div className={`rounded-xl border ${isDark ? "border-[#2a2a3a]" : "border-slate-200/70"} ${isDark ? "bg-[#12121a]/50" : "bg-slate-50/30"} overflow-hidden mt-1`} style={data.usAnalysisBoxColor ? { backgroundColor: data.usAnalysisBoxColor } : undefined}>
-          <div className={`px-4 py-2.5 border-b ${isDark ? "border-[#2a2a3a] bg-[#16161e]" : "border-slate-200/50 bg-slate-200/70"} rounded-t-xl`} style={data.usAnalysisHeaderColor ? { backgroundColor: data.usAnalysisHeaderColor } : undefined}>
+          <div className={`px-4 py-2.5 border-b ${isDark ? "border-[#2a2a3a] bg-[#16161e]" : "border-slate-200/50 bg-slate-200/70"} rounded-t-xl flex items-center gap-2`} style={data.usAnalysisHeaderColor ? { backgroundColor: data.usAnalysisHeaderColor } : undefined}>
             <EditableText
               value={data.usMarketAnalysisTitle}
               {...ep("usMarketAnalysisTitle")}
               tag="h2"
-              className={`text-[18px] font-black uppercase tracking-tighter ${pageText}`}
+              className={`text-[18px] font-black uppercase tracking-tighter ${pageText} flex-1`}
+            />
+            <ImageAttachButton
+              isModal={isModalView}
+              onAttach={(src) => onChange({ ...data, usAnalysisImage: { src, width: 160, x: 350, y: 10 } })}
             />
           </div>
-          <div className="p-4 cursor-text" style={{ minHeight: data.usMarketAnalysis?.trim() ? undefined : "120px" }} onClick={(e) => { const el = (e.currentTarget as HTMLElement).querySelector('[contenteditable]') as HTMLElement; if (el && e.target === e.currentTarget) el.focus(); }}>
+          <div className="p-4 cursor-text" style={{ position: "relative", minHeight: "150px", display: "flow-root" }} onClick={(e) => { const el = (e.currentTarget as HTMLElement).querySelector('[contenteditable]') as HTMLElement; if (el && e.target === e.currentTarget) el.focus(); }}>
+            {data.usAnalysisImage && (
+              <DraggableImage
+                src={data.usAnalysisImage.src}
+                width={data.usAnalysisImage.width}
+                x={data.usAnalysisImage.x}
+                y={data.usAnalysisImage.y}
+                aspect={data.usAnalysisImage.aspect}
+                isModal={isModalView}
+                onUpdate={(patch) => onChange({ ...data, usAnalysisImage: { ...data.usAnalysisImage!, ...patch } as any })}
+                onRemove={() => onChange({ ...data, usAnalysisImage: undefined })}
+              />
+            )}
             <EditableText
               value={data.usMarketAnalysis}
               {...ep("usMarketAnalysis")}
@@ -1465,27 +2148,46 @@ const ReportPreview: React.FC<Props> = ({
             >
               <div className="flex items-center gap-3 mb-3">
                 <span className="text-[20px] leading-none">🎯</span>
-                <span
+                <EditableText
+                  value={isPreMarket ? (data.strategyTitle || "RISING STOCK 오늘의 핵심 주식 전략") : (data.strategyTitle || "RISING STOCK 핵심 내일 시장 전략")}
+                  onSave={(v) => onChange({ ...data, strategyTitle: v })}
+                  isModal={isModalView}
                   className={`text-[18px] font-black ${
                     isDark ? "text-amber-400" 
                     : isPreMarket ? "text-sky-300" 
                     : "text-amber-400"
-                  } uppercase tracking-widest`}
-                >
-                  {isPreMarket ? "RISING STOCK 오늘의 핵심 주식 전략" : "RISING STOCK 핵심 내일 시장 전략"}
-                </span>
+                  } uppercase tracking-widest flex-1`}
+                />
+                <ImageAttachButton
+                  isModal={isModalView}
+                  onAttach={(src) => onChange({ ...data, strategyImage: { src, width: 160, x: 350, y: 10 } })}
+                />
               </div>
               {/* 타이틀과 내용 사이 구분선 */}
               <div className="border-t border-white/15 mb-3" />
-              <EditableText
-                value={data.todayStrategy}
-                {...ep("todayStrategy")}
-                multiline
-                className="text-[18px] font-bold text-white/90 leading-[2.0] text-justify"
-                placeholder="EX. 오늘의 시장전략을 적어주세요"
-              />
+              <div style={{ position: "relative", minHeight: "120px", display: "flow-root" }}>
+                {data.strategyImage && (
+                  <DraggableImage
+                    src={data.strategyImage.src}
+                    width={data.strategyImage.width}
+                    x={data.strategyImage.x}
+                    y={data.strategyImage.y}
+                    aspect={data.strategyImage.aspect}
+                    isModal={isModalView}
+                    onUpdate={(patch) => onChange({ ...data, strategyImage: { ...data.strategyImage!, ...patch } as any })}
+                    onRemove={() => onChange({ ...data, strategyImage: undefined })}
+                  />
+                )}
+                <EditableText
+                  value={data.todayStrategy}
+                  {...ep("todayStrategy")}
+                  multiline
+                  className="text-[18px] font-bold text-white/90 leading-[2.0] text-justify"
+                  placeholder="EX. 오늘의 시장전략을 적어주세요"
+                />
+              </div>
               <div
-                className={`mt-3 pt-3 border-t border-white/10 flex items-center gap-3`}
+                className={`mt-3 pt-3 border-t border-white/10 flex flex-wrap items-center gap-[10px]`}
               >
                 <EditableText
                   value={
@@ -1495,13 +2197,13 @@ const ReportPreview: React.FC<Props> = ({
                   }
                   onSave={(v) => onChange({ ...data, featuredStockLabel: v })}
                   isModal={isModalView}
-                  className={`shrink-0 uppercase tracking-widest text-[15px] font-[900] bg-white/20 border border-white/20 ${
+                  className={`shrink-0 uppercase tracking-widest text-[16px] font-[900] bg-white/20 border border-white/20 ${
                     isDark ? "text-amber-300" 
                     : isPreMarket ? "text-sky-200" 
                     : "text-amber-300"
                   } px-3.5 py-1.5 rounded-full`}
                 />
-                <div className="flex-1 text-white">
+                <div className="flex-1 text-white" style={{ overflow: 'visible' }}>
                   <ChipInput
                     value={data.expertInterestedStocks}
                     onSave={(v) => onChange({ ...data, expertInterestedStocks: v })}
@@ -1510,7 +2212,6 @@ const ReportPreview: React.FC<Props> = ({
                     chipClassName={data.stockChipColor ? `text-white border-white/40` : "bg-white/25 text-white border-white/40"}
                     size="lg"
                     chipStyle={data.stockChipColor ? { backgroundColor: data.stockChipColor } : undefined}
-                    noWrap
                   />
                 </div>
               </div>
