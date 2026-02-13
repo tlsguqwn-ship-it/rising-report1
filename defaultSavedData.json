@@ -1,0 +1,32 @@
+{
+  "close": {
+    "title": "RISING STOCK 마감 시황",
+    "date": "2026년 2월 13일(금) 21:03 발행",
+    "reportType": "마감",
+    "summaryTitle": "국내 증시 및 수급 현황",
+    "summaryItems": [
+      {"label": "KOSPI", "value": "2,620", "subText": "+18.5 +0.71%", "trend": "up"},
+      {"label": "KOSDAQ", "value": "745", "subText": "+5.2 +0.70%", "trend": "up"},
+      {"label": "KOSPI 외인", "value": "+2,850억", "subText": "순매수", "trend": "up"},
+      {"label": "KOSPI 기관", "value": "+1,200억", "subText": "순매수", "trend": "up"},
+      {"label": "KOSDAQ 외인", "value": "-320억", "subText": "순매도", "trend": "down"},
+      {"label": "KOSDAQ 기관", "value": "+580억", "subText": "순매수", "trend": "up"},
+      {"label": "원달러환율", "value": "1,452", "subText": "-3.5 -0.24%", "trend": "down"}
+    ],
+    "marketSchedule": [
+      {"id": "item-1770984187117", "time": "장마감", "event": "국내 소비자물가지수(CPI) 발표"},
+      {"id": "item-1770984187118", "time": "22:30", "event": "미국 고용지표 발표"}
+    ],
+    "featuredStocks": [
+      {"id": "item-1770984187120", "keyword": "반도체 장비", "stocks": [{"name": "삼성전자", "price": "58,200", "change": "+1.2%"}, {"name": "SK하이닉스", "price": "198,000", "change": "+2.8%"}]},
+      {"id": "item-1770984187121", "keyword": "휴머노이드 로봇", "stocks": [{"name": "LG전자", "price": "112,000", "change": "+4.5%"}, {"name": "현대차", "price": "245,000", "change": "+2.1%"}]},
+      {"id": "item-1770984187122", "keyword": "원전 & 에너지", "stocks": [{"name": "두산에너빌리티", "price": "22,500", "change": "+3.8%"}, {"name": "한전기술", "price": "85,000", "change": "+2.5%"}]},
+      {"id": "item-1770984187123", "keyword": "소비재 & 유통", "stocks": [{"name": "이마트", "price": "78,000", "change": "+5.2%"}, {"name": "BGF리테일", "price": "145,000", "change": "+1.8%"}]}
+    ],
+    "usMarketAnalysisTitle": "전일 미증시 마감 분석",
+    "usMarketAnalysis": "금리 인하 기대 소멸: 1월 고용 예상 7만건을 두 배나 앞지른 13만건 기록.\nAI산업 변화로 유니티 26% 하락 등 소프트웨어주 및 부동산주 하락한 반면\nAI 하드웨어 핵심인 반도체주 견조.\n\n반도체 섹터의 독주\n마이크론 9.94% 상승이 HBM 경쟁력 루머를 반박하며 엔비디아/TSMC 등 반도체주 강세 마감.\n\n에너지 안전자산 강세:\n중동 내 미국 2차 항모 배치 소식에 따른 유가 1% 상승하며 금, 에너지 관련주 상승 마감.",
+    "domesticAnalysisTitle": "전일 국내증시 특징",
+    "domesticAnalysis": "1. 코스피 5,300선 돌파: 외인과 기관 강력한 동반 매수로 증시 하방경직성 확인 중.\n2. 피지컬 AI와 반도체의 독주: LG전자, 현대차 로봇 강화 소식에 23% 급등\n3. 대미 원전 협력에 원전주 강세\n4. 실적 및 주주환원 모멘텀, 새벽배송 모멘텀에 이마트 및 소비재 강세",
+    "todayStrategy": "마이크론 9% 상승에 국내장 반도체 강세 시작.\n코스피 갭상승 출발 유력 (역사상 신고가)\n신고가 이후 하방경직성 체크 후 매매 유효.\n반도체 > 휴머노이드로봇 > 전력설비 > 원전 > 우주항공 지속되는 테마순환매\n따라잡는 매매보다 길목에서 기다리는 매매 필수전략."
+  }
+}

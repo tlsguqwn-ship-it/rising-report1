@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { ReportData } from './types';
 import { INITIAL_REPORT, PRE_MARKET_REPORT_TEMPLATE, CLOSE_REPORT_TEMPLATE, EMPTY_PRE_MARKET_TEMPLATE, EMPTY_CLOSE_TEMPLATE, SHARED_FIELDS } from './constants';
+import defaultSavedData from './defaultSavedData.json';
 import { useUndoRedo } from './hooks/useUndoRedo';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import Toolbar from './components/Toolbar';
@@ -97,7 +98,13 @@ const MainEditor: React.FC = () => {
         }
       }
     } catch { /* ignore */ }
-    // 2. 기본 템플릿 (항상 샘플 데이터)
+    // 2. 하드코딩된 기본 저장 데이터 (저장히스토리에서 추출)
+    try {
+      if (lastMode === '마감' && defaultSavedData.close) {
+        return { ...CLOSE_REPORT_TEMPLATE, ...defaultSavedData.close } as ReportData;
+      }
+    } catch { /* ignore */ }
+    // 3. 기본 템플릿 (항상 샘플 데이터)
     return lastMode === '장전' ? PRE_MARKET_REPORT_TEMPLATE : CLOSE_REPORT_TEMPLATE;
   };
   const { state: reportData, setState: setReportData, undo, redo, canUndo, canRedo, reset } = useUndoRedo<ReportData>(getInitialData());
